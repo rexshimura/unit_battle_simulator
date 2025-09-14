@@ -11,7 +11,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unit Battle Simulator - v1.8</title>
+    <title>Unit Battle Simulator - v2.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -45,6 +45,10 @@
         }
         .action-btn:hover {
             transform: scale(1.05);
+        }
+        .action-btn.active {
+            background-color: #ef4444;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
         }
         .speed-btn.selected {
             background-color: #8b5cf6;
@@ -133,13 +137,19 @@
                 <button id="log-btn" title="Show Version History" class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.546-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </button>
-                <h1 class="text-2xl font-bold text-violet-300">Unit Battle Simulator Ver 1.8</h1>
+                <h1 class="text-2xl font-bold text-violet-300">Unit Battle Simulator Ver 2.1</h1>
             </div>
             <div class="text-right flex gap-4 items-center">
+                
                 <button id="toggle-range-btn" title="Toggle Unit Range Preview" class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
-                    <svg id="eye-icon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                    <svg id="eye-off-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"></path></svg>
+                    <img id="eye-icon" src="icon/icon_eye_open.svg" alt="Eye Open" class="w-6 h-6 hidden pointer-events-none">
+                    <img id="eye-off-icon" src="icon/icon_eye_closed.svg" alt="Eye Closed" class="w-6 h-6 pointer-events-none">
                 </button>
+
+                <button id="remove-unit-btn" title="Remove Unit" class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
+                    <img src="icon/icon_remove.svg" alt="Remove" class="w-6 h-6 pointer-events-none">
+                </button>
+
                 <p class="text-lg font-bold text-blue-400">Blue: <span id="blue-count">0</span></p>
                 <p class="text-lg font-bold text-red-400">Red: <span id="red-count">0</span></p>
             </div>
@@ -153,19 +163,19 @@
                 <!-- Role Sorter -->
                 <div id="role-sorter" class="flex justify-around mb-4 border-b border-gray-600 pb-2">
                     <button data-role="all" class="role-btn p-2 rounded-full selected" title="All">
-                        <svg class="pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/></svg>
+                        <img src="icon/icon_all.svg" alt="All" class="w-6 h-6 pointer-events-none">
                     </button>
                     <button data-role="Melee" class="role-btn p-2 rounded-full" title="Melee">
-                        <svg class="pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 3.5 17 17L15 22l-1-1-3.5-3.5-1-1L1 7l5.5-5.5Z"/><path d="m14 7 3 3"/><path d="M18 12.5V10l4 4-2.5 2.5"/><path d="m6.5 17.5 4.5-4.5"/></svg>
+                        <img src="icon/icon_melee.svg" alt="Melee" class="w-6 h-6 pointer-events-none">
                     </button>
                     <button data-role="Ranged" class="role-btn p-2 rounded-full" title="Ranged">
-                        <svg class="pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+                        <img src="icon/icon_range.svg" alt="Ranged" class="w-6 h-6 pointer-events-none">
                     </button>
                     <button data-role="Tank" class="role-btn p-2 rounded-full" title="Tank">
-                        <svg class="pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <img src="icon/icon_tank.svg" alt="Tank" class="w-6 h-6 pointer-events-none">
                     </button>
                     <button data-role="Support" class="role-btn p-2 rounded-full" title="Support">
-                       <svg class="pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                        <img src="icon/icon_support.svg" alt="Support" class="w-6 h-6 pointer-events-none">
                     </button>
                 </div>
 
@@ -237,6 +247,9 @@
                     <button data-unit-type="stalker" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
                         <p class="font-bold">Stalker</p><p class="text-xs text-gray-400">Teleports & silences target</p>
                     </button>
+                     <button data-unit-type="swarmer" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Swarmer</p><p class="text-xs text-gray-400">Spawns multiple bees</p>
+                    </button>
                 </div>
                 <div class="mt-auto flex-shrink-0">
                     <div class="mt-6 pt-4 border-t border-gray-600 flex justify-around items-center">
@@ -266,6 +279,7 @@
             <div class="relative flex-grow">
                 <canvas id="gameCanvas" class="w-full h-full"></canvas>
                 <div id="status-message" class="status-message absolute inset-0 flex items-center justify-center text-5xl font-bold text-white pointer-events-none opacity-0 transition-opacity"></div>
+                <div id="remove-message" class="status-message absolute top-5 inset-x-0 flex items-center justify-center text-2xl font-bold text-red-400 pointer-events-none opacity-0 transition-opacity"></div>
             </div>
         </div>
     </div>
@@ -284,6 +298,7 @@
         const speedControls = document.getElementById('speed-controls');
         const statusMessage = document.getElementById('status-message');
         const tooltip = document.getElementById('unit-tooltip');
+        const removeMessage = document.getElementById('remove-message');
 
         // New elements
         const logBtn = document.getElementById('log-btn');
@@ -294,6 +309,7 @@
         const eyeIcon = document.getElementById('eye-icon');
         const eyeOffIcon = document.getElementById('eye-off-icon');
         const roleSorter = document.getElementById('role-sorter');
+        const removeUnitBtn = document.getElementById('remove-unit-btn');
         
         const playIconSVG = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
         const pauseIconSVG = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
@@ -327,6 +343,8 @@
             'slither':      { name: 'Slither', tags: ['Support', 'Summoner'], hp: 80,  speed: 0.4, attackDamage: 0,    attackRange: 500, attackCooldown: 9000, color: { team1: '#0d9488', team2: '#7c2d12' } },
             'snake':        { name: 'Snake', tags: ['Melee', 'Summon'], hp: 50, speed: 1.5, attackDamage: 10,   attackRange: 25,  attackCooldown: 430,  color: { team1: '#14b8a6', team2: '#9a3412' } },
             'stalker':      { name: 'Stalker', tags: ['Melee', 'Assassin'], hp: 70, speed: 3.5, attackDamage: 20, attackRange: 400, attackCooldown: 700, color: { team1: '#4338ca', team2: '#be185d' }, silenceDuration: 2000 },
+            'swarmer':      { name: 'Swarmer', tags: ['Support', 'Summoner'], hp: 80,  speed: 0.3, attackDamage: 0,    attackRange: 1000, attackCooldown: 1500, color: { team1: '#f59e0b', team2: '#fb923c' } },
+            'bee':          { name: 'Bee',     tags: ['Melee', 'Summon'],     hp: 2,   speed: 7, attackDamage: 1,    attackRange: 30,  attackCooldown: 500,  color: { team1: '#facc15', team2: '#fef08a' } },
         };
         // =======================================================
 
@@ -340,6 +358,8 @@
         let isPaused = false;
         let gameSpeed = 1.0;
         let showRangePreview = false;
+        let isRemoveModeActive = false;
+        let unitToHighlight = null;
         let mousePos = { x: -1, y: -1, onCanvas: false };
 
         function resizeCanvas() {
@@ -412,6 +432,11 @@
                 if (type === 'sentry') { this.width = 16; this.height = 16; }
                 if (type === 'swinger') { this.width = 28; this.height = 28; }
                 if (type === 'snake') { this.width = 14; this.height = 14; }
+                if (type === 'bee') { 
+                    this.width = 8; 
+                    this.height = 8; 
+                    this.buzzOffset = { x: 0, y: 0 };
+                }
                 this.isSlashing = false;
                 this.slashAnimDuration = 15; this.slashAnimProgress = 0;
                 this.isSwinging = false;
@@ -433,7 +458,7 @@
                 if (type === 'streamer') { this.isStreaming = false; this.streamDuration = 240; this.streamProgress = 0; }
                 if (type === 'sustainer') { this.isHealing = false; this.healDuration = 100; this.healProgress = 0; this.healTargets = []; this.healParticleTimers = []; }
                 if (type === 'synchronizer') { this.linkedAlly = null; }
-                if (type === 'summoner') { this.mySkeletons = []; this.lastSummonTime = 0; }
+                if (type === 'summoner') { this.mySkeletons = []; }
                 if (type === 'sniper') { this.isAiming = false; this.aimDuration = 120; this.aimProgress = 0; }
                 if (type === 'slither') { this.mySnake = null; }
                 if (type === 'snake') {
@@ -472,6 +497,7 @@
                     this.castProgress = 0;
                     this.bodyAngle = 0;
                 }
+                if (type === 'swarmer') { this.myBees = []; }
             }
 
             getAttackDamage() { return this.attackDamage * this.buffMultiplier; }
@@ -519,6 +545,33 @@
                     ctx.lineTo(-this.width / 2 - 5, 0); ctx.lineTo(0, this.width / 2);
                     ctx.closePath(); ctx.fill();
                     ctx.restore();
+                } else if (this.type === 'bee') {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    let angle = this.team === 1 ? 0 : Math.PI;
+                    if (this.target) angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                    ctx.rotate(angle);
+
+                    // Body
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, this.width/2 + 1, this.width/2, 0, 0, Math.PI*2);
+                    ctx.fill();
+
+                    // Stripe
+                    ctx.fillStyle = 'rgba(26, 26, 26, 0.8)';
+                    ctx.fillRect(-this.width / 6, -this.width / 2, this.width / 3, this.width);
+                    
+                    // Stinger
+                    ctx.fillStyle = '#1a1a1a';
+                    ctx.beginPath();
+                    ctx.moveTo(this.width/2 + 1, 0);
+                    ctx.lineTo(this.width/2 + 4, -1.5);
+                    ctx.lineTo(this.width/2 + 4, 1.5);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    ctx.restore();
                 } else if (this.type === 'stalker') {
                     ctx.save();
                     ctx.translate(this.x, this.y);
@@ -533,7 +586,7 @@
                     ctx.closePath();
                     ctx.fill();
                     ctx.restore();
-                } else if (this.type === 'synchronizer' || this.type === 'spawner' || this.type === 'slither') {
+                } else if (this.type === 'synchronizer' || this.type === 'spawner' || this.type === 'slither' || this.type === 'swarmer') {
                     ctx.save();
                     ctx.translate(this.x, this.y);
                     const size = this.width / 1.8;
@@ -577,7 +630,7 @@
                     ctx.fill();
                 }
 
-                if (this.type !== 'snake') this.drawEquipment();
+                if (this.type !== 'snake' && this.type !== 'bee') this.drawEquipment();
                 if (this.type === 'streamer' && this.isStreaming && this.target) this.drawLaser();
                 if (this.type === 'sustainer' && this.isHealing) this.drawHealBeams();
                 if (this.type === 'sniper' && this.isAiming && this.target) {
@@ -696,15 +749,15 @@
                     cooldownProgress = Math.min(1, (now - this.lastSpawnTime) / (this.spawnCooldown / gameSpeed));
                     cooldownColor = '#d8b4fe';
                     cooldownBgColor = '#581c87';
-                } else if (this.type === 'summoner' && this.mySkeletons.length < 2) {
+                } else if ((this.type === 'summoner' && this.mySkeletons.length < 2) || (this.type === 'swarmer' && this.myBees.length < 12) ) {
                     cooldownProgress = Math.min(1, (now - this.lastAttackTime) / (this.getAttackCooldown() / gameSpeed));
-                    cooldownColor = '#f9a8d4';
-                    cooldownBgColor = '#831843';
+                    cooldownColor = this.type === 'swarmer' ? '#fde047' : '#f9a8d4';
+                    cooldownBgColor = this.type === 'swarmer' ? '#78350f' : '#831843';
                 } else if (this.type === 'slither' && !this.mySnake) {
                     cooldownProgress = Math.min(1, (now - this.lastAttackTime) / (this.getAttackCooldown() / gameSpeed));
                     cooldownColor = '#5eead4';
                     cooldownBgColor = '#134e4a';
-                } else if (this.attackCooldown > 0 && this.type !== 'spawner' && this.type !== 'summoner' && this.type !== 'slither' && this.type !== 'sustainer' && this.type !== 'synchronizer' && this.type !== 'shielder') {
+                } else if (this.attackCooldown > 0 && this.type !== 'spawner' && this.type !== 'summoner' && this.type !== 'slither' && this.type !== 'sustainer' && this.type !== 'synchronizer' && this.type !== 'shielder' && this.type !== 'swarmer') {
                     cooldownProgress = Math.min(1, (now - this.lastAttackTime) / (this.getAttackCooldown() / gameSpeed));
                     if(this.type === 'stopper') {
                         cooldownColor = '#fca5a5';
@@ -809,11 +862,10 @@
                 let angle = this.team === 1 ? 0 : Math.PI;
                 if (this.target) angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
 
-                if (this.type === 'shooter' || this.type === 'scorcher' || this.type === 'skipper' || this.type === 'sprayer') {
-                    const isSprayer = this.type === 'sprayer';
+                if (this.type === 'shooter' || this.type === 'scorcher' || this.type === 'skipper') {
                     const isSkipper = this.type === 'skipper';
                     const nozzleLength = this.type === 'scorcher' ? 12 : 8;
-                    const nozzleWidth = this.type === 'scorcher' ? 8 : (isSkipper ? 6 : (isSprayer ? 6 : 5));
+                    const nozzleWidth = this.type === 'scorcher' ? 8 : (isSkipper ? 6 : 5);
                     const startX = this.x + Math.cos(angle) * (this.width / 2);
                     const startY = this.y + Math.sin(angle) * (this.width / 2);
                     const endX = this.x + Math.cos(angle) * (this.width / 2 + nozzleLength);
@@ -821,6 +873,31 @@
                     ctx.strokeStyle = this.type === 'scorcher' ? '#451a03' : (isSkipper ? '#0d9488' : '#9ca3af');
                     ctx.lineWidth = nozzleWidth;
                     ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(endX, endY); ctx.stroke();
+                } else if (this.type === 'sprayer') {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(angle);
+                    
+                    const baseWidth = 8;
+                    const tipWidth = 10;
+                    const length = 14;
+                    const basePos = this.width / 2;
+
+                    ctx.fillStyle = '#6b7280'; // dark grey for the main body
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(basePos, -baseWidth / 2);
+                    ctx.lineTo(basePos + length, -tipWidth / 2);
+                    ctx.lineTo(basePos + length, tipWidth / 2);
+                    ctx.lineTo(basePos, baseWidth / 2);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Add a darker tip
+                    ctx.fillStyle = '#4b5563';
+                    ctx.fillRect(basePos + length, -tipWidth / 2, 3, tipWidth);
+
+                    ctx.restore();
                 } else if (this.type === 'spawner') {
                     const toolLength = 15;
                     const clawSize = 6;
@@ -840,6 +917,26 @@
                     ctx.moveTo(this.width/2 + toolLength, 0);
                     ctx.lineTo(this.width/2 + toolLength - clawSize, clawSize);
                     ctx.stroke();
+                    ctx.restore();
+                } else if (this.type === 'swarmer') {
+                    const staffLength = 25; const staffWidth = 4;
+                    const hiveSize = 8;
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(angle);
+                    // Staff
+                    ctx.fillStyle = '#a16207';
+                    ctx.fillRect(this.width / 2, -staffWidth / 2, staffLength, staffWidth);
+                    // Hive
+                    ctx.fillStyle = this.team === 1 ? '#facc15' : '#ca8a04';
+                    const hiveX = this.width/2 + staffLength;
+                    const hiveY = 0;
+                    ctx.beginPath();
+                    for(let i = 0; i < 6; i++) {
+                        ctx.lineTo(hiveX + hiveSize * Math.cos(Math.PI / 3 * i), hiveY + hiveSize * Math.sin(Math.PI / 3 * i));
+                    }
+                    ctx.closePath();
+                    ctx.fill();
                     ctx.restore();
                 } else if (this.type === 'slasher' || this.type === 'swifter' || this.type === 'skeleton' || this.type === 'stalker') {
                     if (this.isSlashing) {
@@ -1002,13 +1099,14 @@
             }
             
             findStopperTargets(enemies) {
-                const priority = ['sustainer', 'synchronizer', 'summoner', 'spawner', 'sniper', 'streamer', 'slither'];
+                const priority = ['sustainer', 'synchronizer', 'summoner', 'spawner', 'sniper', 'streamer', 'slither', 'swarmer'];
                 let potentialTargets = enemies.filter(e => 
                     !e.isStopped && 
                     !this.stoppedTargets.includes(e) && 
                     e.type !== 'sentry' && 
                     e.type !== 'skeleton' &&
-                    e.type !== 'snake'
+                    e.type !== 'snake' &&
+                    e.type !== 'bee'
                 );
 
                 if (potentialTargets.length === 0) return [];
@@ -1162,6 +1260,9 @@
                 if (this.type === 'summoner') {
                     this.mySkeletons = this.mySkeletons.filter(s => s.hp > 0);
                 }
+                 if (this.type === 'swarmer') {
+                    this.myBees = this.myBees.filter(b => b.hp > 0);
+                }
                 
                 this.applySeparation(friendlies);
 
@@ -1193,6 +1294,9 @@
                                 } else if (f.type === 'slither') {
                                      const snakeDps = UNIT_SPECS['snake'].attackDamage / (UNIT_SPECS['snake'].attackCooldown / 1000);
                                      power += snakeDps;
+                                } else if (f.type === 'swarmer') {
+                                    const beeDps = UNIT_SPECS['bee'].attackDamage / (UNIT_SPECS['bee'].attackCooldown / 1000);
+                                    power += 4 * beeDps; // Assuming an average of 4 active bees
                                 }
 
                                 if (power > maxPower) {
@@ -1211,6 +1315,7 @@
                             if(this.linkedAlly.type === 'summoner') { this.linkedAlly.mySkeletons.forEach(s => { s.isBuffed = false; s.buffMultiplier = 1; s.buffSource = null; }); }
                             else if (this.linkedAlly.type === 'spawner') { this.linkedAlly.mySentries.forEach(s => { s.isBuffed = false; s.buffMultiplier = 1; s.buffSource = null; }); }
                             else if (this.linkedAlly.type === 'slither' && this.linkedAlly.mySnake) { this.linkedAlly.mySnake.isBuffed = false; this.linkedAlly.mySnake.buffMultiplier = 1; this.linkedAlly.mySnake.buffSource = null; }
+                            else if (this.linkedAlly.type === 'swarmer') { this.linkedAlly.myBees.forEach(b => { b.isBuffed = false; b.buffMultiplier = 1; b.buffSource = null; }); }
                         }
                     }
 
@@ -1225,6 +1330,7 @@
                         if(this.linkedAlly.type === 'summoner') { this.linkedAlly.mySkeletons.forEach(s => { if (!s.isBuffed || s.buffSource !== this) s.applyBuff(buffAmount, 99999, this); }); }
                         else if (this.linkedAlly.type === 'spawner') { this.linkedAlly.mySentries.forEach(s => { if (!s.isBuffed || s.buffSource !== this) s.applyBuff(buffAmount, 99999, this); }); }
                         else if (this.linkedAlly.type === 'slither' && this.linkedAlly.mySnake) { if (!this.linkedAlly.mySnake.isBuffed || this.linkedAlly.mySnake.buffSource !== this) this.linkedAlly.mySnake.applyBuff(buffAmount, 99999, this); }
+                        else if (this.linkedAlly.type === 'swarmer') { this.linkedAlly.myBees.forEach(b => { if (!b.isBuffed || b.buffSource !== this) b.applyBuff(buffAmount, 99999, this); }); }
                         
                         const idealDist = 80;
                         const d = getDistance(this, this.linkedAlly);
@@ -1355,6 +1461,25 @@
                         if (Math.abs(this.x - targetX) > 20) this.x += Math.sign(targetX - this.x) * this.speed * gameSpeed;
                     } else this.x += (this.team === 1 ? this.speed * 0.5 : -this.speed * 0.5) * gameSpeed;
                 
+                } else if (this.type === 'swarmer') {
+                    this.myBees = this.myBees.filter(b => b.hp > 0);
+                    const kitingRange = 400;
+                    this.findTarget(enemies);
+                    let isCurrentlyKiting = this.target && getDistance(this, this.target) < kitingRange;
+                    if (isCurrentlyKiting) {
+                        const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                        this.x -= Math.cos(angle) * this.speed * gameSpeed;
+                        this.y -= Math.sin(angle) * this.speed * gameSpeed;
+                        this.attack(friendlies, enemies);
+                    } else {
+                         if (this.target) {
+                            if (getDistance(this, this.target) > this.attackRange) {
+                                const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                                this.x += Math.cos(angle) * this.speed * gameSpeed;
+                                this.y += Math.sin(angle) * this.speed * gameSpeed;
+                            } else this.attack(friendlies, enemies);
+                        } else this.x += (this.team === 1 ? this.speed : -this.speed) * gameSpeed;
+                    }
                 } else if (this.type === 'snake') {
                      this.body[0].x = this.x;
                      this.body[0].y = this.y;
@@ -1427,9 +1552,29 @@
                     });
 
                 } else {
-                    this.findTarget(enemies);
+                    let targetableEnemies = enemies;
+                    if (this.type === 'stalker') {
+                        const hasSwarmer = enemies.some(e => e.type === 'swarmer');
+                        if (hasSwarmer) {
+                            const nonBeeEnemies = enemies.filter(e => e.type !== 'bee');
+                            if (nonBeeEnemies.length > 0) {
+                                targetableEnemies = nonBeeEnemies;
+                            }
+                        }
+                    }
+
+                    this.findTarget(targetableEnemies);
                     
-                    if (this.type === 'skirmisher' || this.type === 'summoner') {
+                    if (this.type === 'bee' && !this.target) {
+                        if(enemies.length > 0) {
+                            const randomEnemy = enemies[Math.floor(Math.random() * enemies.length)];
+                            const angle = Math.atan2(randomEnemy.y - this.y, randomEnemy.x - this.x);
+                            this.buzzOffset.x = (Math.random() - 0.5) * 6;
+                            this.buzzOffset.y = (Math.random() - 0.5) * 6;
+                            this.x += Math.cos(angle) * this.speed * gameSpeed + this.buzzOffset.x;
+                            this.y += Math.sin(angle) * this.speed * gameSpeed + this.buzzOffset.y;
+                        }
+                    } else if (this.type === 'skirmisher' || this.type === 'summoner') {
                         const kitingRange = this.type === 'summoner' ? 400 : 80;
                         let isCurrentlyKiting = this.target && getDistance(this, this.target) < kitingRange;
                         if (isCurrentlyKiting) {
@@ -1456,8 +1601,16 @@
                             const attackRange = (this.type === 'stalker' && this.teleportedEnemies.includes(this.target)) ? 20 : this.attackRange;
                             if (getDistance(this, this.target) > attackRange) {
                                 const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
-                                this.x += Math.cos(angle) * this.speed * gameSpeed;
-                                this.y += Math.sin(angle) * this.speed * gameSpeed;
+                                let moveX = Math.cos(angle) * this.speed * gameSpeed;
+                                let moveY = Math.sin(angle) * this.speed * gameSpeed;
+                                if (this.type === 'bee') {
+                                    this.buzzOffset.x = (Math.random() - 0.5) * 6;
+                                    this.buzzOffset.y = (Math.random() - 0.5) * 6;
+                                    moveX += this.buzzOffset.x;
+                                    moveY += this.buzzOffset.y;
+                                }
+                                this.x += moveX;
+                                this.y += moveY;
                             } else {
                                 this.attack(friendlies, enemies);
                             }
@@ -1498,10 +1651,13 @@
                     } else if (this.type === 'skirmisher') {
                         this.isShooting = true; this.shootAnimProgress = this.shootAnimDuration;
                         projectiles.push(new Projectile(this, this.target, this.getAttackDamage(), this.team));
-                    } else if (this.type === 'slasher' || this.type === 'swifter' || this.type === 'skeleton' || this.type === 'spiker' || this.type === 'snake') {
+                    } else if (this.type === 'slasher' || this.type === 'swifter' || this.type === 'skeleton' || this.type === 'spiker' || this.type === 'snake' || this.type === 'bee') {
                          if (this.target && getDistance(this, this.target) <= this.attackRange + 5) {
                             this.target.takeDamage(this.getAttackDamage(), this);
-                            if (this.type !== 'snake') {
+                            if (this.type === 'bee') {
+                                particles.push(new Particle(this.target.x, this.target.y, this.team, true, 'sting'));
+                            }
+                            if (this.type !== 'snake' && this.type !== 'bee') {
                                 if (!this.isSlashing) { this.isSlashing = true; this.slashAnimProgress = this.slashAnimDuration; }
                             }
                          }
@@ -1525,7 +1681,6 @@
                     } else if (this.type === 'summoner') {
                         this.mySkeletons = this.mySkeletons.filter(s => s.hp > 0);
                         if (this.mySkeletons.length < 2) {
-                            this.lastSummonTime = now;
                             const spawnX = this.x + (this.team === 1 ? 30 : -30) + (Math.random() - 0.5) * 10;
                             const spawnY = this.y + (Math.random() - 0.5) * 40;
                             const newSkeleton = new Unit(spawnX, spawnY, this.team, 'skeleton', spawnX / canvas.width, spawnY / canvas.height);
@@ -1535,6 +1690,20 @@
                             units.push(newSkeleton);
                             this.mySkeletons.push(newSkeleton);
                             updateUnitCounts();
+                        }
+                    } else if (this.type === 'swarmer') {
+                        for (let i = 0; i < 3; i++) {
+                            if (this.myBees.length < 12) { 
+                                const spawnX = this.x - (this.team === 1 ? 20 : -20) + (Math.random() - 0.5) * 10;
+                                const spawnY = this.y + (Math.random() - 0.5) * 40;
+                                const newBee = new Unit(spawnX, spawnY, this.team, 'bee', spawnX / canvas.width, spawnY / canvas.height);
+                                if (this.isBuffed && this.buffSource && this.buffSource.type === 'synchronizer') {
+                                    newBee.applyBuff(this.buffMultiplier, 99999, this.buffSource);
+                                }
+                                units.push(newBee);
+                                this.myBees.push(newBee);
+                                updateUnitCounts();
+                            }
                         }
                     } else if (this.type === 'slither') {
                         if (!this.mySnake) {
@@ -1637,7 +1806,7 @@
             }
             takeDamage(damage, attacker = null) {
                  this.hp -= damage; 
-                 if (this.type === 'spiker' && attacker && this.reflectDamage > 0 && (attacker.type === 'slasher' || attacker.type === 'swifter' || attacker.type === 'slammer' || attacker.type === 'skeleton' || attacker.type === 'spiker' || attacker.type === 'swinger' || attacker.type === 'snake' || attacker.type === 'stalker')) {
+                 if (this.type === 'spiker' && attacker && this.reflectDamage > 0 && (attacker.type === 'slasher' || attacker.type === 'swifter' || attacker.type === 'slammer' || attacker.type === 'skeleton' || attacker.type === 'spiker' || attacker.type === 'swinger' || attacker.type === 'snake' || attacker.type === 'stalker' || attacker.type === 'bee')) {
                      if (getDistance(this, attacker) <= (this.width/2 + attacker.width/2 + 10)) {
                          attacker.takeDamage(this.reflectDamage);
                          for(let i=0; i < 5; i++) {
@@ -1651,29 +1820,55 @@
         
         class Projectile {
             constructor(shooter, target, damage, team) {
-                this.shooter = shooter; this.target = target;
-                this.damage = damage; this.team = team; this.speed = 4; this.radius = 4;
-                const angle = Math.atan2(this.target.y - shooter.y, this.target.x - shooter.x);
+                this.shooter = shooter;
+                this.target = target;
+                this.damage = damage;
+                this.team = team;
+                this.speed = 4;
+                this.radius = 4;
+                this.angle = Math.atan2(this.target.y - shooter.y, this.target.x - shooter.x);
                 const nozzleTipDist = shooter.width / 2 + 8;
-                this.x = shooter.x + Math.cos(angle) * nozzleTipDist; this.y = shooter.y + Math.sin(angle) * nozzleTipDist;
+                this.x = shooter.x + Math.cos(this.angle) * nozzleTipDist;
+                this.y = shooter.y + Math.sin(this.angle) * nozzleTipDist;
             }
-            update(enemies) { // Changed to accept enemies, though it doesn't use it directly
+
+            update(enemies) {
                 const enemyShielders = units.filter(u => u.team !== this.team && u.type === 'shielder');
                 for (const shielder of enemyShielders) {
                     if (getDistance(this, shielder) < shielder.width / 2 + 5) {
                         shielder.deflect();
-                        if (Math.random() < 0.5) { 
-                            this.team = shielder.team; this.target = this.shooter; this.shooter = shielder; return true;
-                        } else { shielder.takeDamage(this.damage * 0.5, this.shooter); return false; }
+                        if (Math.random() < 0.5) {
+                            this.team = shielder.team;
+                            this.target = this.shooter;
+                            this.shooter = shielder;
+                            return true;
+                        } else {
+                            shielder.takeDamage(this.damage * 0.5, this.shooter);
+                            return false;
+                        }
                     }
                 }
-                if (!this.target || this.target.hp <= 0) return false;
-                const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
-                this.x += Math.cos(angle) * this.speed * gameSpeed;
-                this.y += Math.sin(angle) * this.speed * gameSpeed;
-                if (getDistance(this, this.target) < this.target.width / 2) { this.target.takeDamage(this.damage, this.shooter); return false; }
-                return true;
+
+                // If original target is alive, home in on it. Otherwise, continue straight.
+                if (this.target && this.target.hp > 0) {
+                    this.angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                }
+
+                this.x += Math.cos(this.angle) * this.speed * gameSpeed;
+                this.y += Math.sin(this.angle) * this.speed * gameSpeed;
+
+                // Check for collision with any enemy unit
+                for (const enemy of enemies) {
+                    if (getDistance(this, enemy) < enemy.width / 2 + this.radius) {
+                        enemy.takeDamage(this.damage, this.shooter);
+                        return false; // Destroy on hit
+                    }
+                }
+
+                // Destroy if it goes off-screen
+                return (this.x > -this.radius && this.x < canvas.width + this.radius && this.y > -this.radius && this.y < canvas.height + this.radius);
             }
+            
             draw() {
                  if (this.shooter && this.shooter.type === 'skirmisher') {
                     ctx.save(); ctx.translate(this.x, this.y);
@@ -2124,6 +2319,13 @@
                     this.maxLifespan = this.lifespan;
                     this.size = 1 + Math.random() * 1.5;
                     this.color = 'rgba(252, 165, 165,';
+                } else if (type === 'sting') {
+                    this.vx = (Math.random() - 0.5) * 2;
+                    this.vy = (Math.random() - 0.5) * 2;
+                    this.lifespan = 10 + Math.random() * 10;
+                    this.maxLifespan = this.lifespan;
+                    this.size = 1.5 + Math.random() * 1.5;
+                    this.color = team === 1 ? 'rgba(250, 204, 21,' : 'rgba(253, 230, 138,';
                 } else if (isImpact) {
                     this.color = team === 1 ? 'rgba(107, 235, 222,' : 'rgba(253, 164, 175,';
                 } else {
@@ -2236,6 +2438,23 @@
                 ctx.globalAlpha = 1.0;
             }
 
+            // --- Draw highlight for remove mode ---
+            if (isRemoveModeActive && unitToHighlight) {
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.beginPath();
+                ctx.arc(unitToHighlight.x, unitToHighlight.y, unitToHighlight.width / 2 + 8, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.7)';
+                ctx.filter = 'blur(8px)';
+                ctx.fill();
+                ctx.restore();
+
+                ctx.beginPath();
+                ctx.arc(unitToHighlight.x, unitToHighlight.y, unitToHighlight.width / 2 + 4, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
 
             if (isPaused && isBattleStarted) {
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
@@ -2256,6 +2475,9 @@
 
         function setup() {
             isBattleStarted = false; isPaused = false; gameSpeed = 1.0;
+            isRemoveModeActive = false;
+            removeUnitBtn.classList.remove('active');
+            canvas.style.cursor = 'crosshair';
             pauseBtn.innerHTML = pauseIconSVG;
             document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('selected'));
             document.querySelector('.speed-btn[data-speed="1.0"]').classList.add('selected');
@@ -2266,6 +2488,8 @@
             document.querySelectorAll('.unit-btn').forEach(b => b.disabled = false);
             startBattleBtn.disabled = false;
             statusMessage.style.opacity = 0; statusMessage.textContent = '';
+            removeMessage.style.opacity = 0;
+            unitToHighlight = null;
         }
 
         function updateUnitCounts() {
@@ -2279,6 +2503,7 @@
         }
         
         function selectUnit(type) {
+             if (isRemoveModeActive) return;
              // --- Toggle logic ---
              if (selectedUnit === type) {
                 selectedUnit = null;
@@ -2349,9 +2574,32 @@
 
 
         canvas.addEventListener('click', (e) => {
-            if (isBattleStarted || !selectedUnit || isPaused) return;
             const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left; const y = e.clientY - rect.top;
+            const x = e.clientX - rect.left; 
+            const y = e.clientY - rect.top;
+
+            if (isRemoveModeActive) {
+                let unitToRemove = null;
+                let closestDist = Infinity;
+                
+                units.forEach(unit => {
+                    const dist = getDistance({x, y}, unit);
+                    if (dist < unit.width / 2 + 5 && dist < closestDist) { // a bit of tolerance
+                        unitToRemove = unit;
+                        closestDist = dist;
+                    }
+                });
+
+                if (unitToRemove) {
+                    units = units.filter(u => u !== unitToRemove);
+                    updateUnitCounts();
+                    unitToHighlight = null;
+                }
+                return;
+            }
+
+            if (isBattleStarted || !selectedUnit || isPaused) return;
+
             const relX = x / canvas.width; const relY = y / canvas.height;
             if (x < canvas.width / 3) {
                  units.push(new Unit(x, y, 1, selectedUnit, relX, relY));
@@ -2365,14 +2613,32 @@
             const rect = canvas.getBoundingClientRect();
             mousePos.x = e.clientX - rect.left; mousePos.y = e.clientY - rect.top;
             mousePos.onCanvas = true;
+
+            if (isRemoveModeActive) {
+                unitToHighlight = null; 
+                for (const unit of units) {
+                    if (getDistance(mousePos, unit) < unit.width / 2 + 5) {
+                        unitToHighlight = unit;
+                        break; 
+                    }
+                }
+            }
         });
-        canvas.addEventListener('mouseleave', () => { mousePos.onCanvas = false; });
+        canvas.addEventListener('mouseleave', () => { 
+            mousePos.onCanvas = false; 
+            unitToHighlight = null;
+        });
 
         startBattleBtn.addEventListener('click', () => {
             if (units.length === 0 || isBattleStarted) return;
             if (isPaused) { isPaused = false; pauseBtn.innerHTML = pauseIconSVG; }
             isBattleStarted = true; startBattleBtn.disabled = true;
             document.querySelectorAll('.unit-btn').forEach(b => b.disabled = true);
+            isRemoveModeActive = false;
+            removeUnitBtn.classList.remove('active');
+            removeMessage.style.opacity = 0;
+            unitToHighlight = null;
+            canvas.style.cursor = 'crosshair';
             selectedUnit = null;
             document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('selected'));
         });
@@ -2422,6 +2688,21 @@
             showRangePreview = !showRangePreview;
             eyeIcon.classList.toggle('hidden', !showRangePreview);
             eyeOffIcon.classList.toggle('hidden', showRangePreview);
+        });
+
+        removeUnitBtn.addEventListener('click', () => {
+            isRemoveModeActive = !isRemoveModeActive;
+            removeUnitBtn.classList.toggle('active', isRemoveModeActive);
+            canvas.style.cursor = isRemoveModeActive ? 'pointer' : 'crosshair';
+            if (isRemoveModeActive) {
+                selectedUnit = null;
+                document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('selected'));
+                removeMessage.textContent = 'Click a unit to remove';
+                removeMessage.style.opacity = 1;
+            } else {
+                removeMessage.style.opacity = 0;
+                unitToHighlight = null;
+            }
         });
 
         roleSorter.addEventListener('click', (e) => {
