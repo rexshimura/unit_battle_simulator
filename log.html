@@ -1,0 +1,112 @@
+<div class="max-w-2xl mx-auto text-gray-300">
+  <h2 class="text-2xl font-bold mb-4 text-violet-200 border-b border-gray-600 pb-2">
+    Version History
+  </h2>
+
+  <!-- Scrollable container -->
+  <div id="version-log" class="space-y-2 max-h-96 overflow-y-auto pr-2 scroll-smooth">
+    
+    <!-- <details class="bg-gray-800 rounded-xl p-3">
+      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
+        V1.8
+      </summary>
+      <p class="text-sm mt-2">(Reserved for future updates)</p>
+    </details> -->
+
+    <details class="bg-gray-800 rounded-xl p-3">
+      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
+        V1.7 - Log System Implemented
+      </summary>
+      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+        <li>Introduced this collapsible version log system.</li>
+      </ul>
+    </details>
+
+    <details class="bg-gray-800 rounded-xl p-3">
+      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
+        V1.6 - Slither & Bug Fixes
+      </summary>
+      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+        <li>Fixed multiple bugs and refined unit stat balances.</li>
+        <li>Added new unit: <strong>Slither</strong>.</li>
+      </ul>
+    </details>
+
+    <details class="bg-gray-800 rounded-xl p-3">
+      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
+        V1.5 - Massive Unit Expansion
+      </summary>
+      <p class="text-sm mt-2">Introduced a wide range of new units and mechanics:</p>
+      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+        <li>Summoner, Sustainer, Synchronizer</li>
+        <li>Sniper, Spiker, Spinner</li>
+        <li>Spawner, Stopper, Sprayer</li>
+        <li>Swinger</li>
+      </ul>
+    </details>
+
+    <details class="bg-gray-800 rounded-xl p-3">
+      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
+        V1.4 - Trio of New Units
+      </summary>
+      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+        <li>Added Slammer, Skirmisher, and Streamer.</li>
+      </ul>
+    </details>
+
+    <details class="bg-gray-800 rounded-xl p-3">
+      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
+        V1.3 - Scorcher & Shocker
+      </summary>
+      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+        <li>Introduced new units: Scorcher and Shocker.</li>
+        <li>Adjusted stats of existing units for better balance.</li>
+      </ul>
+    </details>
+
+    <details class="bg-gray-800 rounded-xl p-3">
+      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
+        V1.2 - Shielder & Swifter
+      </summary>
+      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+        <li>Added new units: Shielder and Swifter.</li>
+        <li>Improved overall unit behavior and interactions.</li>
+      </ul>
+    </details>
+
+    <details class="bg-gray-800 rounded-xl p-3">
+      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
+        V1.1 - UI & Controls Update
+      </summary>
+      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+        <li>Improved user interface.</li>
+        <li>Added start, pause, stop, and adjustable game speed controls.</li>
+      </ul>
+    </details>
+
+    <details class="bg-gray-800 rounded-xl p-3">
+      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
+        V1.0 - Initial Release
+      </summary>
+      <p class="text-sm mt-2">The battle begins with a core set of units:</p>
+      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+        <li>Shooter</li>
+        <li>Slasher</li>
+      </ul>
+    </details>
+  </div>
+</div>
+
+<script>
+  // Auto scroll into view smoothly when a summary is clicked
+  document.querySelectorAll("#version-log summary").forEach(summary => {
+    summary.addEventListener("click", function(e) {
+      const details = this.parentElement;
+      setTimeout(() => {
+        if (details.open) {
+          details.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+      }, 200); // delay so it scrolls after expansion
+    });
+  });
+</script>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unit Battle Simulator</title>
+    <title>Unit Battle Simulator - v1.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -15,6 +15,7 @@
             font-family: 'Roboto Mono', monospace;
             background-color: #1a1a1a;
             color: #f0f0f0;
+            cursor: default;
         }
         .glass-panel {
             background: rgba(40, 40, 40, 0.6);
@@ -44,7 +45,7 @@
             box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
         }
         #gameCanvas {
-            cursor: pointer;
+            cursor: crosshair;
             border-radius: 0.5rem;
             border: 1px solid rgba(255, 255, 255, 0.2);
             background-image: 
@@ -56,29 +57,66 @@
             text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
             transition: opacity 0.5s ease-in-out;
         }
-        .unit-list::-webkit-scrollbar {
-            width: 8px;
+        .unit-list::-webkit-scrollbar { width: 8px; }
+        .unit-list::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
+        .unit-list::-webkit-scrollbar-thumb { background: #4a4a4a; border-radius: 10px; }
+        .unit-list::-webkit-scrollbar-thumb:hover { background: #5c5c5c; }
+
+        /* Tooltip Styles */
+        #unit-tooltip {
+            position: fixed;
+            display: none;
+            padding: 12px;
+            z-index: 100;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            width: 280px;
         }
-        .unit-list::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-        }
-        .unit-list::-webkit-scrollbar-thumb {
-            background: #4a4a4a;
-            border-radius: 10px;
-        }
-        .unit-list::-webkit-scrollbar-thumb:hover {
-            background: #5c5c5c;
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
         }
     </style>
 </head>
 <body>
+    <!-- Unit Info Tooltip -->
+    <div id="unit-tooltip" class="glass-panel"></div>
+
+    <!-- Version Log Modal -->
+    <div id="log-modal" class="modal-overlay hidden">
+        <div class="glass-panel p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto relative">
+            <button id="close-log-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div id="log-content"></div>
+        </div>
+    </div>
+
 
     <div id="game-container" class="w-full h-full flex flex-col p-4 gap-4">
         <!-- Header -->
         <div class="glass-panel p-4 w-full flex-shrink-0 flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-violet-300">Unit Battle Sim</h1>
-            <div class="text-right flex gap-4">
+            <div class="flex items-center gap-4">
+                <button id="log-btn" title="Show Version History" class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.546-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </button>
+                <h1 class="text-2xl font-bold text-violet-300">Unit Battle Simulator Ver 1.7</h1>
+            </div>
+            <div class="text-right flex gap-4 items-center">
+                <button id="toggle-range-btn" title="Toggle Unit Range Preview" class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
+                    <svg id="eye-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    <svg id="eye-off-icon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"></path></svg>
+                </button>
                 <p class="text-lg font-bold text-blue-400">Blue: <span id="blue-count">0</span></p>
                 <p class="text-lg font-bold text-red-400">Red: <span id="red-count">0</span></p>
             </div>
@@ -89,89 +127,69 @@
             <div class="glass-panel p-6 w-full md:w-64 flex flex-col">
                 <h2 class="text-xl font-bold mb-4 border-b border-gray-600 pb-2 flex-shrink-0">Place Units</h2>
                 <div class="space-y-3 unit-list flex-grow min-h-0 overflow-y-auto pr-2">
-                    <button id="select-shooter" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
-                        <p class="font-bold">Shooter</p>
-                        <p class="text-xs text-gray-400">Slow, Ranged Attack</p>
+                    <!-- Unit buttons now have a data-unit-type attribute -->
+                    <button data-unit-type="shooter" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Shooter</p><p class="text-xs text-gray-400">Slow, Ranged Attack</p>
                     </button>
-                    <button id="select-slasher" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
-                        <p class="font-bold">Slasher</p>
-                        <p class="text-xs text-gray-400">Fast, Melee Attack</p>
+                    <button data-unit-type="slasher" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Slasher</p><p class="text-xs text-gray-400">Fast, Melee Attack</p>
                     </button>
-                    <button id="select-shielder" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
-                        <p class="font-bold">Shielder</p>
-                        <p class="text-xs text-gray-400">Bounces back projectiles</p>
+                    <button data-unit-type="shielder" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Shielder</p><p class="text-xs text-gray-400">Bounces back projectiles</p>
                     </button>
-                    <button id="select-swifter" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
-                        <p class="font-bold">Swifter</p>
-                        <p class="text-xs text-gray-400">Targets backline units</p>
+                    <button data-unit-type="swifter" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Swifter</p><p class="text-xs text-gray-400">Targets backline units</p>
                     </button>
-                     <button id="select-scorcher" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
-                        <p class="font-bold">Scorcher</p>
-                        <p class="text-xs text-gray-400">Explosive AoE attack</p>
+                     <button data-unit-type="scorcher" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Scorcher</p><p class="text-xs text-gray-400">Explosive AoE attack</p>
                     </button>
-                    <button id="select-shocker" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
-                        <p class="font-bold">Shocker</p>
-                        <p class="text-xs text-gray-400">Chain lightning attack</p>
+                    <button data-unit-type="shocker" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Shocker</p><p class="text-xs text-gray-400">Chain lightning attack</p>
                     </button>
-                    <button id="select-slammer" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
-                        <p class="font-bold">Slammer</p>
-                        <p class="text-xs text-gray-400">Melee, pushes enemies</p>
+                    <button data-unit-type="slammer" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Slammer</p><p class="text-xs text-gray-400">Melee, pushes enemies</p>
                     </button>
-                    <button id="select-skirmisher" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
-                        <p class="font-bold">Skirmisher</p>
-                        <p class="text-xs text-gray-400">Ranged, kites enemies</p>
+                    <button data-unit-type="skirmisher" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Skirmisher</p><p class="text-xs text-gray-400">Ranged, kites enemies</p>
                     </button>
-                    <button id="select-streamer" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
-                        <p class="font-bold">Streamer</p>
-                        <p class="text-xs text-gray-400">Fires a continuous laser</p>
+                    <button data-unit-type="streamer" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Streamer</p><p class="text-xs text-gray-400">Fires a continuous laser</p>
                     </button>
-                     <button id="select-summoner" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
-                        <p class="font-bold">Summoner</p>
-                        <p class="text-xs text-gray-400">Summons 2 skeletal warriors</p>
+                     <button data-unit-type="summoner" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Summoner</p><p class="text-xs text-gray-400">Summons 2 skeletal warriors</p>
                     </button>
-                    <button id="select-sustainer" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
-                        <p class="font-bold">Sustainer</p>
-                        <p class="text-xs text-gray-400">Continuously heals allies</p>
+                    <button data-unit-type="sustainer" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Sustainer</p><p class="text-xs text-gray-400">Continuously heals allies</p>
                     </button>
-                    <button id="select-synchronizer" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
-                        <p class="font-bold">Synchronizer</p>
-                        <p class="text-xs text-gray-400">Links to buff one ally</p>
+                    <button data-unit-type="synchronizer" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Synchronizer</p><p class="text-xs text-gray-400">Links to buff one ally</p>
                     </button>
-                     <button id="select-sniper" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
-                        <p class="font-bold">Sniper</p>
-                        <p class="text-xs text-gray-400">Long-range, high-damage</p>
+                     <button data-unit-type="sniper" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Sniper</p><p class="text-xs text-gray-400">Long-range, high-damage</p>
                     </button>
-                    <button id="select-spiker" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
-                        <p class="font-bold">Spiker</p>
-                        <p class="text-xs text-gray-400">Reflects melee damage</p>
+                    <button data-unit-type="spiker" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Spiker</p><p class="text-xs text-gray-400">Reflects melee damage</p>
                     </button>
-                    <button id="select-skipper" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
-                        <p class="font-bold">Skipper</p>
-                        <p class="text-xs text-gray-400">Ricochet shot hits two enemies</p>
+                    <button data-unit-type="skipper" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Skipper</p><p class="text-xs text-gray-400">Ricochet shot hits two enemies</p>
                     </button>
-                    <button id="select-spinner" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
-                        <p class="font-bold">Spinner</p>
-                        <p class="text-xs text-gray-400">Rotating orbs block shots</p>
+                    <button data-unit-type="spinner" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Spinner</p><p class="text-xs text-gray-400">Rotating orbs block shots</p>
                     </button>
-                    <button id="select-spawner" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
-                        <p class="font-bold">Spawner</p>
-                        <p class="text-xs text-gray-400">Spawns sentry turrets</p>
+                    <button data-unit-type="spawner" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Spawner</p><p class="text-xs text-gray-400">Spawns sentry turrets</p>
                     </button>
-                    <button id="select-stopper" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
-                        <p class="font-bold">Stopper</p>
-                        <p class="text-xs text-gray-400">Disables & damages 2 units</p>
+                    <button data-unit-type="stopper" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Stopper</p><p class="text-xs text-gray-400">Disables & damages 2 units</p>
                     </button>
-                    <button id="select-sprayer" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
-                        <p class="font-bold">Sprayer</p>
-                        <p class="text-xs text-gray-400">Rapid-fire minigunner</p>
+                    <button data-unit-type="sprayer" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Sprayer</p><p class="text-xs text-gray-400">Rapid-fire minigunner</p>
                     </button>
-                    <button id="select-swinger" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
-                        <p class="font-bold">Swinger</p>
-                        <p class="text-xs text-gray-400">Slow, wide melee attack</p>
+                    <button data-unit-type="swinger" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Swinger</p><p class="text-xs text-gray-400">Slow, wide melee attack</p>
                     </button>
-                    <button id="select-slither" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
-                        <p class="font-bold">Slither</p>
-                        <p class="text-xs text-gray-400">Summons a powerful snake</p>
+                    <button data-unit-type="slither" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Slither</p><p class="text-xs text-gray-400">Summons a powerful snake</p>
                     </button>
                 </div>
                 <div class="mt-auto flex-shrink-0">
@@ -212,33 +230,23 @@
 
         const blueCountDisplay = document.getElementById('blue-count');
         const redCountDisplay = document.getElementById('red-count');
-        const selectShooterBtn = document.getElementById('select-shooter');
-        const selectSlasherBtn = document.getElementById('select-slasher');
-        const selectShielderBtn = document.getElementById('select-shielder');
-        const selectSwifterBtn = document.getElementById('select-swifter');
-        const selectScorcherBtn = document.getElementById('select-scorcher');
-        const selectShockerBtn = document.getElementById('select-shocker');
-        const selectSlammerBtn = document.getElementById('select-slammer');
-        const selectSkirmisherBtn = document.getElementById('select-skirmisher');
-        const selectStreamerBtn = document.getElementById('select-streamer');
-        const selectSummonerBtn = document.getElementById('select-summoner');
-        const selectSustainerBtn = document.getElementById('select-sustainer');
-        const selectSynchronizerBtn = document.getElementById('select-synchronizer');
-        const selectSniperBtn = document.getElementById('select-sniper');
-        const selectSpikerBtn = document.getElementById('select-spiker');
-        const selectSkipperBtn = document.getElementById('select-skipper');
-        const selectSpinnerBtn = document.getElementById('select-spinner');
-        const selectSpawnerBtn = document.getElementById('select-spawner');
-        const selectStopperBtn = document.getElementById('select-stopper');
-        const selectSprayerBtn = document.getElementById('select-sprayer');
-        const selectSwingerBtn = document.getElementById('select-swinger');
-        const selectSlitherBtn = document.getElementById('select-slither');
-
+        const unitButtons = document.querySelectorAll('.unit-btn');
+        
         const startBattleBtn = document.getElementById('start-battle-btn');
         const resetBtn = document.getElementById('reset-btn');
         const pauseBtn = document.getElementById('pause-btn');
         const speedControls = document.getElementById('speed-controls');
         const statusMessage = document.getElementById('status-message');
+        const tooltip = document.getElementById('unit-tooltip');
+
+        // New elements
+        const logBtn = document.getElementById('log-btn');
+        const logModal = document.getElementById('log-modal');
+        const closeLogBtn = document.getElementById('close-log-btn');
+        const logContent = document.getElementById('log-content');
+        const toggleRangeBtn = document.getElementById('toggle-range-btn');
+        const eyeIcon = document.getElementById('eye-icon');
+        const eyeOffIcon = document.getElementById('eye-off-icon');
         
         const playIconSVG = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
         const pauseIconSVG = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
@@ -247,30 +255,30 @@
         // === CONFIGURATION: Tweak unit stats here! ===
         // =======================================================
         const UNIT_SPECS = {
-            'shooter':      { hp: 50,  speed: 0.5, attackDamage: 9,  attackRange: 800, attackCooldown: 650,  color: { team1: '#3b82f6', team2: '#ef4444' } },
-            'slasher':      { hp: 100, speed: 1.0, attackDamage: 13,   attackRange: 20,  attackCooldown: 500,  color: { team1: '#60a5fa', team2: '#f87171' } },
-            'shielder':     { hp: 175, speed: 0.4, attackDamage: 0,    attackRange: 0,   attackCooldown: 0,    color: { team1: '#1d4ed8', team2: '#b91c1c' } },
-            'swifter':      { hp: 50,  speed: 3.8, attackDamage: 15,   attackRange: 20,  attackCooldown: 700,  color: { team1: '#a78bfa', team2: '#f472b6' } },
-            'scorcher':     { hp: 80,  speed: 0.6, attackDamage: 25,   attackRange: 500, attackCooldown: 2000, color: { team1: '#f59e0b', team2: '#f97316' } },
-            'shocker':      { hp: 70,  speed: 0.8, attackDamage: 12,   attackRange: 200, attackCooldown: 1200, color: { team1: '#eab308', team2: '#0891b2' } },
-            'slammer':      { hp: 120, speed: 1.0, attackDamage: 15,   attackRange: 40,  attackCooldown: 1000, color: { team1: '#94a3b8', team2: '#7f1d1d' } },
-            'skirmisher':   { hp: 60,  speed: 1.8, attackDamage: 8,    attackRange: 300, attackCooldown: 700,  color: { team1: '#2dd4bf', team2: '#fb7185' } },
-            'streamer':     { hp: 65,  speed: 0.4, attackDamage: 0.25, attackRange: 800, attackCooldown: 5800, color: { team1: '#14b8a6', team2: '#f43f5e' } },
-            'summoner':     { hp: 70,  speed: 0.3, attackDamage: 0,    attackRange: 1000, attackCooldown: 1300, color: { team1: '#a855f7', team2: '#ec4899' } },
-            'skeleton':     { hp: 15,  speed: 1.01,attackDamage: 8,    attackRange: 20,  attackCooldown: 800,  color: { team1: '#d1d5db', team2: '#9ca3af' } },
-            'sustainer':    { hp: 80,  speed: 0.8, attackDamage: 0,    attackRange: 800, attackCooldown: 3000, color: { team1: '#10b981', team2: '#22d3ee' }, healAmount: 0.25 },
-            'synchronizer': { hp: 90,  speed: 0.9, attackDamage: 0,    attackRange: 300, attackCooldown: 100,  color: { team1: '#c084fc', team2: '#fb7185' }, buffAmount: 1.48 },
-            'sniper':       { hp: 60,  speed: 0.3, attackDamage: 75,   attackRange: 2000,attackCooldown: 5050, color: { team1: '#67e8f9', team2: '#be123c' } },
-            'spiker':       { hp: 400, speed: 0.4, attackDamage: 5,    attackRange: 15,  attackCooldown: 1000, color: { team1: '#84cc16', team2: '#ca8a04' }, reflectDamage: 16 },
-            'skipper':      { hp: 70,  speed: 0.7, attackDamage: 12,   attackRange: 600, attackCooldown: 1500, color: { team1: '#22d3ee', team2: '#f472b6' } },
-            'spinner':      { hp: 110, speed: 1.3, attackDamage: 17,    attackRange: 80,  attackCooldown: 1300, color: { team1: '#fde047', team2: '#f87171' } },
-            'spawner':      { hp: 85,  speed: 0.4, attackDamage: 9,    attackRange: 300, attackCooldown: 1300, color: { team1: '#d8b4fe', team2: '#fbcfe8' } },
-            'sentry':       { hp: 5,  speed: 0,   attackDamage: 1,  attackRange: 400, attackCooldown: 270,  color: { team1: '#a5b4fc', team2: '#fda4af' } },
-            'stopper':      { hp: 90,  speed: 0.6, attackDamage: 0.05, attackRange: 1000, attackCooldown: 6000, color: { team1: '#fca5a5', team2: '#67e8f9' }, stopDuration: 6500, maxTargets: 2 },
-            'sprayer':      { hp: 75,  speed: 0.9, attackDamage: 2.0,  attackRange: 650, attackCooldown: 100,  color: { team1: '#06b6d4', team2: '#db2777' }, spreadAngle: Math.PI / 12 },
-            'swinger':      { hp: 110, speed: 0.8, attackDamage: 65,   attackRange: 50,  attackCooldown: 1500, color: { team1: '#fca5a5', team2: '#93c5fd' } },
-            'slither':      { hp: 80,  speed: 0.4, attackDamage: 0,    attackRange: 500, attackCooldown: 9000, color: { team1: '#0d9488', team2: '#7c2d12' } },
-            'snake':        { hp: 50, speed: 1.5, attackDamage: 10,   attackRange: 25,  attackCooldown: 430,  color: { team1: '#14b8a6', team2: '#9a3412' } },
+            'shooter':      { name: 'Shooter', tags: ['Ranged', 'Basic'], hp: 50,  speed: 0.5, attackDamage: 9,  attackRange: 800, attackCooldown: 650,  color: { team1: '#3b82f6', team2: '#ef4444' } },
+            'slasher':      { name: 'Slasher', tags: ['Melee', 'Basic'], hp: 100, speed: 1.0, attackDamage: 13,   attackRange: 20,  attackCooldown: 500,  color: { team1: '#60a5fa', team2: '#f87171' } },
+            'shielder':     { name: 'Shielder', tags: ['Tank', 'Defense'], hp: 175, speed: 0.4, attackDamage: 0,    attackRange: 0,   attackCooldown: 0,    color: { team1: '#1d4ed8', team2: '#b91c1c' } },
+            'swifter':      { name: 'Swifter', tags: ['Melee', 'Assassin'], hp: 50,  speed: 3.8, attackDamage: 15,   attackRange: 20,  attackCooldown: 700,  color: { team1: '#a78bfa', team2: '#f472b6' } },
+            'scorcher':     { name: 'Scorcher', tags: ['Ranged', 'AoE'], hp: 80,  speed: 0.6, attackDamage: 25,   attackRange: 500, attackCooldown: 2000, color: { team1: '#f59e0b', team2: '#f97316' } },
+            'shocker':      { name: 'Shocker', tags: ['Ranged', 'Chain'], hp: 70,  speed: 0.8, attackDamage: 12,   attackRange: 200, attackCooldown: 1200, color: { team1: '#eab308', team2: '#0891b2' } },
+            'slammer':      { name: 'Slammer', tags: ['Melee', 'Crowd-Control'], hp: 120, speed: 1.0, attackDamage: 15,   attackRange: 40,  attackCooldown: 1000, color: { team1: '#94a3b8', team2: '#7f1d1d' } },
+            'skirmisher':   { name: 'Skirmisher', tags: ['Ranged', 'Kiter'], hp: 60,  speed: 1.8, attackDamage: 8,    attackRange: 300, attackCooldown: 700,  color: { team1: '#2dd4bf', team2: '#fb7185' } },
+            'streamer':     { name: 'Streamer', tags: ['Ranged', 'Laser'], hp: 65,  speed: 0.4, attackDamage: 0.25, attackRange: 800, attackCooldown: 5800, color: { team1: '#14b8a6', team2: '#f43f5e' } },
+            'summoner':     { name: 'Summoner', tags: ['Support', 'Summoner'], hp: 70,  speed: 0.3, attackDamage: 0,    attackRange: 1000, attackCooldown: 1300, color: { team1: '#a855f7', team2: '#ec4899' } },
+            'skeleton':     { name: 'Skeleton', tags: ['Melee', 'Summon'], hp: 15,  speed: 1.01,attackDamage: 8,    attackRange: 20,  attackCooldown: 800,  color: { team1: '#d1d5db', team2: '#9ca3af' } },
+            'sustainer':    { name: 'Sustainer', tags: ['Support', 'Healer'], hp: 80,  speed: 0.8, attackDamage: 0,    attackRange: 800, attackCooldown: 900, color: { team1: '#10b981', team2: '#22d3ee' }, healAmount: 0.30 },
+            'synchronizer': { name: 'Synchronizer', tags: ['Support', 'Buffer'], hp: 90,  speed: 0.9, attackDamage: 0,    attackRange: 300, attackCooldown: 100,  color: { team1: '#c084fc', team2: '#fb7185' }, buffAmount: 1.48 },
+            'sniper':       { name: 'Sniper', tags: ['Ranged', 'High-Damage'], hp: 60,  speed: 0.3, attackDamage: 75,   attackRange: 2000,attackCooldown: 5050, color: { team1: '#67e8f9', team2: '#be123c' } },
+            'spiker':       { name: 'Spiker', tags: ['Tank', 'Reflect'], hp: 400, speed: 0.4, attackDamage: 5,    attackRange: 15,  attackCooldown: 1000, color: { team1: '#84cc16', team2: '#ca8a04' }, reflectDamage: 16 },
+            'skipper':      { name: 'Skipper', tags: ['Ranged', 'Ricochet'], hp: 70,  speed: 0.7, attackDamage: 12,   attackRange: 600, attackCooldown: 1500, color: { team1: '#22d3ee', team2: '#f472b6' } },
+            'spinner':      { name: 'Spinner', tags: ['Melee', 'Defense'], hp: 110, speed: 1.3, attackDamage: 17,    attackRange: 80,  attackCooldown: 1300, color: { team1: '#fde047', team2: '#f87171' } },
+            'spawner':      { name: 'Spawner', tags: ['Ranged', 'Summoner'], hp: 85,  speed: 0.4, attackDamage: 9,    attackRange: 300, attackCooldown: 1300, color: { team1: '#d8b4fe', team2: '#fbcfe8' } },
+            'sentry':       { name: 'Sentry', tags: ['Ranged', 'Summon'], hp: 5,  speed: 0,   attackDamage: 1,  attackRange: 400, attackCooldown: 270,  color: { team1: '#a5b4fc', team2: '#fda4af' } },
+            'stopper':      { name: 'Stopper', tags: ['Support', 'Disabler'], hp: 90,  speed: 0.6, attackDamage: 0.05, attackRange: 1000, attackCooldown: 6000, color: { team1: '#fca5a5', team2: '#67e8f9' }, stopDuration: 6500, maxTargets: 2 },
+            'sprayer':      { name: 'Sprayer', tags: ['Ranged', 'Rapid-Fire'], hp: 75,  speed: 0.9, attackDamage: 2.0,  attackRange: 650, attackCooldown: 100,  color: { team1: '#06b6d4', team2: '#db2777' }, spreadAngle: Math.PI / 12 },
+            'swinger':      { name: 'Swinger', tags: ['Melee', 'AoE'], hp: 110, speed: 0.8, attackDamage: 65,   attackRange: 50,  attackCooldown: 1500, color: { team1: '#fca5a5', team2: '#93c5fd' } },
+            'slither':      { name: 'Slither', tags: ['Support', 'Summoner'], hp: 80,  speed: 0.4, attackDamage: 0,    attackRange: 500, attackCooldown: 9000, color: { team1: '#0d9488', team2: '#7c2d12' } },
+            'snake':        { name: 'Snake', tags: ['Melee', 'Summon'], hp: 50, speed: 1.5, attackDamage: 10,   attackRange: 25,  attackCooldown: 430,  color: { team1: '#14b8a6', team2: '#9a3412' } },
         };
         // =======================================================
 
@@ -283,6 +291,7 @@
         let isBattleStarted = false;
         let isPaused = false;
         let gameSpeed = 1.0;
+        let showRangePreview = true;
         let mousePos = { x: -1, y: -1, onCanvas: false };
 
         function resizeCanvas() {
@@ -373,7 +382,7 @@
                 if (type === 'slammer') { this.successfulAttacks = 0; }
                 if (type === 'skirmisher') { this.isShooting = false; this.shootAnimDuration = 15; this.shootAnimProgress = 0; }
                 if (type === 'streamer') { this.isStreaming = false; this.streamDuration = 240; this.streamProgress = 0; }
-                if (type === 'sustainer') { this.isHealing = false; this.healDuration = 300; this.healProgress = 0; this.healTargets = []; this.healParticleTimers = []; }
+                if (type === 'sustainer') { this.isHealing = false; this.healDuration = 100; this.healProgress = 0; this.healTargets = []; this.healParticleTimers = []; }
                 if (type === 'synchronizer') { this.linkedAlly = null; }
                 if (type === 'summoner') { this.mySkeletons = []; this.lastSummonTime = 0; }
                 if (type === 'sniper') { this.isAiming = false; this.aimDuration = 120; this.aimProgress = 0; }
@@ -2030,6 +2039,29 @@
             specialProjectiles.forEach(p => p.draw());
             animations.forEach(a => a.draw());
             particles.forEach(p => p.draw());
+            
+            // --- Draw unit preview on cursor ---
+            if (selectedUnit && mousePos.onCanvas && !isBattleStarted) {
+                const specs = UNIT_SPECS[selectedUnit];
+                ctx.fillStyle = (mousePos.x < canvas.width / 2) ? specs.color.team1 : specs.color.team2;
+                ctx.globalAlpha = 0.6;
+                ctx.beginPath();
+                ctx.arc(mousePos.x, mousePos.y, 10, 0, Math.PI * 2);
+                ctx.fill();
+                
+                if (showRangePreview && specs.attackRange > 0) {
+                    ctx.beginPath();
+                    ctx.arc(mousePos.x, mousePos.y, specs.attackRange, 0, Math.PI * 2);
+                    ctx.setLineDash([8, 12]);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+                ctx.globalAlpha = 1.0;
+            }
+
+
             if (isPaused && isBattleStarted) {
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -2072,33 +2104,59 @@
         }
         
         function selectUnit(type) {
+             // --- Toggle logic ---
+             if (selectedUnit === type) {
+                selectedUnit = null;
+                document.querySelector(`[data-unit-type="${type}"]`).classList.remove('selected');
+                return;
+             }
+
              selectedUnit = type;
              document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('selected'));
-             document.getElementById(`select-${type}`).classList.add('selected');
+             document.querySelector(`[data-unit-type="${type}"]`).classList.add('selected');
         }
 
         window.addEventListener('resize', resizeCanvas);
-        selectShooterBtn.addEventListener('click', () => selectUnit('shooter'));
-        selectSlasherBtn.addEventListener('click', () => selectUnit('slasher'));
-        selectShielderBtn.addEventListener('click', () => selectUnit('shielder'));
-        selectSwifterBtn.addEventListener('click', () => selectUnit('swifter'));
-        selectScorcherBtn.addEventListener('click', () => selectUnit('scorcher'));
-        selectShockerBtn.addEventListener('click', () => selectUnit('shocker'));
-        selectSlammerBtn.addEventListener('click', () => selectUnit('slammer'));
-        selectSkirmisherBtn.addEventListener('click', () => selectUnit('skirmisher'));
-        selectStreamerBtn.addEventListener('click', () => selectUnit('streamer'));
-        selectSummonerBtn.addEventListener('click', () => selectUnit('summoner'));
-        selectSustainerBtn.addEventListener('click', () => selectUnit('sustainer'));
-        selectSynchronizerBtn.addEventListener('click', () => selectUnit('synchronizer'));
-        selectSniperBtn.addEventListener('click', () => selectUnit('sniper'));
-        selectSpikerBtn.addEventListener('click', () => selectUnit('spiker'));
-        selectSkipperBtn.addEventListener('click', () => selectUnit('skipper'));
-        selectSpinnerBtn.addEventListener('click', () => selectUnit('spinner'));
-        selectSpawnerBtn.addEventListener('click', () => selectUnit('spawner'));
-        selectStopperBtn.addEventListener('click', () => selectUnit('stopper'));
-        selectSprayerBtn.addEventListener('click', () => selectUnit('sprayer'));
-        selectSwingerBtn.addEventListener('click', () => selectUnit('swinger'));
-        selectSlitherBtn.addEventListener('click', () => selectUnit('slither'));
+        
+        unitButtons.forEach(btn => {
+            const unitType = btn.dataset.unitType;
+            btn.addEventListener('click', () => selectUnit(unitType));
+
+            // --- Tooltip logic ---
+            btn.addEventListener('mouseenter', () => {
+                const stats = UNIT_SPECS[unitType];
+                if (!stats) return;
+
+                const tagsHTML = stats.tags.map(tag => `<span class="bg-gray-600 text-violet-300 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">${tag}</span>`).join('');
+                
+                tooltip.innerHTML = `
+                    <h3 class="text-lg font-bold text-violet-300 mb-2">${stats.name}</h3>
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                        <span class="text-gray-400">HP:</span> <span class="text-white">${stats.hp}</span>
+                        <span class="text-gray-400">Speed:</span> <span class="text-white">${stats.speed}</span>
+                        <span class="text-gray-400">Damage:</span> <span class="text-white">${stats.attackDamage}</span>
+                        <span class="text-gray-400">Range:</span> <span class="text-white">${stats.attackRange}</span>
+                        <span class="text-gray-400">Cooldown:</span> <span class="text-white">${stats.attackCooldown}ms</span>
+                    </div>
+                    <div class="mt-3 pt-2 border-t border-gray-600">
+                        ${tagsHTML}
+                    </div>
+                `;
+                tooltip.style.display = 'block';
+            });
+
+            btn.addEventListener('mouseleave', () => {
+                tooltip.style.display = 'none';
+            });
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (tooltip.style.display === 'block') {
+                tooltip.style.left = `${e.clientX + 15}px`;
+                tooltip.style.top = `${e.clientY + 15}px`;
+            }
+        });
+
 
         canvas.addEventListener('click', (e) => {
             if (isBattleStarted || !selectedUnit || isPaused) return;
@@ -2145,6 +2203,37 @@
         });
 
         resetBtn.addEventListener('click', setup);
+
+        // --- New Event Listeners ---
+        logBtn.addEventListener('click', () => {
+            fetch('log.html')
+                .then(response => response.ok ? response.text() : '<p>Error loading logs.</p>')
+                .then(html => {
+                    logContent.innerHTML = html;
+                    logModal.classList.remove('hidden');
+                })
+                .catch(error => {
+                    logContent.innerHTML = '<p>Could not fetch version history.</p>';
+                    logModal.classList.remove('hidden');
+                });
+        });
+
+        closeLogBtn.addEventListener('click', () => {
+            logModal.classList.add('hidden');
+        });
+
+        logModal.addEventListener('click', (e) => {
+            if (e.target === logModal) {
+                 logModal.classList.add('hidden');
+            }
+        });
+
+        toggleRangeBtn.addEventListener('click', () => {
+            showRangePreview = !showRangePreview;
+            eyeIcon.classList.toggle('hidden', !showRangePreview);
+            eyeOffIcon.classList.toggle('hidden', showRangePreview);
+        });
+
 
         resizeCanvas();
         setup();
