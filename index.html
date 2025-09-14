@@ -86,6 +86,21 @@
             justify-content: center;
             z-index: 50;
         }
+        
+        /* Role Sorter Styles */
+        .role-btn {
+            transition: all 0.2s ease-in-out;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .role-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .role-btn.selected {
+            background-color: #a78bfa;
+            color: #1a1a1a;
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(167, 139, 250, 0.5);
+        }
     </style>
 </head>
 <body>
@@ -114,8 +129,8 @@
             </div>
             <div class="text-right flex gap-4 items-center">
                 <button id="toggle-range-btn" title="Toggle Unit Range Preview" class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
-                    <svg id="eye-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                    <svg id="eye-off-icon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"></path></svg>
+                    <svg id="eye-icon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    <svg id="eye-off-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"></path></svg>
                 </button>
                 <p class="text-lg font-bold text-blue-400">Blue: <span id="blue-count">0</span></p>
                 <p class="text-lg font-bold text-red-400">Red: <span id="red-count">0</span></p>
@@ -126,6 +141,26 @@
             <!-- Controls -->
             <div class="glass-panel p-6 w-full md:w-64 flex flex-col">
                 <h2 class="text-xl font-bold mb-4 border-b border-gray-600 pb-2 flex-shrink-0">Place Units</h2>
+                
+                <!-- Role Sorter -->
+                <div id="role-sorter" class="flex justify-around mb-4 border-b border-gray-600 pb-2">
+                    <button data-role="all" class="role-btn p-2 rounded-full selected" title="All">
+                        <svg class="pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/></svg>
+                    </button>
+                    <button data-role="Melee" class="role-btn p-2 rounded-full" title="Melee">
+                        <svg class="pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 3.5 17 17L15 22l-1-1-3.5-3.5-1-1L1 7l5.5-5.5Z"/><path d="m14 7 3 3"/><path d="M18 12.5V10l4 4-2.5 2.5"/><path d="m6.5 17.5 4.5-4.5"/></svg>
+                    </button>
+                    <button data-role="Ranged" class="role-btn p-2 rounded-full" title="Ranged">
+                        <svg class="pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+                    </button>
+                    <button data-role="Tank" class="role-btn p-2 rounded-full" title="Tank">
+                        <svg class="pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </button>
+                    <button data-role="Support" class="role-btn p-2 rounded-full" title="Support">
+                       <svg class="pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                    </button>
+                </div>
+
                 <div class="space-y-3 unit-list flex-grow min-h-0 overflow-y-auto pr-2">
                     <!-- Unit buttons now have a data-unit-type attribute -->
                     <button data-unit-type="shooter" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
@@ -250,6 +285,7 @@
         const toggleRangeBtn = document.getElementById('toggle-range-btn');
         const eyeIcon = document.getElementById('eye-icon');
         const eyeOffIcon = document.getElementById('eye-off-icon');
+        const roleSorter = document.getElementById('role-sorter');
         
         const playIconSVG = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
         const pauseIconSVG = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
@@ -271,10 +307,10 @@
             'skeleton':     { name: 'Skeleton', tags: ['Melee', 'Summon'], hp: 15,  speed: 1.01,attackDamage: 8,    attackRange: 20,  attackCooldown: 800,  color: { team1: '#d1d5db', team2: '#9ca3af' } },
             'sustainer':    { name: 'Sustainer', tags: ['Support', 'Healer'], hp: 80,  speed: 0.8, attackDamage: 0,    attackRange: 800, attackCooldown: 900, color: { team1: '#10b981', team2: '#22d3ee' }, healAmount: 0.30 },
             'synchronizer': { name: 'Synchronizer', tags: ['Support', 'Buffer'], hp: 90,  speed: 0.9, attackDamage: 0,    attackRange: 300, attackCooldown: 100,  color: { team1: '#c084fc', team2: '#fb7185' }, buffAmount: 1.48 },
-            'sniper':       { name: 'Sniper', tags: ['Ranged', 'High-Damage'], hp: 60,  speed: 0.3, attackDamage: 75,   attackRange: 2000,attackCooldown: 5050, color: { team1: '#67e8f9', team2: '#be123c' } },
+            'sniper':       { name: 'Sniper', tags: ['Ranged', 'High-Damage', 'Assassin'], hp: 60,  speed: 0.3, attackDamage: 75,   attackRange: 2000,attackCooldown: 5050, color: { team1: '#67e8f9', team2: '#be123c' } },
             'spiker':       { name: 'Spiker', tags: ['Tank', 'Reflect'], hp: 400, speed: 0.4, attackDamage: 5,    attackRange: 15,  attackCooldown: 1000, color: { team1: '#84cc16', team2: '#ca8a04' }, reflectDamage: 16 },
             'skipper':      { name: 'Skipper', tags: ['Ranged', 'Ricochet'], hp: 70,  speed: 0.7, attackDamage: 12,   attackRange: 600, attackCooldown: 1500, color: { team1: '#22d3ee', team2: '#f472b6' } },
-            'spinner':      { name: 'Spinner', tags: ['Melee', 'Defense'], hp: 110, speed: 1.3, attackDamage: 17,    attackRange: 80,  attackCooldown: 1300, color: { team1: '#fde047', team2: '#f87171' } },
+            'spinner':      { name: 'Spinner', tags: ['Melee', 'Defense', 'AoE'], hp: 110, speed: 1.3, attackDamage: 17,    attackRange: 80,  attackCooldown: 1300, color: { team1: '#fde047', team2: '#f87171' } },
             'spawner':      { name: 'Spawner', tags: ['Ranged', 'Summoner'], hp: 85,  speed: 0.4, attackDamage: 9,    attackRange: 300, attackCooldown: 1300, color: { team1: '#d8b4fe', team2: '#fbcfe8' } },
             'sentry':       { name: 'Sentry', tags: ['Ranged', 'Summon'], hp: 5,  speed: 0,   attackDamage: 1,  attackRange: 400, attackCooldown: 270,  color: { team1: '#a5b4fc', team2: '#fda4af' } },
             'stopper':      { name: 'Stopper', tags: ['Support', 'Disabler'], hp: 90,  speed: 0.6, attackDamage: 0.05, attackRange: 1000, attackCooldown: 6000, color: { team1: '#fca5a5', team2: '#67e8f9' }, stopDuration: 6500, maxTargets: 2 },
@@ -295,7 +331,7 @@
         let isBattleStarted = false;
         let isPaused = false;
         let gameSpeed = 1.0;
-        let showRangePreview = true;
+        let showRangePreview = false;
         let mousePos = { x: -1, y: -1, onCanvas: false };
 
         function resizeCanvas() {
@@ -630,51 +666,49 @@
 
                 const healthBarWidth = 30; const healthBarHeight = 5;
                 const healthBarX = this.x - healthBarWidth / 2;
-                const healthBarY = this.y - this.height - 5;
+                const healthBarY = this.y - this.height - 10;
                 ctx.fillStyle = '#4b5563';
                 ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
                 const currentHealthWidth = (this.hp / this.maxHp) * healthBarWidth;
                 ctx.fillStyle = this.hp / this.maxHp > 0.5 ? '#22c55e' : this.hp / this.maxHp > 0.25 ? '#f59e0b' : '#ef4444';
                 ctx.fillRect(healthBarX, healthBarY, currentHealthWidth, healthBarHeight);
 
+                // --- Cooldown Bar Logic ---
                 const now = Date.now();
-                const cooldownBarY = this.y - this.height - 1;
+                const cooldownBarY = healthBarY + healthBarHeight + 1;
                 const cooldownBarWidth = 30;
                 const cooldownBarHeight = 3;
                 const cooldownBarX = this.x - cooldownBarWidth / 2;
                 
-                if (this.type === 'stopper') {
-                    const cooldownProgress = Math.min(1, (now - this.lastAttackTime) / (this.getAttackCooldown() / gameSpeed));
-                     if (cooldownProgress < 1 && isBattleStarted) {
-                        ctx.fillStyle = '#b91c1c';
-                        ctx.fillRect(cooldownBarX, cooldownBarY, cooldownBarWidth, cooldownBarHeight);
-                        ctx.fillStyle = '#fca5a5';
-                        ctx.fillRect(cooldownBarX, cooldownBarY, cooldownBarWidth * cooldownProgress, cooldownBarHeight);
-                    }
-                } else if (this.type === 'sniper') {
-                    const cooldownProgress = Math.min(1, (now - this.lastAttackTime) / (this.getAttackCooldown() / gameSpeed));
-                    if (cooldownProgress < 1 && isBattleStarted) {
-                        ctx.fillStyle = '#1e3a8a';
-                        ctx.fillRect(cooldownBarX, cooldownBarY, cooldownBarWidth, cooldownBarHeight);
-                        ctx.fillStyle = '#60a5fa';
-                        ctx.fillRect(cooldownBarX, cooldownBarY, cooldownBarWidth * cooldownProgress, cooldownBarHeight);
-                    }
-                } else if (this.type === 'spawner' && this.mySentries.length < 2) {
-                    const cooldownProgress = Math.min(1, (now - this.lastSpawnTime) / (this.spawnCooldown / gameSpeed));
-                    if (cooldownProgress < 1 && isBattleStarted) {
-                        ctx.fillStyle = '#3b0764';
-                        ctx.fillRect(cooldownBarX, cooldownBarY, cooldownBarWidth, cooldownBarHeight);
-                        ctx.fillStyle = '#a855f7';
-                        ctx.fillRect(cooldownBarX, cooldownBarY, cooldownBarWidth * cooldownProgress, cooldownBarHeight);
-                    }
+                let cooldownProgress = -1;
+                let cooldownColor = '#93c5fd'; // Light Blue
+                let cooldownBgColor = '#1e3a8a'; // Dark Blue
+
+                if (this.type === 'spawner' && this.mySentries.length < 2) {
+                    cooldownProgress = Math.min(1, (now - this.lastSpawnTime) / (this.spawnCooldown / gameSpeed));
+                    cooldownColor = '#d8b4fe';
+                    cooldownBgColor = '#581c87';
                 } else if (this.type === 'summoner' && this.mySkeletons.length < 2) {
-                    const cooldownProgress = Math.min(1, (now - this.lastSummonTime) / (this.getAttackCooldown() / gameSpeed));
-                     if (cooldownProgress < 1 && isBattleStarted) {
-                        ctx.fillStyle = '#4a044e';
-                        ctx.fillRect(cooldownBarX, cooldownBarY, cooldownBarWidth, cooldownBarHeight);
-                        ctx.fillStyle = '#e879f9';
-                        ctx.fillRect(cooldownBarX, cooldownBarY, cooldownBarWidth * cooldownProgress, cooldownBarHeight);
+                    cooldownProgress = Math.min(1, (now - this.lastAttackTime) / (this.getAttackCooldown() / gameSpeed));
+                    cooldownColor = '#f9a8d4';
+                    cooldownBgColor = '#831843';
+                } else if (this.type === 'slither' && !this.mySnake) {
+                    cooldownProgress = Math.min(1, (now - this.lastAttackTime) / (this.getAttackCooldown() / gameSpeed));
+                    cooldownColor = '#5eead4';
+                    cooldownBgColor = '#134e4a';
+                } else if (this.attackCooldown > 0 && this.type !== 'spawner' && this.type !== 'summoner' && this.type !== 'slither' && this.type !== 'sustainer' && this.type !== 'synchronizer' && this.type !== 'shielder') {
+                    cooldownProgress = Math.min(1, (now - this.lastAttackTime) / (this.getAttackCooldown() / gameSpeed));
+                    if(this.type === 'stopper') {
+                        cooldownColor = '#fca5a5';
+                        cooldownBgColor = '#7f1d1d';
                     }
+                }
+                
+                if (isBattleStarted && cooldownProgress >= 0 && cooldownProgress < 1) {
+                    ctx.fillStyle = cooldownBgColor;
+                    ctx.fillRect(cooldownBarX, cooldownBarY, cooldownBarWidth, cooldownBarHeight);
+                    ctx.fillStyle = cooldownColor;
+                    ctx.fillRect(cooldownBarX, cooldownBarY, cooldownBarWidth * cooldownProgress, cooldownBarHeight);
                 }
 
 
@@ -942,7 +976,7 @@
             findTarget(enemies) {
                 if (enemies.length === 0) { this.target = null; return; }
 
-                if (this.type === 'swifter' || this.type === 'sniper') {
+                if (this.type === 'swifter' || this.type === 'sniper' || this.type === 'stalker') {
                     let furthestEnemy = null; let maxDist = -Infinity;
                     enemies.forEach(e => {
                         const dist = this.team === 1 ? e.x : canvas.width - e.x;
@@ -2146,6 +2180,27 @@
             ctx.fillRect(0, 0, canvas.width / 3, canvas.height);
             ctx.fillStyle = 'rgba(239, 68, 68, 0.1)';
             ctx.fillRect(canvas.width - canvas.width / 3, 0, canvas.width / 3, canvas.height);
+            
+            // Draw all unit ranges if toggled, do this before drawing units
+            if (showRangePreview) {
+                units.forEach(unit => {
+                    if (unit.attackRange > 0) {
+                        ctx.beginPath();
+                        ctx.arc(unit.x, unit.y, unit.attackRange, 0, Math.PI * 2);
+                        ctx.globalAlpha = 0.10;
+                        ctx.fillStyle = unit.team === 1 ? '#3b82f6' : '#ef4444';
+                        ctx.fill();
+                        ctx.globalAlpha = 0.4;
+                        ctx.strokeStyle = unit.team === 1 ? '#60a5fa' : '#f87171';
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash([5, 10]);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                        ctx.globalAlpha = 1.0;
+                    }
+                });
+            }
+
             units.forEach(unit => unit.draw());
             projectiles.forEach(p => p.draw());
             specialProjectiles.forEach(p => p.draw());
@@ -2361,6 +2416,30 @@
             eyeOffIcon.classList.toggle('hidden', showRangePreview);
         });
 
+        roleSorter.addEventListener('click', (e) => {
+            const roleBtn = e.target.closest('.role-btn');
+            if (roleBtn) {
+                const selectedRole = roleBtn.dataset.role;
+
+                document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('selected'));
+                roleBtn.classList.add('selected');
+
+                document.querySelectorAll('.unit-btn').forEach(unitBtn => {
+                    if (selectedRole === 'all') {
+                        unitBtn.style.display = 'block';
+                    } else {
+                        const unitType = unitBtn.dataset.unitType;
+                        const unitTags = UNIT_SPECS[unitType].tags;
+                        if (unitTags.includes(selectedRole) || (selectedRole === 'Assassin' && unitTags.includes('Assassin'))) {
+                            unitBtn.style.display = 'block';
+                        } else {
+                            unitBtn.style.display = 'none';
+                        }
+                    }
+                });
+            }
+        });
+
 
         resizeCanvas();
         setup();
@@ -2368,3 +2447,4 @@
     </script>
 </body>
 </html>
+
