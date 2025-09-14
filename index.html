@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unit Battle Simulator - v1.7</title>
+    <title>Unit Battle Simulator - v1.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -110,7 +110,7 @@
                 <button id="log-btn" title="Show Version History" class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.546-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </button>
-                <h1 class="text-2xl font-bold text-violet-300">Unit Battle Simulator Ver 1.7</h1>
+                <h1 class="text-2xl font-bold text-violet-300">Unit Battle Simulator Ver 1.8</h1>
             </div>
             <div class="text-right flex gap-4 items-center">
                 <button id="toggle-range-btn" title="Toggle Unit Range Preview" class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
@@ -190,6 +190,9 @@
                     </button>
                     <button data-unit-type="slither" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
                         <p class="font-bold">Slither</p><p class="text-xs text-gray-400">Summons a powerful snake</p>
+                    </button>
+                    <button data-unit-type="stalker" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Stalker</p><p class="text-xs text-gray-400">Teleports & silences target</p>
                     </button>
                 </div>
                 <div class="mt-auto flex-shrink-0">
@@ -279,6 +282,7 @@
             'swinger':      { name: 'Swinger', tags: ['Melee', 'AoE'], hp: 110, speed: 0.8, attackDamage: 65,   attackRange: 50,  attackCooldown: 1500, color: { team1: '#fca5a5', team2: '#93c5fd' } },
             'slither':      { name: 'Slither', tags: ['Support', 'Summoner'], hp: 80,  speed: 0.4, attackDamage: 0,    attackRange: 500, attackCooldown: 9000, color: { team1: '#0d9488', team2: '#7c2d12' } },
             'snake':        { name: 'Snake', tags: ['Melee', 'Summon'], hp: 50, speed: 1.5, attackDamage: 10,   attackRange: 25,  attackCooldown: 430,  color: { team1: '#14b8a6', team2: '#9a3412' } },
+            'stalker':      { name: 'Stalker', tags: ['Melee', 'Assassin'], hp: 70, speed: 3.5, attackDamage: 20, attackRange: 400, attackCooldown: 700, color: { team1: '#4338ca', team2: '#be185d' }, silenceDuration: 2000 },
         };
         // =======================================================
 
@@ -372,6 +376,7 @@
                 this.deflectAnim = 0;
 
                 this.isStunned = false; this.stunDuration = 0;
+                this.isSilenced = false; this.silenceDuration = 0;
                 this.isStopped = false; this.stopDuration = 0; this.stoppedBy = null; this.stopEffectAngle = 0;
                 this.isBeingKnockedBack = false; this.knockbackProgress = 0;
                 this.knockbackStartX = 0; this.knockbackStartY = 0;
@@ -390,6 +395,9 @@
                 if (type === 'snake') {
                     this.slither = null;
                     this.body = Array.from({ length: 10 }, () => ({ x: this.x, y: this.y }));
+                }
+                if (type === 'stalker') {
+                    this.teleportedEnemies = [];
                 }
                 if (type === 'spinner') {
                     this.orbAngle = 0;
@@ -430,6 +438,13 @@
                 this.buffSource = source;
             }
 
+            applySilence(duration) {
+                this.isSilenced = true;
+                // Convert duration from ms to frames
+                this.silenceDuration = duration / (1000 / 60); 
+                animations.push(new SilenceIndicator(this));
+            }
+
             draw() {
                 ctx.fillStyle = this.color;
                 if (this.type === 'snake') {
@@ -459,6 +474,20 @@
                     ctx.moveTo(this.width / 2 + 5, 0); ctx.lineTo(0, -this.width / 2);
                     ctx.lineTo(-this.width / 2 - 5, 0); ctx.lineTo(0, this.width / 2);
                     ctx.closePath(); ctx.fill();
+                    ctx.restore();
+                } else if (this.type === 'stalker') {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    let angle = this.team === 1 ? 0 : Math.PI;
+                    if (this.target) angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                    ctx.rotate(angle + Math.PI / 2);
+                    const size = this.width / 1.8;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -size);
+                    ctx.quadraticCurveTo(size * 1.5, 0, 0, size);
+                    ctx.quadraticCurveTo(-size * 1.5, 0, 0, -size);
+                    ctx.closePath();
+                    ctx.fill();
                     ctx.restore();
                 } else if (this.type === 'synchronizer' || this.type === 'spawner' || this.type === 'slither') {
                     ctx.save();
@@ -770,7 +799,7 @@
                     ctx.lineTo(this.width/2 + toolLength - clawSize, clawSize);
                     ctx.stroke();
                     ctx.restore();
-                } else if (this.type === 'slasher' || this.type === 'swifter' || this.type === 'skeleton') {
+                } else if (this.type === 'slasher' || this.type === 'swifter' || this.type === 'skeleton' || this.type === 'stalker') {
                     if (this.isSlashing) {
                         const progress = this.slashAnimProgress / this.slashAnimDuration;
                         const arc = Math.PI / 1.5;
@@ -981,6 +1010,10 @@
             }
             
             update(friendlies, enemies) {
+                 if (this.isSilenced) {
+                    this.silenceDuration -= 1 * gameSpeed;
+                    if (this.silenceDuration <= 0) this.isSilenced = false;
+                }
                 if (this.isBuffed) {
                     this.buffDuration -= 1 * gameSpeed;
                     if (this.buffDuration <= 0 || (this.buffSource && this.buffSource.hp <= 0)) {
@@ -1025,6 +1058,7 @@
                 }
 
                 if (this.type === 'stopper' && this.isCasting) {
+                    if (this.isSilenced) this.isCasting = false;
                     this.castProgress += 1 * gameSpeed;
                     if (this.castProgress >= this.castDuration) this.isCasting = false;
                     return; 
@@ -1034,6 +1068,7 @@
                 
                 if (this.type === 'streamer') {
                     if (this.isStreaming) {
+                        if (this.isSilenced) this.isStreaming = false;
                         this.streamProgress -= 1 * gameSpeed;
                         if (!this.target || this.target.hp <= 0) this.findTarget(enemies);
                         if (this.streamProgress <= 0 || !this.target) this.isStreaming = false;
@@ -1043,6 +1078,7 @@
                 }
                 if (this.type === 'sustainer') {
                     if (this.isHealing) {
+                        if (this.isSilenced) this.isHealing = false;
                         this.healProgress -= 1 * gameSpeed;
                         if (this.healProgress <= 0) {
                             this.isHealing = false; this.healTargets = []; this.lastAttackTime = Date.now();
@@ -1069,6 +1105,7 @@
                     return;
                 }
                 if (this.type === 'sniper' && this.isAiming) {
+                    if (this.isSilenced) this.isAiming = false;
                     this.aimProgress += 1 * gameSpeed;
                     if (!this.target || this.target.hp <= 0) {
                         this.isAiming = false; this.aimProgress = 0;
@@ -1241,7 +1278,7 @@
                         const spawnDist = 80;
                         const angle = this.target ? Math.atan2(this.target.y - this.y, this.target.x - this.x) : (this.team === 1 ? 0 : Math.PI);
                         const spawnX = this.x + Math.cos(angle) * spawnDist;
-                        const spawnY = this.y + Math.sin(angle) * spawnDist + (Math.random() - 0.5) * 40;
+                        const spawnY = this.y + (Math.random() - 0.5) * 40;
                         
                         const newSentry = new Unit(spawnX, spawnY, this.team, 'sentry', spawnX/canvas.width, spawnY/canvas.height);
                         newSentry.spawner = this;
@@ -1374,7 +1411,8 @@
                         }
                     } else {
                         if (this.target) {
-                            if (getDistance(this, this.target) > this.attackRange) {
+                            const attackRange = (this.type === 'stalker' && this.teleportedEnemies.includes(this.target)) ? 20 : this.attackRange;
+                            if (getDistance(this, this.target) > attackRange) {
                                 const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
                                 this.x += Math.cos(angle) * this.speed * gameSpeed;
                                 this.y += Math.sin(angle) * this.speed * gameSpeed;
@@ -1394,7 +1432,7 @@
             }
             
             attack(friendlies, enemies) {
-                if (this.isStopped) return;
+                if (this.isStopped || this.isSilenced) return;
                 const now = Date.now();
                 if (now - this.lastAttackTime > this.getAttackCooldown() / gameSpeed) {
                     if (this.type === 'shielder' || this.type === 'synchronizer') return;
@@ -1529,12 +1567,35 @@
                         });
                         this.isSwinging = true;
                         this.swingAnimProgress = this.swingAnimDuration;
+                    } else if (this.type === 'stalker') {
+                        if (this.target && this.target.hp > 0) {
+                            if (!this.teleportedEnemies.includes(this.target)) {
+                                this.teleportedEnemies.push(this.target);
+                                animations.push(new TeleportEffect(this.x, this.y, this.color));
+                                
+                                let targetAngle = (this.target.target) 
+                                    ? Math.atan2(this.target.target.y - this.target.y, this.target.target.x - this.target.x) 
+                                    : Math.atan2(this.y - this.target.y, this.x - this.target.x);
+
+                                const behindDist = this.target.width / 2 + this.width / 2;
+                                this.x = this.target.x - Math.cos(targetAngle) * behindDist;
+                                this.y = this.target.y - Math.sin(targetAngle) * behindDist;
+                                
+                                animations.push(new TeleportEffect(this.x, this.y, this.color));
+
+                                this.target.applySilence(UNIT_SPECS.stalker.silenceDuration);
+                            }
+                            // All attacks, whether the first or subsequent, deal damage.
+                            this.target.takeDamage(this.getAttackDamage(), this);
+                            this.isSlashing = true; 
+                            this.slashAnimProgress = this.slashAnimDuration;
+                        }
                     }
                 }
             }
             takeDamage(damage, attacker = null) {
                  this.hp -= damage; 
-                 if (this.type === 'spiker' && attacker && this.reflectDamage > 0 && (attacker.type === 'slasher' || attacker.type === 'swifter' || attacker.type === 'slammer' || attacker.type === 'skeleton' || attacker.type === 'spiker' || attacker.type === 'swinger' || attacker.type === 'snake')) {
+                 if (this.type === 'spiker' && attacker && this.reflectDamage > 0 && (attacker.type === 'slasher' || attacker.type === 'swifter' || attacker.type === 'slammer' || attacker.type === 'skeleton' || attacker.type === 'spiker' || attacker.type === 'swinger' || attacker.type === 'snake' || attacker.type === 'stalker')) {
                      if (getDistance(this, attacker) <= (this.width/2 + attacker.width/2 + 10)) {
                          attacker.takeDamage(this.reflectDamage);
                          for(let i=0; i < 5; i++) {
@@ -1817,6 +1878,34 @@
                 ctx.filter = 'none';
             }
         }
+        
+        class TeleportEffect {
+            constructor(x, y, color) {
+                this.x = x; this.y = y; this.color = color;
+                this.radius = 0; this.duration = 20; this.maxDuration = 20;
+            }
+            update() { this.duration -= gameSpeed; return this.duration > 0; }
+            draw() {
+                const progress = 1 - this.duration / this.maxDuration;
+                const currentRadius = 35 * progress;
+                const alpha = 1 - progress;
+
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, currentRadius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color + `${alpha * 0.5})`;
+                ctx.filter = 'blur(10px)';
+                ctx.fill();
+                ctx.restore();
+
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, currentRadius * 0.7, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.8})`;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+        }
 
         class Explosion {
             constructor(x, y, radius, damage, team, enemies, caster) {
@@ -1852,6 +1941,29 @@
              }
         }
         
+        class SilenceIndicator {
+            constructor(target) {
+                this.target = target;
+                this.duration = UNIT_SPECS.stalker.silenceDuration / (1000/60);
+                this.maxDuration = this.duration;
+            }
+            update() {
+                this.duration -= gameSpeed;
+                return this.duration > 0 && this.target.hp > 0 && this.target.isSilenced;
+            }
+            draw() {
+                const progress = this.duration / this.maxDuration;
+                const alpha = Math.sin(progress * Math.PI); // Fades in and out
+                const time = Date.now();
+                const pulsate = 1 + Math.sin(time / 100) * 0.1;
+                ctx.fillStyle = `rgba(203, 213, 225, ${alpha * 0.9})`;
+                ctx.font = `bold ${24 * pulsate}px "Roboto Mono"`;
+                ctx.textAlign = 'center';
+                ctx.fillText('…', this.target.x, this.target.y - this.target.height - 18);
+            }
+        }
+
+
         class StopEffect {
             constructor(caster, target) {
                 this.caster = caster;
@@ -2129,15 +2241,30 @@
 
                 const tagsHTML = stats.tags.map(tag => `<span class="bg-gray-600 text-violet-300 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">${tag}</span>`).join('');
                 
-                tooltip.innerHTML = `
-                    <h3 class="text-lg font-bold text-violet-300 mb-2">${stats.name}</h3>
+                let statsHTML = `
                     <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                         <span class="text-gray-400">HP:</span> <span class="text-white">${stats.hp}</span>
                         <span class="text-gray-400">Speed:</span> <span class="text-white">${stats.speed}</span>
                         <span class="text-gray-400">Damage:</span> <span class="text-white">${stats.attackDamage}</span>
                         <span class="text-gray-400">Range:</span> <span class="text-white">${stats.attackRange}</span>
                         <span class="text-gray-400">Cooldown:</span> <span class="text-white">${stats.attackCooldown}ms</span>
-                    </div>
+                    </div>`;
+
+                if (stats.burstDamage) {
+                    statsHTML = `
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                        <span class="text-gray-400">HP:</span> <span class="text-white">${stats.hp}</span>
+                        <span class="text-gray-400">Speed:</span> <span class="text-white">${stats.speed}</span>
+                        <span class="text-gray-400">Teleport Dmg:</span> <span class="text-white">${stats.burstDamage} x ${stats.burstCount}</span>
+                        <span class="text-gray-400">Melee Dmg:</span> <span class="text-white">${stats.attackDamage}</span>
+                        <span class="text-gray-400">Range:</span> <span class="text-white">${stats.attackRange}</span>
+                        <span class="text-gray-400">Cooldown:</span> <span class="text-white">${stats.attackCooldown}ms</span>
+                    </div>`;
+                }
+
+                tooltip.innerHTML = `
+                    <h3 class="text-lg font-bold text-violet-300 mb-2">${stats.name}</h3>
+                    ${statsHTML}
                     <div class="mt-3 pt-2 border-t border-gray-600">
                         ${tagsHTML}
                     </div>
@@ -2241,4 +2368,3 @@
     </script>
 </body>
 </html>
-
