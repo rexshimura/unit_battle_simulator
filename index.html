@@ -1,0 +1,2155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit Battle Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+        }
+        .glass-panel {
+            background: rgba(40, 40, 40, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+        }
+        .unit-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .unit-btn.selected {
+            background-color: #a78bfa;
+            color: #1a1a1a;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(167, 139, 250, 0.5);
+        }
+        .action-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .action-btn:hover {
+            transform: scale(1.05);
+        }
+        .speed-btn.selected {
+            background-color: #8b5cf6;
+            color: #f0f0f0;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+        }
+        #gameCanvas {
+            cursor: pointer;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .status-message {
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+            transition: opacity 0.5s ease-in-out;
+        }
+        .unit-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        .unit-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        .unit-list::-webkit-scrollbar-thumb {
+            background: #4a4a4a;
+            border-radius: 10px;
+        }
+        .unit-list::-webkit-scrollbar-thumb:hover {
+            background: #5c5c5c;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container" class="w-full h-full flex flex-col p-4 gap-4">
+        <!-- Header -->
+        <div class="glass-panel p-4 w-full flex-shrink-0 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-violet-300">Unit Battle Sim</h1>
+            <div class="text-right flex gap-4">
+                <p class="text-lg font-bold text-blue-400">Blue: <span id="blue-count">0</span></p>
+                <p class="text-lg font-bold text-red-400">Red: <span id="red-count">0</span></p>
+            </div>
+        </div>
+
+        <div class="w-full flex-grow flex flex-col md:flex-row gap-4 min-h-0">
+            <!-- Controls -->
+            <div class="glass-panel p-6 w-full md:w-64 flex flex-col">
+                <h2 class="text-xl font-bold mb-4 border-b border-gray-600 pb-2 flex-shrink-0">Place Units</h2>
+                <div class="space-y-3 unit-list flex-grow min-h-0 overflow-y-auto pr-2">
+                    <button id="select-shooter" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Shooter</p>
+                        <p class="text-xs text-gray-400">Slow, Ranged Attack</p>
+                    </button>
+                    <button id="select-slasher" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Slasher</p>
+                        <p class="text-xs text-gray-400">Fast, Melee Attack</p>
+                    </button>
+                    <button id="select-shielder" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Shielder</p>
+                        <p class="text-xs text-gray-400">Bounces back projectiles</p>
+                    </button>
+                    <button id="select-swifter" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Swifter</p>
+                        <p class="text-xs text-gray-400">Targets backline units</p>
+                    </button>
+                     <button id="select-scorcher" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Scorcher</p>
+                        <p class="text-xs text-gray-400">Explosive AoE attack</p>
+                    </button>
+                    <button id="select-shocker" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Shocker</p>
+                        <p class="text-xs text-gray-400">Chain lightning attack</p>
+                    </button>
+                    <button id="select-slammer" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Slammer</p>
+                        <p class="text-xs text-gray-400">Melee, pushes enemies</p>
+                    </button>
+                    <button id="select-skirmisher" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Skirmisher</p>
+                        <p class="text-xs text-gray-400">Ranged, kites enemies</p>
+                    </button>
+                    <button id="select-streamer" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Streamer</p>
+                        <p class="text-xs text-gray-400">Fires a continuous laser</p>
+                    </button>
+                     <button id="select-summoner" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Summoner</p>
+                        <p class="text-xs text-gray-400">Summons 2 skeletal warriors</p>
+                    </button>
+                    <button id="select-sustainer" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Sustainer</p>
+                        <p class="text-xs text-gray-400">Continuously heals allies</p>
+                    </button>
+                    <button id="select-synchronizer" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Synchronizer</p>
+                        <p class="text-xs text-gray-400">Links to buff one ally</p>
+                    </button>
+                     <button id="select-sniper" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Sniper</p>
+                        <p class="text-xs text-gray-400">Long-range, high-damage</p>
+                    </button>
+                    <button id="select-spiker" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Spiker</p>
+                        <p class="text-xs text-gray-400">Reflects melee damage</p>
+                    </button>
+                    <button id="select-skipper" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Skipper</p>
+                        <p class="text-xs text-gray-400">Ricochet shot hits two enemies</p>
+                    </button>
+                    <button id="select-spinner" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Spinner</p>
+                        <p class="text-xs text-gray-400">Rotating orbs block shots</p>
+                    </button>
+                    <button id="select-spawner" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Spawner</p>
+                        <p class="text-xs text-gray-400">Spawns sentry turrets</p>
+                    </button>
+                    <button id="select-stopper" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Stopper</p>
+                        <p class="text-xs text-gray-400">Disables & damages 2 units</p>
+                    </button>
+                    <button id="select-sprayer" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Sprayer</p>
+                        <p class="text-xs text-gray-400">Rapid-fire minigunner</p>
+                    </button>
+                    <button id="select-swinger" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Swinger</p>
+                        <p class="text-xs text-gray-400">Slow, wide melee attack</p>
+                    </button>
+                    <button id="select-slither" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Slither</p>
+                        <p class="text-xs text-gray-400">Summons a powerful snake</p>
+                    </button>
+                </div>
+                <div class="mt-auto flex-shrink-0">
+                    <div class="mt-6 pt-4 border-t border-gray-600 flex justify-around items-center">
+                         <button id="start-battle-btn" title="Start Battle" class="action-btn p-3 rounded-full bg-green-600 hover:bg-green-500 shadow-lg text-white">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                         </button>
+                         <button id="pause-btn" title="Pause/Resume" class="action-btn p-3 rounded-full bg-yellow-600 hover:bg-yellow-500 shadow-lg text-white">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                         </button>
+                         <button id="reset-btn" title="Reset" class="action-btn p-3 rounded-full bg-red-600 hover:bg-red-500 shadow-lg text-white">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+                         </button>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-600">
+                        <h3 class="text-lg font-bold mb-2 text-center">Game Speed</h3>
+                        <div id="speed-controls" class="grid grid-cols-4 gap-2">
+                            <button class="speed-btn action-btn p-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-xs" data-speed="0.5">0.5x</button>
+                            <button class="speed-btn action-btn p-2 rounded-lg bg-gray-700 hover:bg-gray-600 selected text-xs" data-speed="1.0">1.0x</button>
+                            <button class="speed-btn action-btn p-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-xs" data-speed="1.5">1.5x</button>
+                            <button class="speed-btn action-btn p-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-xs" data-speed="2.0">2.0x</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Canvas -->
+            <div class="relative flex-grow">
+                <canvas id="gameCanvas" class="w-full h-full"></canvas>
+                <div id="status-message" class="status-message absolute inset-0 flex items-center justify-center text-5xl font-bold text-white pointer-events-none opacity-0 transition-opacity"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const blueCountDisplay = document.getElementById('blue-count');
+        const redCountDisplay = document.getElementById('red-count');
+        const selectShooterBtn = document.getElementById('select-shooter');
+        const selectSlasherBtn = document.getElementById('select-slasher');
+        const selectShielderBtn = document.getElementById('select-shielder');
+        const selectSwifterBtn = document.getElementById('select-swifter');
+        const selectScorcherBtn = document.getElementById('select-scorcher');
+        const selectShockerBtn = document.getElementById('select-shocker');
+        const selectSlammerBtn = document.getElementById('select-slammer');
+        const selectSkirmisherBtn = document.getElementById('select-skirmisher');
+        const selectStreamerBtn = document.getElementById('select-streamer');
+        const selectSummonerBtn = document.getElementById('select-summoner');
+        const selectSustainerBtn = document.getElementById('select-sustainer');
+        const selectSynchronizerBtn = document.getElementById('select-synchronizer');
+        const selectSniperBtn = document.getElementById('select-sniper');
+        const selectSpikerBtn = document.getElementById('select-spiker');
+        const selectSkipperBtn = document.getElementById('select-skipper');
+        const selectSpinnerBtn = document.getElementById('select-spinner');
+        const selectSpawnerBtn = document.getElementById('select-spawner');
+        const selectStopperBtn = document.getElementById('select-stopper');
+        const selectSprayerBtn = document.getElementById('select-sprayer');
+        const selectSwingerBtn = document.getElementById('select-swinger');
+        const selectSlitherBtn = document.getElementById('select-slither');
+
+        const startBattleBtn = document.getElementById('start-battle-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const speedControls = document.getElementById('speed-controls');
+        const statusMessage = document.getElementById('status-message');
+        
+        const playIconSVG = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
+        const pauseIconSVG = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
+
+        // =======================================================
+        // === CONFIGURATION: Tweak unit stats here! ===
+        // =======================================================
+        const UNIT_SPECS = {
+            'shooter':      { hp: 50,  speed: 0.5, attackDamage: 9,  attackRange: 800, attackCooldown: 650,  color: { team1: '#3b82f6', team2: '#ef4444' } },
+            'slasher':      { hp: 100, speed: 1.0, attackDamage: 13,   attackRange: 20,  attackCooldown: 500,  color: { team1: '#60a5fa', team2: '#f87171' } },
+            'shielder':     { hp: 175, speed: 0.4, attackDamage: 0,    attackRange: 0,   attackCooldown: 0,    color: { team1: '#1d4ed8', team2: '#b91c1c' } },
+            'swifter':      { hp: 50,  speed: 3.8, attackDamage: 15,   attackRange: 20,  attackCooldown: 700,  color: { team1: '#a78bfa', team2: '#f472b6' } },
+            'scorcher':     { hp: 80,  speed: 0.6, attackDamage: 25,   attackRange: 500, attackCooldown: 2000, color: { team1: '#f59e0b', team2: '#f97316' } },
+            'shocker':      { hp: 70,  speed: 0.8, attackDamage: 12,   attackRange: 200, attackCooldown: 1200, color: { team1: '#eab308', team2: '#0891b2' } },
+            'slammer':      { hp: 120, speed: 1.0, attackDamage: 15,   attackRange: 40,  attackCooldown: 1000, color: { team1: '#94a3b8', team2: '#7f1d1d' } },
+            'skirmisher':   { hp: 60,  speed: 1.8, attackDamage: 8,    attackRange: 300, attackCooldown: 700,  color: { team1: '#2dd4bf', team2: '#fb7185' } },
+            'streamer':     { hp: 65,  speed: 0.4, attackDamage: 0.25, attackRange: 800, attackCooldown: 5800, color: { team1: '#14b8a6', team2: '#f43f5e' } },
+            'summoner':     { hp: 70,  speed: 0.3, attackDamage: 0,    attackRange: 1000, attackCooldown: 1300, color: { team1: '#a855f7', team2: '#ec4899' } },
+            'skeleton':     { hp: 15,  speed: 1.01,attackDamage: 8,    attackRange: 20,  attackCooldown: 800,  color: { team1: '#d1d5db', team2: '#9ca3af' } },
+            'sustainer':    { hp: 80,  speed: 0.8, attackDamage: 0,    attackRange: 800, attackCooldown: 3000, color: { team1: '#10b981', team2: '#22d3ee' }, healAmount: 0.25 },
+            'synchronizer': { hp: 90,  speed: 0.9, attackDamage: 0,    attackRange: 300, attackCooldown: 100,  color: { team1: '#c084fc', team2: '#fb7185' }, buffAmount: 1.48 },
+            'sniper':       { hp: 60,  speed: 0.3, attackDamage: 75,   attackRange: 2000,attackCooldown: 5050, color: { team1: '#67e8f9', team2: '#be123c' } },
+            'spiker':       { hp: 400, speed: 0.4, attackDamage: 5,    attackRange: 15,  attackCooldown: 1000, color: { team1: '#84cc16', team2: '#ca8a04' }, reflectDamage: 16 },
+            'skipper':      { hp: 70,  speed: 0.7, attackDamage: 12,   attackRange: 600, attackCooldown: 1500, color: { team1: '#22d3ee', team2: '#f472b6' } },
+            'spinner':      { hp: 110, speed: 1.3, attackDamage: 17,    attackRange: 80,  attackCooldown: 1300, color: { team1: '#fde047', team2: '#f87171' } },
+            'spawner':      { hp: 85,  speed: 0.4, attackDamage: 9,    attackRange: 300, attackCooldown: 1300, color: { team1: '#d8b4fe', team2: '#fbcfe8' } },
+            'sentry':       { hp: 5,  speed: 0,   attackDamage: 1,  attackRange: 400, attackCooldown: 270,  color: { team1: '#a5b4fc', team2: '#fda4af' } },
+            'stopper':      { hp: 90,  speed: 0.6, attackDamage: 0.05, attackRange: 1000, attackCooldown: 6000, color: { team1: '#fca5a5', team2: '#67e8f9' }, stopDuration: 6500, maxTargets: 2 },
+            'sprayer':      { hp: 75,  speed: 0.9, attackDamage: 2.0,  attackRange: 650, attackCooldown: 100,  color: { team1: '#06b6d4', team2: '#db2777' }, spreadAngle: Math.PI / 12 },
+            'swinger':      { hp: 110, speed: 0.8, attackDamage: 65,   attackRange: 50,  attackCooldown: 1500, color: { team1: '#fca5a5', team2: '#93c5fd' } },
+            'slither':      { hp: 80,  speed: 0.4, attackDamage: 0,    attackRange: 500, attackCooldown: 9000, color: { team1: '#0d9488', team2: '#7c2d12' } },
+            'snake':        { hp: 50, speed: 1.5, attackDamage: 10,   attackRange: 25,  attackCooldown: 430,  color: { team1: '#14b8a6', team2: '#9a3412' } },
+        };
+        // =======================================================
+
+        let selectedUnit = null;
+        let units = [];
+        let projectiles = [];
+        let specialProjectiles = [];
+        let animations = [];
+        let particles = [];
+        let isBattleStarted = false;
+        let isPaused = false;
+        let gameSpeed = 1.0;
+        let mousePos = { x: -1, y: -1, onCanvas: false };
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            units.forEach(unit => {
+                unit.x = unit.relX * canvas.width;
+                unit.y = unit.relY * canvas.height;
+            });
+        }
+
+        function getDistance(obj1, obj2) {
+            const dx = obj1.x - obj2.x;
+            const dy = obj1.y - obj2.y;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function lerp(start, end, amt) {
+            return (1 - amt) * start + amt * end;
+        }
+
+        function drawJaggedLine(startX, startY, endX, endY, color, alpha) {
+             const dx = endX - startX;
+             const dy = endY - startY;
+             const dist = Math.sqrt(dx*dx + dy*dy);
+             const segments = Math.max(1, Math.floor(dist / 15));
+             const perpendicular = { x: -dy / dist, y: dx / dist };
+
+             ctx.beginPath();
+             ctx.moveTo(startX, startY);
+             for (let j = 1; j < segments; j++) {
+                 const progress = j / segments;
+                 const midX = startX + dx * progress;
+                 const midY = startY + dy * progress;
+                 const offset = (Math.random() - 0.5) * 12;
+                 ctx.lineTo(midX + perpendicular.x * offset, midY + perpendicular.y * offset);
+             }
+             ctx.lineTo(endX, endY);
+             
+             ctx.strokeStyle = color + `${alpha * 0.5})`;
+             ctx.lineWidth = 5;
+             ctx.filter = 'blur(4px)';
+             ctx.stroke();
+             ctx.filter = 'none';
+
+             ctx.strokeStyle = color + `${alpha})`;
+             ctx.lineWidth = 2;
+             ctx.stroke();
+        }
+
+        class Unit {
+            constructor(x, y, team, type, relX, relY) {
+                this.x = x; this.y = y;
+                this.relX = relX; this.relY = relY;
+                this.team = team; this.type = type;
+                const specs = UNIT_SPECS[type];
+                this.hp = specs.hp; this.maxHp = specs.hp;
+                this.speed = specs.speed;
+                this.attackDamage = specs.attackDamage;
+                this.attackRange = specs.attackRange;
+                this.attackCooldown = specs.attackCooldown;
+                this.healAmount = specs.healAmount || 0;
+                this.reflectDamage = specs.reflectDamage || 0;
+                this.color = specs.color[team === 1 ? 'team1' : 'team2'];
+                this.lastAttackTime = 0;
+                this.target = null;
+                this.width = 20; this.height = 20;
+                if (type === 'skeleton') { this.width = 15; this.height = 15; }
+                if (type === 'sentry') { this.width = 16; this.height = 16; }
+                if (type === 'swinger') { this.width = 28; this.height = 28; }
+                if (type === 'snake') { this.width = 14; this.height = 14; }
+                this.isSlashing = false;
+                this.slashAnimDuration = 15; this.slashAnimProgress = 0;
+                this.isSwinging = false;
+                this.swingAnimDuration = 30;
+                this.swingAnimProgress = 0;
+                this.deflectAnim = 0;
+
+                this.isStunned = false; this.stunDuration = 0;
+                this.isStopped = false; this.stopDuration = 0; this.stoppedBy = null; this.stopEffectAngle = 0;
+                this.isBeingKnockedBack = false; this.knockbackProgress = 0;
+                this.knockbackStartX = 0; this.knockbackStartY = 0;
+                this.knockbackTargetX = 0; this.knockbackTargetY = 0;
+                this.isBuffed = false; this.buffDuration = 0;
+                this.buffMultiplier = 1; this.buffSource = null;
+
+                if (type === 'slammer') { this.successfulAttacks = 0; }
+                if (type === 'skirmisher') { this.isShooting = false; this.shootAnimDuration = 15; this.shootAnimProgress = 0; }
+                if (type === 'streamer') { this.isStreaming = false; this.streamDuration = 240; this.streamProgress = 0; }
+                if (type === 'sustainer') { this.isHealing = false; this.healDuration = 300; this.healProgress = 0; this.healTargets = []; this.healParticleTimers = []; }
+                if (type === 'synchronizer') { this.linkedAlly = null; }
+                if (type === 'summoner') { this.mySkeletons = []; this.lastSummonTime = 0; }
+                if (type === 'sniper') { this.isAiming = false; this.aimDuration = 120; this.aimProgress = 0; }
+                if (type === 'slither') { this.mySnake = null; }
+                if (type === 'snake') {
+                    this.slither = null;
+                    this.body = Array.from({ length: 10 }, () => ({ x: this.x, y: this.y }));
+                }
+                if (type === 'spinner') {
+                    this.orbAngle = 0;
+                    this.orbRadius = 40;
+                    this.orbAttackRadius = 80;
+                    this.isAttacking = false;
+                    this.attackDuration = 90;
+                    this.attackProgress = 0;
+                    this.orbs = [
+                        { angleOffset: 0 },
+                        { angleOffset: Math.PI * 2 / 3 },
+                        { angleOffset: Math.PI * 4 / 3 }
+                    ];
+                    this.hitDuringAttack = [];
+                }
+                if (type === 'spawner') {
+                    this.mySentries = [];
+                    this.lastSpawnTime = 0;
+                    this.spawnCooldown = 4000;
+                }
+                if (type === 'sentry') { this.spawner = null; }
+                 if (type === 'stopper') {
+                    this.stoppedTargets = [];
+                    this.stopEffectDuration = specs.stopDuration;
+                    this.maxStoppedTargets = specs.maxTargets;
+                    this.isCasting = false;
+                    this.castDuration = 30;
+                    this.castProgress = 0;
+                    this.bodyAngle = 0;
+                }
+            }
+
+            getAttackDamage() { return this.attackDamage * this.buffMultiplier; }
+            getAttackCooldown() { return this.attackCooldown / this.buffMultiplier; }
+            applyBuff(multiplier, duration, source) {
+                this.isBuffed = true; this.buffMultiplier = multiplier;
+                this.buffDuration = duration; 
+                this.buffSource = source;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                if (this.type === 'snake') {
+                    // Draw snake body first so head is on top
+                    ctx.strokeStyle = this.color;
+                    ctx.lineWidth = 12;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(this.body[0].x, this.body[0].y);
+                    for (let i = 1; i < this.body.length; i++) {
+                        ctx.lineTo(this.body[i].x, this.body[i].y);
+                    }
+                    ctx.stroke();
+                    // Draw head
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.width / 2 + 2, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (this.type === 'swifter') {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    let angle = this.team === 1 ? 0 : Math.PI;
+                    if (this.target) angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                    ctx.rotate(angle);
+                    ctx.beginPath();
+                    ctx.moveTo(this.width / 2 + 5, 0); ctx.lineTo(0, -this.width / 2);
+                    ctx.lineTo(-this.width / 2 - 5, 0); ctx.lineTo(0, this.width / 2);
+                    ctx.closePath(); ctx.fill();
+                    ctx.restore();
+                } else if (this.type === 'synchronizer' || this.type === 'spawner' || this.type === 'slither') {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    const size = this.width / 1.8;
+                    ctx.beginPath();
+                    ctx.moveTo(size * Math.cos(0), size * Math.sin(0));
+                    for (var i = 1; i <= 6; i += 1) {
+                        ctx.lineTo(size * Math.cos(i * 2 * Math.PI / 6), size * Math.sin(i * 2 * Math.PI / 6));
+                    }
+                    ctx.fill();
+                    ctx.restore();
+                } else if (this.type === 'skipper') {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(Math.PI / 4);
+                    const size = this.width * 0.9;
+                    ctx.fillRect(-size / 2, -size / 2, size, size);
+                    ctx.restore();
+                } else if (this.type === 'stopper') {
+                    this.bodyAngle += 0.01 * gameSpeed;
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(this.bodyAngle);
+                    const size = this.width * 0.8;
+                    const points = 5;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -size);
+                    for (let i = 1; i < points * 2; i++) {
+                        const radius = i % 2 === 0 ? size : size / 2;
+                        const angle = Math.PI / points * i;
+                        ctx.lineTo(Math.sin(angle) * radius, -Math.cos(angle) * radius);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                } else if (this.type === 'sentry') {
+                    ctx.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
+                }
+                else {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.width / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                if (this.type !== 'snake') this.drawEquipment();
+                if (this.type === 'streamer' && this.isStreaming && this.target) this.drawLaser();
+                if (this.type === 'sustainer' && this.isHealing) this.drawHealBeams();
+                if (this.type === 'sniper' && this.isAiming && this.target) {
+                    ctx.beginPath(); ctx.moveTo(this.x, this.y); ctx.lineTo(this.target.x, this.target.y);
+                    ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255, 0, 0, 0.7)'; ctx.stroke();
+                }
+                 if (this.type === 'slither' && this.mySnake && this.mySnake.hp > 0) {
+                    drawJaggedLine(this.x, this.y, this.mySnake.x, this.mySnake.y, `rgba(20, 184, 166,`, 0.6);
+                }
+                if (this.type === 'synchronizer' && this.linkedAlly) {
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(this.linkedAlly.x, this.linkedAlly.y);
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeStyle = this.color;
+                    ctx.globalAlpha = 0.8;
+                    ctx.setLineDash([5, 5]);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.globalAlpha = 1.0;
+                }
+                if (this.type === 'stopper') {
+                     this.stoppedTargets.forEach(target => {
+                         if (target.hp > 0) {
+                            drawJaggedLine(this.x, this.y, target.x, target.y, `rgba(252, 165, 165,`, 0.8);
+                         }
+                     });
+                     if (!isBattleStarted) {
+                        const time = Date.now();
+                        const alpha = 0.3 + (Math.sin(time / 400) + 1) / 2 * 0.4; // oscillates between 0.3 and 0.7
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.attackRange, 0, Math.PI * 2);
+                        ctx.setLineDash([8, 12]);
+                        ctx.strokeStyle = `rgba(252, 165, 165, ${alpha})`;
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+                }
+                if (this.type === 'spinner') {
+                    let currentRadius = this.orbRadius;
+                    if (this.isAttacking) {
+                        const progress = this.attackProgress / this.attackDuration;
+                        const contractedRadius = 15;
+                        const peakTime = 0.4; 
+                        const contractTime = 0.8; 
+
+                        if (progress < peakTime) {
+                            const phaseProgress = progress / peakTime;
+                            currentRadius = lerp(this.orbRadius, this.orbAttackRadius, phaseProgress);
+                        } else if (progress < contractTime) {
+                            const phaseProgress = (progress - peakTime) / (contractTime - peakTime);
+                            currentRadius = lerp(this.orbAttackRadius, contractedRadius, phaseProgress);
+                        } else {
+                            const phaseProgress = (progress - contractTime) / (1 - contractTime);
+                            currentRadius = lerp(contractedRadius, this.orbRadius, phaseProgress);
+                        }
+                    }
+                    this.orbs.forEach(orb => {
+                        const angle = this.orbAngle + orb.angleOffset;
+                        const orbX = this.x + Math.cos(angle) * currentRadius;
+                        const orbY = this.y + Math.sin(angle) * currentRadius;
+                        const orbSize = 8;
+                        const glowSize = this.isAttacking ? 8 : 2;
+                        
+                        ctx.save();
+                        ctx.globalCompositeOperation = 'lighter';
+                        ctx.fillStyle = this.team === 1 ? '#fef08a' : '#fda4af';
+                        ctx.filter = `blur(${glowSize}px)`;
+                        ctx.beginPath();
+                        ctx.arc(orbX, orbY, orbSize, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.restore();
+
+                        ctx.fillStyle = 'white';
+                        ctx.beginPath();
+                        ctx.arc(orbX, orbY, orbSize / 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+                }
+                if (this.type === 'sentry') {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.attackRange, 0, Math.PI * 2);
+                    ctx.setLineDash([5, 10]);
+                    ctx.strokeStyle = this.team === 1 ? 'rgba(165, 180, 252, 0.5)' : 'rgba(253, 164, 175, 0.5)';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+                
+                ctx.fillStyle = this.team === 1 ? 'rgba(100, 200, 255, 0.7)' : 'rgba(255, 100, 100, 0.7)';
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.width / 2 + 3, 0, Math.PI * 2);
+                ctx.lineWidth = 2; ctx.strokeStyle = ctx.fillStyle; ctx.stroke();
+
+                const healthBarWidth = 30; const healthBarHeight = 5;
+                const healthBarX = this.x - healthBarWidth / 2;
+                const healthBarY = this.y - this.height - 5;
+                ctx.fillStyle = '#4b5563';
+                ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+                const currentHealthWidth = (this.hp / this.maxHp) * healthBarWidth;
+                ctx.fillStyle = this.hp / this.maxHp > 0.5 ? '#22c55e' : this.hp / this.maxHp > 0.25 ? '#f59e0b' : '#ef4444';
+                ctx.fillRect(healthBarX, healthBarY, currentHealthWidth, healthBarHeight);
+
+                const now = Date.now();
+                const cooldownBarY = this.y - this.height - 1;
+                const cooldownBarWidth = 30;
+                const cooldownBarHeight = 3;
+                const cooldownBarX = this.x - cooldownBarWidth / 2;
+                
+                if (this.type === 'stopper') {
+                    const cooldownProgress = Math.min(1, (now - this.lastAttackTime) / (this.getAttackCooldown() / gameSpeed));
+                     if (cooldownProgress < 1 && isBattleStarted) {
+                        ctx.fillStyle = '#b91c1c';
+                        ctx.fillRect(cooldownBarX, cooldownBarY, cooldownBarWidth, cooldownBarHeight);
+                        ctx.fillStyle = '#fca5a5';
+                        ctx.fillRect(cooldownBarX, cooldownBarY, cooldownBarWidth * cooldownProgress, cooldownBarHeight);
+                    }
+                } else if (this.type === 'sniper') {
+                    const cooldownProgress = Math.min(1, (now - this.lastAttackTime) / (this.getAttackCooldown() / gameSpeed));
+                    if (cooldownProgress < 1 && isBattleStarted) {
+                        ctx.fillStyle = '#1e3a8a';
+                        ctx.fillRect(cooldownBarX, cooldownBarY, cooldownBarWidth, cooldownBarHeight);
+                        ctx.fillStyle = '#60a5fa';
+                        ctx.fillRect(cooldownBarX, cooldownBarY, cooldownBarWidth * cooldownProgress, cooldownBarHeight);
+                    }
+                } else if (this.type === 'spawner' && this.mySentries.length < 2) {
+                    const cooldownProgress = Math.min(1, (now - this.lastSpawnTime) / (this.spawnCooldown / gameSpeed));
+                    if (cooldownProgress < 1 && isBattleStarted) {
+                        ctx.fillStyle = '#3b0764';
+                        ctx.fillRect(cooldownBarX, cooldownBarY, cooldownBarWidth, cooldownBarHeight);
+                        ctx.fillStyle = '#a855f7';
+                        ctx.fillRect(cooldownBarX, cooldownBarY, cooldownBarWidth * cooldownProgress, cooldownBarHeight);
+                    }
+                } else if (this.type === 'summoner' && this.mySkeletons.length < 2) {
+                    const cooldownProgress = Math.min(1, (now - this.lastSummonTime) / (this.getAttackCooldown() / gameSpeed));
+                     if (cooldownProgress < 1 && isBattleStarted) {
+                        ctx.fillStyle = '#4a044e';
+                        ctx.fillRect(cooldownBarX, cooldownBarY, cooldownBarWidth, cooldownBarHeight);
+                        ctx.fillStyle = '#e879f9';
+                        ctx.fillRect(cooldownBarX, cooldownBarY, cooldownBarWidth * cooldownProgress, cooldownBarHeight);
+                    }
+                }
+
+
+                if (this.isStunned) {
+                    ctx.fillStyle = 'rgba(253, 224, 71, 0.8)'; ctx.font = 'bold 18px "Roboto Mono"';
+                    ctx.textAlign = 'center'; ctx.fillText('Zzz', this.x, this.y - this.height - 18);
+                }
+                if (this.isStopped) {
+                    ctx.fillStyle = 'rgba(252, 165, 165, 0.9)';
+                    ctx.font = 'bold 20px "Roboto Mono"';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('🚫', this.x, this.y - this.height - 18);
+                    
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(this.stopEffectAngle);
+                    const radius = this.width / 2 + 8;
+                    ctx.strokeStyle = `rgba(252, 165, 165, 0.8)`;
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([4, 8]);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.restore();
+
+                }
+                if (this.isBuffed && this.buffSource) {
+                    ctx.fillStyle = this.buffSource.color;
+                    ctx.font = 'bold 20px "Roboto Mono"';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('↑', this.x, this.y - this.height - 15);
+                }
+            }
+            
+            drawHealBeams() {
+                this.healTargets.forEach((target, index) => {
+                    if (target.hp <= 0) return;
+                    
+                    const gradient = ctx.createLinearGradient(this.x, this.y, target.x, target.y);
+                    const color1 = this.team === 1 ? 'rgba(52, 211, 153, 0.7)' : 'rgba(134, 239, 172, 0.7)';
+                    const color2 = this.team === 1 ? 'rgba(52, 211, 153, 0.2)' : 'rgba(134, 239, 172, 0.2)';
+                    gradient.addColorStop(0, color2);
+                    gradient.addColorStop(1, color1);
+
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(target.x, target.y);
+
+                    ctx.lineWidth = 4;
+                    ctx.strokeStyle = gradient;
+                    ctx.filter = 'blur(3px)';
+                    ctx.stroke();
+                    ctx.filter = 'none';
+
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                    ctx.stroke();
+
+                    this.healParticleTimers[index] = (this.healParticleTimers[index] || 0) + gameSpeed;
+                    if (this.healParticleTimers[index] > 10) {
+                        this.healParticleTimers[index] = 0;
+                        particles.push(new Particle(this.x, this.y, this.team, false, 'heal_beam', target));
+                    }
+                });
+            }
+
+            drawLaser() {
+                if (!this.target) return;
+                const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                const startX = this.x + Math.cos(angle) * (this.width / 2 + 12);
+                const startY = this.y + Math.sin(angle) * (this.width / 2 + 12);
+                const endX = this.target.x; const endY = this.target.y;
+    
+                ctx.strokeStyle = this.team === 1 ? 'rgba(20, 184, 166, 0.4)' : 'rgba(244, 63, 94, 0.4)';
+                ctx.lineWidth = 10; ctx.filter = 'blur(5px)';
+                ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(endX, endY); ctx.stroke();
+                ctx.filter = 'none';
+    
+                ctx.strokeStyle = this.team === 1 ? 'rgba(107, 235, 222, 0.8)' : 'rgba(253, 164, 175, 0.8)';
+                ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(endX, endY); ctx.stroke();
+    
+                ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(endX, endY); ctx.stroke();
+    
+                for(let i = 0; i < 2; i++) particles.push(new Particle(endX, endY, this.team, true));
+            }
+
+            drawEquipment() {
+                let angle = this.team === 1 ? 0 : Math.PI;
+                if (this.target) angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+
+                if (this.type === 'shooter' || this.type === 'scorcher' || this.type === 'skipper' || this.type === 'sprayer') {
+                    const isSprayer = this.type === 'sprayer';
+                    const isSkipper = this.type === 'skipper';
+                    const nozzleLength = this.type === 'scorcher' ? 12 : 8;
+                    const nozzleWidth = this.type === 'scorcher' ? 8 : (isSkipper ? 6 : (isSprayer ? 6 : 5));
+                    const startX = this.x + Math.cos(angle) * (this.width / 2);
+                    const startY = this.y + Math.sin(angle) * (this.width / 2);
+                    const endX = this.x + Math.cos(angle) * (this.width / 2 + nozzleLength);
+                    const endY = this.y + Math.sin(angle) * (this.width / 2 + nozzleLength);
+                    ctx.strokeStyle = this.type === 'scorcher' ? '#451a03' : (isSkipper ? '#0d9488' : '#9ca3af');
+                    ctx.lineWidth = nozzleWidth;
+                    ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(endX, endY); ctx.stroke();
+                } else if (this.type === 'spawner') {
+                    const toolLength = 15;
+                    const clawSize = 6;
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(angle);
+                    ctx.strokeStyle = '#a1a1aa';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(this.width/2, 0);
+                    ctx.lineTo(this.width/2 + toolLength, 0);
+                    ctx.stroke();
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(this.width/2 + toolLength, 0);
+                    ctx.lineTo(this.width/2 + toolLength - clawSize, -clawSize);
+                    ctx.moveTo(this.width/2 + toolLength, 0);
+                    ctx.lineTo(this.width/2 + toolLength - clawSize, clawSize);
+                    ctx.stroke();
+                    ctx.restore();
+                } else if (this.type === 'slasher' || this.type === 'swifter' || this.type === 'skeleton') {
+                    if (this.isSlashing) {
+                        const progress = this.slashAnimProgress / this.slashAnimDuration;
+                        const arc = Math.PI / 1.5;
+                        angle += (1 - progress) * arc - (arc / 2); 
+                    }
+                    const swordLength = this.type === 'skeleton' ? 10 : 18;
+                    const swordWidth = this.type === 'skeleton' ? 2 : 4;
+                    ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(angle);
+                    const hiltPosition = this.width / 2 - 2;
+                    ctx.fillStyle = '#d1d5db';
+                    ctx.fillRect(hiltPosition, -swordWidth / 2, swordLength, swordWidth);
+                    ctx.fillStyle = '#9ca3af';
+                    ctx.fillRect(hiltPosition, -swordWidth, swordWidth, swordWidth * 2);
+                    ctx.restore();
+                } else if (this.type === 'swinger') {
+                    if (this.isSwinging) {
+                        const progress = 1 - (this.swingAnimProgress / this.swingAnimDuration);
+                        const arc = Math.PI / 1.2;
+                        const currentAngle = angle - (arc / 2) + (progress * arc);
+                        ctx.save();
+                        ctx.globalAlpha = 0.5 * Math.sin(progress * Math.PI);
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                        ctx.beginPath();
+                        ctx.moveTo(this.x, this.y);
+                        ctx.arc(this.x, this.y, this.attackRange + 10, currentAngle - 0.2, currentAngle + 0.2);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.restore();
+                    }
+                    const swordLength = 25;
+                    const swordWidth = 6;
+                    ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(angle);
+                    const hiltPosition = this.width / 2 - 2;
+                    ctx.fillStyle = '#a1a1aa';
+                    ctx.fillRect(hiltPosition, -swordWidth / 2, swordLength, swordWidth);
+                    ctx.fillStyle = '#71717a';
+                    ctx.fillRect(hiltPosition, -swordWidth, swordWidth, swordWidth * 2);
+                    ctx.restore();
+                } else if (this.type === 'shielder') {
+                    const shieldWidth = 8; const shieldHeight = 25;
+                    ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(angle);
+                    ctx.fillStyle = '#9ca3af';
+                    ctx.fillRect(this.width / 2, -shieldHeight / 2, shieldWidth, shieldHeight);
+                    if (this.deflectAnim > 0) {
+                        ctx.fillStyle = `rgba(255, 255, 255, ${this.deflectAnim / 10})`;
+                        ctx.fillRect(this.width / 2, -shieldHeight / 2, shieldWidth, shieldHeight);
+                    }
+                    ctx.restore();
+                } else if (this.type === 'shocker') {
+                    const bodyRadius = this.width / 2;
+                    const prongColor = this.team === 1 ? '#fef9c3' : '#cffafe';
+                    ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(angle);
+                    ctx.strokeStyle = prongColor; ctx.lineWidth = 3;
+                    ctx.beginPath(); ctx.moveTo(bodyRadius, -5); ctx.lineTo(bodyRadius + 8, -5); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(bodyRadius, 5); ctx.lineTo(bodyRadius + 8, 5); ctx.stroke();
+                    ctx.restore();
+                } else if (this.type === 'slammer') {
+                    const hammerLength = 22; const handleWidth = 4;
+                    const headWidth = 12; const headHeight = 10;
+                    ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(angle);
+                    const hiltPosition = this.width / 2 - 2;
+                    ctx.fillStyle = '#6b4629';
+                    ctx.fillRect(hiltPosition, -handleWidth / 2, hammerLength, handleWidth);
+                    ctx.fillStyle = '#a8a29e';
+                    ctx.fillRect(hiltPosition + hammerLength - headWidth, -headHeight / 2, headWidth, headHeight);
+                    ctx.restore();
+                } else if (this.type === 'skirmisher') {
+                    const bowSize = 15;
+                    ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(angle);
+                    ctx.strokeStyle = '#854d0e'; ctx.lineWidth = 3;
+                    ctx.beginPath(); ctx.arc(this.width / 4, 0, bowSize, -Math.PI / 2.5, Math.PI / 2.5);
+                    ctx.stroke(); ctx.restore();
+                } else if (this.type === 'streamer') {
+                    const crystalSize = 8;
+                    ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(angle);
+                    ctx.fillStyle = this.team === 1 ? '#a5f3fc' : '#fda4af';
+                    ctx.fillRect(this.width / 2, -crystalSize / 2, crystalSize * 1.5, crystalSize);
+                    ctx.strokeStyle = this.color; ctx.lineWidth = 2;
+                    ctx.strokeRect(this.width / 2, -crystalSize / 2, crystalSize * 1.5, crystalSize);
+                    ctx.restore();
+                } else if (this.type === 'summoner') {
+                    const staffLength = 25; const staffWidth = 4;
+                    ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(angle);
+                    ctx.fillStyle = '#4a044e';
+                    ctx.fillRect(this.width / 2, -staffWidth / 2, staffLength, staffWidth);
+                    ctx.fillStyle = this.team === 1 ? '#e879f9' : '#f9a8d4';
+                    ctx.beginPath(); ctx.arc(this.width/2 + staffLength, 0, 5, 0, Math.PI*2); ctx.fill();
+                    ctx.restore();
+                } else if (this.type === 'sustainer') {
+                    const staffLength = 24; const staffWidth = 4;
+                    const gemSize = 6;
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(angle);
+                    ctx.fillStyle = '#b45309';
+                    ctx.fillRect(this.width / 2, -staffWidth / 2, staffLength, staffWidth);
+                    ctx.fillStyle = this.team === 1 ? '#10b981' : '#22d3ee';
+                    ctx.beginPath();
+                    ctx.arc(this.width / 2 + staffLength, 0, gemSize, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                    ctx.restore();
+                } else if (this.type === 'synchronizer') {
+                    const bookWidth = 12;
+                    const bookHeight = 15;
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(angle + Math.PI / 4); 
+                    ctx.fillStyle = '#6d28d9'; 
+                    ctx.fillRect(-bookWidth / 2, -bookHeight / 2, bookWidth, bookHeight);
+                    ctx.fillStyle = '#f5d0fe'; 
+                    ctx.fillRect(-bookWidth/2 + 2, -bookHeight/2 + 2, bookWidth-4, bookHeight-4);
+                    ctx.restore();
+                } else if (this.type === 'sniper') {
+                    const rifleLength = 28; const rifleWidth = 4;
+                    ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(angle);
+                    ctx.fillStyle = '#44403c';
+                    ctx.fillRect(this.width/2-4, -rifleWidth/2, rifleLength, rifleWidth);
+                    ctx.restore();
+                } else if (this.type === 'spiker') {
+                    const spikeCount = 8;
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.fillStyle = this.team === 1 ? '#a3e635' : '#facc15';
+                    for (let i = 0; i < spikeCount; i++) {
+                        ctx.rotate(Math.PI * 2 / spikeCount);
+                        ctx.beginPath();
+                        ctx.moveTo(this.width/2, 0);
+                        ctx.lineTo(this.width/2 + 6, -3);
+                        ctx.lineTo(this.width/2 + 6, 3);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                    ctx.restore();
+                }
+            }
+
+            findTarget(enemies) {
+                if (enemies.length === 0) { this.target = null; return; }
+
+                if (this.type === 'swifter' || this.type === 'sniper') {
+                    let furthestEnemy = null; let maxDist = -Infinity;
+                    enemies.forEach(e => {
+                        const dist = this.team === 1 ? e.x : canvas.width - e.x;
+                        if (dist > maxDist) { maxDist = dist; furthestEnemy = e; }
+                    });
+                    this.target = furthestEnemy;
+                } else {
+                    let closestEnemy = null; let minDistance = Infinity;
+                    enemies.forEach(e => {
+                        const d = getDistance(this, e);
+                        if (d < minDistance) { minDistance = d; closestEnemy = e; }
+                    });
+                    this.target = closestEnemy;
+                }
+            }
+            
+            findStopperTargets(enemies) {
+                const priority = ['sustainer', 'synchronizer', 'summoner', 'spawner', 'sniper', 'streamer', 'slither'];
+                let potentialTargets = enemies.filter(e => 
+                    !e.isStopped && 
+                    !this.stoppedTargets.includes(e) && 
+                    e.type !== 'sentry' && 
+                    e.type !== 'skeleton' &&
+                    e.type !== 'snake'
+                );
+
+                if (potentialTargets.length === 0) return [];
+
+                potentialTargets.sort((a, b) => {
+                    const priorityA = priority.indexOf(a.type);
+                    const priorityB = priority.indexOf(b.type);
+                    if (priorityA !== -1 && priorityB === -1) return -1;
+                    if (priorityA === -1 && priorityB !== -1) return 1;
+                    if (priorityA !== -1 && priorityB !== -1 && priorityA !== priorityB) return priorityA - priorityB;
+                    return getDistance(this, a) - getDistance(this, b);
+                });
+                
+                return potentialTargets;
+            }
+
+            applySeparation(friendlies) {
+                if (this.type === 'shielder' || this.type === 'sentry') return;
+                let steerX = 0, steerY = 0;
+                friendlies.forEach(other => {
+                    if (other !== this && other.type !== 'shielder') {
+                        const d = getDistance(this, other);
+                        if (d > 0 && d < this.width * 1.5) {
+                            const diffX = this.x - other.x; const diffY = this.y - other.y;
+                            steerX += diffX / d; steerY += diffY / d;
+                        }
+                    }
+                });
+                this.x += steerX * 0.5 * gameSpeed; this.y += steerY * 0.5 * gameSpeed;
+            }
+
+            stun(durationInSeconds) {
+                this.isStunned = true; this.stunDuration = durationInSeconds * 60;
+            }
+
+            knockback(angle, distance) {
+                this.isBeingKnockedBack = true; this.knockbackProgress = 0;
+                this.knockbackStartX = this.x; this.knockbackStartY = this.y;
+                this.knockbackTargetX = this.x + Math.cos(angle) * distance;
+                this.knockbackTargetY = this.y + Math.sin(angle) * distance;
+            }
+            
+            update(friendlies, enemies) {
+                if (this.isBuffed) {
+                    this.buffDuration -= 1 * gameSpeed;
+                    if (this.buffDuration <= 0 || (this.buffSource && this.buffSource.hp <= 0)) {
+                        this.isBuffed = false; this.buffMultiplier = 1; this.buffSource = null;
+                    }
+                }
+                if (this.isStunned) {
+                    this.stunDuration -= 1 * gameSpeed;
+                    if (this.stunDuration <= 0) this.isStunned = false;
+                }
+                 if (this.isStopped) {
+                    let durationDecrease = 1 * gameSpeed;
+                    if (this.type === 'swifter') {
+                        durationDecrease *= 4; // Swifters break free 4x faster
+                    }
+                    this.stopDuration -= durationDecrease;
+                    this.stopEffectAngle += 0.05 * gameSpeed;
+                    if (this.type === 'synchronizer' && this.linkedAlly && this.linkedAlly.buffSource === this) {
+                        this.linkedAlly.isBuffed = false;
+                        this.linkedAlly.buffMultiplier = 1;
+                        this.linkedAlly.buffSource = null;
+                        this.linkedAlly = null;
+                    }
+                    if (this.type === 'slither' && this.mySnake && this.mySnake.hp > 0) {
+                        animations.push(new Puff(this.mySnake.x, this.mySnake.y));
+                        this.mySnake.hp = 0;
+                        this.mySnake = null;
+                    }
+                    if (this.stopDuration <= 0) {
+                        this.isStopped = false;
+                        if (this.stoppedBy) {
+                            this.stoppedBy.stoppedTargets = this.stoppedBy.stoppedTargets.filter(t => t !== this);
+                        }
+                        this.stoppedBy = null;
+                    }
+                }
+                if (this.isBeingKnockedBack) {
+                    this.knockbackProgress = Math.min(1, this.knockbackProgress + 0.08 * gameSpeed);
+                    this.x = lerp(this.knockbackStartX, this.knockbackTargetX, this.knockbackProgress);
+                    this.y = lerp(this.knockbackStartY, this.knockbackTargetY, this.knockbackProgress);
+                    if (this.knockbackProgress >= 1) this.isBeingKnockedBack = false;
+                }
+
+                if (this.type === 'stopper' && this.isCasting) {
+                    this.castProgress += 1 * gameSpeed;
+                    if (this.castProgress >= this.castDuration) this.isCasting = false;
+                    return; 
+                }
+
+                if (this.isStunned || this.isBeingKnockedBack || this.isStopped) { this.relX = this.x / canvas.width; this.relY = this.y / canvas.height; return; }
+                
+                if (this.type === 'streamer') {
+                    if (this.isStreaming) {
+                        this.streamProgress -= 1 * gameSpeed;
+                        if (!this.target || this.target.hp <= 0) this.findTarget(enemies);
+                        if (this.streamProgress <= 0 || !this.target) this.isStreaming = false;
+                        else this.target.takeDamage(this.getAttackDamage(), this);
+                        this.relX = this.x / canvas.width; this.relY = this.y / canvas.height; return; 
+                    }
+                }
+                if (this.type === 'sustainer') {
+                    if (this.isHealing) {
+                        this.healProgress -= 1 * gameSpeed;
+                        if (this.healProgress <= 0) {
+                            this.isHealing = false; this.healTargets = []; this.lastAttackTime = Date.now();
+                        } else {
+                            this.healTargets = this.healTargets.filter(t => t.hp > 0);
+                            this.healTargets.forEach(target => {
+                                if (target.hp < target.maxHp) {
+                                    target.hp = Math.min(target.maxHp, target.hp + this.healAmount * gameSpeed);
+                                }
+                            });
+                        }
+                        this.relX = this.x / canvas.width; this.relY = this.y / canvas.height; return;
+                    }
+                }
+                
+                if (this.isSlashing) { this.slashAnimProgress -= 1 * gameSpeed; if (this.slashAnimProgress <= 0) this.isSlashing = false; }
+                if (this.isSwinging) { this.swingAnimProgress -= 1 * gameSpeed; if (this.swingAnimProgress <= 0) this.isSwinging = false; }
+                if (this.deflectAnim > 0) this.deflectAnim -= 1 * gameSpeed;
+                
+                if (this.type === 'skirmisher' && this.isShooting) {
+                    this.shootAnimProgress -= 1 * gameSpeed;
+                    if (this.shootAnimProgress <= 0) this.isShooting = false;
+                    this.relX = this.x / canvas.width; this.relY = this.y / canvas.height;
+                    return;
+                }
+                if (this.type === 'sniper' && this.isAiming) {
+                    this.aimProgress += 1 * gameSpeed;
+                    if (!this.target || this.target.hp <= 0) {
+                        this.isAiming = false; this.aimProgress = 0;
+                    } else if (this.aimProgress >= this.aimDuration) {
+                        this.attack(friendlies, enemies);
+                        this.isAiming = false; this.aimProgress = 0;
+                    }
+                    this.relX = this.x / canvas.width; this.relY = this.y / canvas.height;
+                    return;
+                }
+
+                if (this.type === 'summoner') {
+                    this.mySkeletons = this.mySkeletons.filter(s => s.hp > 0);
+                }
+                
+                this.applySeparation(friendlies);
+
+                if (this.type === 'sustainer') {
+                    const alliesToHeal = friendlies.filter(f => f.hp < f.maxHp && f !== this).sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp));
+                    if (alliesToHeal.length > 0) this.attack(friendlies, enemies);
+
+                    let averageX = 0; let count = 0;
+                    friendlies.forEach(f => { if (f !== this) { averageX += f.x; count++; } });
+                    if (count > 0) {
+                        const targetX = (averageX / count) - (this.team === 1 ? 50 : -50);
+                        if (Math.abs(this.x - targetX) > 10) this.x += Math.sign(targetX - this.x) * this.speed * gameSpeed;
+                    } else this.x += (this.team === 1 ? this.speed * 0.5 : -this.speed * 0.5) * gameSpeed;
+
+                } else if (this.type === 'synchronizer') {
+                    let bestTarget = null;
+                    let maxPower = -1;
+                    friendlies.forEach(f => {
+                        if (f !== this && f.type !== 'synchronizer' && f.type !== 'sustainer' && f.type !== 'shielder' && !(f.isBuffed && f.buffSource && f.buffSource.type === 'synchronizer')) {
+                            if (getDistance(this, f) <= this.attackRange) {
+                                let power = (f.attackDamage || 0) / (f.attackCooldown / 1000 || 1); // Simple DPS
+
+                                if (f.type === 'summoner') {
+                                    const skeletonDps = UNIT_SPECS['skeleton'].attackDamage / (UNIT_SPECS['skeleton'].attackCooldown / 1000);
+                                    power += 2 * skeletonDps;
+                                } else if (f.type === 'spawner') {
+                                    const sentryDps = UNIT_SPECS['sentry'].attackDamage / (UNIT_SPECS['sentry'].attackCooldown / 1000);
+                                    power += 2 * sentryDps;
+                                } else if (f.type === 'slither') {
+                                     const snakeDps = UNIT_SPECS['snake'].attackDamage / (UNIT_SPECS['snake'].attackCooldown / 1000);
+                                     power += snakeDps;
+                                }
+
+                                if (power > maxPower) {
+                                    maxPower = power;
+                                    bestTarget = f;
+                                }
+                            }
+                        }
+                    });
+                    
+                    if (this.linkedAlly && this.linkedAlly !== bestTarget) {
+                        if (this.linkedAlly.hp > 0 && this.linkedAlly.buffSource === this) {
+                            this.linkedAlly.isBuffed = false;
+                            this.linkedAlly.buffMultiplier = 1;
+                            this.linkedAlly.buffSource = null;
+                            if(this.linkedAlly.type === 'summoner') { this.linkedAlly.mySkeletons.forEach(s => { s.isBuffed = false; s.buffMultiplier = 1; s.buffSource = null; }); }
+                            else if (this.linkedAlly.type === 'spawner') { this.linkedAlly.mySentries.forEach(s => { s.isBuffed = false; s.buffMultiplier = 1; s.buffSource = null; }); }
+                            else if (this.linkedAlly.type === 'slither' && this.linkedAlly.mySnake) { this.linkedAlly.mySnake.isBuffed = false; this.linkedAlly.mySnake.buffMultiplier = 1; this.linkedAlly.mySnake.buffSource = null; }
+                        }
+                    }
+
+                    this.linkedAlly = bestTarget;
+
+                    if (this.linkedAlly) {
+                        const buffAmount = UNIT_SPECS.synchronizer.buffAmount;
+                        if (!this.linkedAlly.isBuffed || this.linkedAlly.buffSource !== this) {
+                            this.linkedAlly.applyBuff(buffAmount, 99999, this); 
+                        }
+                        
+                        if(this.linkedAlly.type === 'summoner') { this.linkedAlly.mySkeletons.forEach(s => { if (!s.isBuffed || s.buffSource !== this) s.applyBuff(buffAmount, 99999, this); }); }
+                        else if (this.linkedAlly.type === 'spawner') { this.linkedAlly.mySentries.forEach(s => { if (!s.isBuffed || s.buffSource !== this) s.applyBuff(buffAmount, 99999, this); }); }
+                        else if (this.linkedAlly.type === 'slither' && this.linkedAlly.mySnake) { if (!this.linkedAlly.mySnake.isBuffed || this.linkedAlly.mySnake.buffSource !== this) this.linkedAlly.mySnake.applyBuff(buffAmount, 99999, this); }
+                        
+                        const idealDist = 80;
+                        const d = getDistance(this, this.linkedAlly);
+                        if (d > idealDist) {
+                            const angle = Math.atan2(this.linkedAlly.y - this.y, this.linkedAlly.x - this.x);
+                            this.x += Math.cos(angle) * this.speed * gameSpeed;
+                            this.y += Math.sin(angle) * this.speed * gameSpeed;
+                        }
+                    } else {
+                        this.x += (this.team === 1 ? this.speed * 0.5 : -this.speed * 0.5) * gameSpeed;
+                    }
+
+
+                } else if (this.type === 'spinner') {
+                    if (!this.isStopped) {
+                        const baseRotationSpeed = 0.03;
+                        const attackRotationSpeed = 0.12;
+                        if (this.isAttacking) {
+                            this.attackProgress += 1 * gameSpeed;
+                            this.orbAngle += attackRotationSpeed * gameSpeed;
+                        } else {
+                            this.orbAngle += baseRotationSpeed * gameSpeed;
+                        }
+                    } else {
+                        this.isAttacking = false;
+                    }
+                    
+                    let currentRadius = this.orbRadius;
+                    if (this.isAttacking) {
+                        const progress = this.attackProgress / this.attackDuration;
+                        const contractedRadius = 15;
+                        const peakTime = 0.4; 
+                        const contractTime = 0.8; 
+                        if (progress < peakTime) currentRadius = lerp(this.orbRadius, this.orbAttackRadius, progress / peakTime);
+                        else if (progress < contractTime) currentRadius = lerp(this.orbAttackRadius, contractedRadius, (progress - peakTime) / (contractTime - peakTime));
+                        else currentRadius = lerp(contractedRadius, this.orbRadius, (progress - contractTime) / (1 - contractTime));
+                        if (this.attackProgress >= this.attackDuration) { this.isAttacking = false; this.lastAttackTime = Date.now(); }
+                    }
+                    
+                    if (this.isAttacking) {
+                        enemies.forEach(enemy => {
+                            if (this.hitDuringAttack.includes(enemy)) return;
+                            for (const orb of this.orbs) {
+                                const angle = this.orbAngle + orb.angleOffset;
+                                const orbPos = { x: this.x + Math.cos(angle) * currentRadius, y: this.y + Math.sin(angle) * currentRadius };
+                                if (getDistance(orbPos, enemy) < enemy.width / 2 + 8) {
+                                    enemy.takeDamage(this.getAttackDamage(), this);
+                                    this.hitDuringAttack.push(enemy);
+                                    for(let i=0; i<3; i++) particles.push(new Particle(orbPos.x, orbPos.y, this.team, true));
+                                    break;
+                                }
+                            }
+                        });
+                    }
+
+                    const allProjectiles = [...projectiles, ...specialProjectiles];
+                    const projectilesToDestroy = new Set();
+                    allProjectiles.forEach(p => {
+                        if (p.team !== this.team) {
+                            for (const orb of this.orbs) {
+                                const angle = this.orbAngle + orb.angleOffset;
+                                const orbPos = { x: this.x + Math.cos(angle) * currentRadius, y: this.y + Math.sin(angle) * currentRadius };
+                                if (getDistance(p, orbPos) < p.radius + 8) {
+                                    projectilesToDestroy.add(p);
+                                    for(let i=0; i<5; i++) particles.push(new Particle(p.x, p.y, this.team, true));
+                                    break;
+                                }
+                            }
+                        }
+                    });
+                    if (projectilesToDestroy.size > 0) {
+                        projectiles = projectiles.filter(p => !projectilesToDestroy.has(p));
+                        specialProjectiles = specialProjectiles.filter(p => !projectilesToDestroy.has(p));
+                    }
+                    
+                    this.findTarget(enemies);
+                    if (this.target) {
+                        if (getDistance(this, this.target) > this.attackRange) {
+                            const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                            this.x += Math.cos(angle) * this.speed * gameSpeed;
+                            this.y += Math.sin(angle) * this.speed * gameSpeed;
+                        } else {
+                            this.attack(friendlies, enemies);
+                        }
+                    } else {
+                        this.x += (this.team === 1 ? this.speed : -this.speed) * gameSpeed;
+                    }
+                } else if (this.type === 'spawner') {
+                    this.mySentries = this.mySentries.filter(s => s.hp > 0);
+                    const now = Date.now();
+                    if (this.mySentries.length < 2 && now - this.lastSpawnTime > this.spawnCooldown / gameSpeed) {
+                        this.lastSpawnTime = now;
+                        const spawnDist = 80;
+                        const angle = this.target ? Math.atan2(this.target.y - this.y, this.target.x - this.x) : (this.team === 1 ? 0 : Math.PI);
+                        const spawnX = this.x + Math.cos(angle) * spawnDist;
+                        const spawnY = this.y + Math.sin(angle) * spawnDist + (Math.random() - 0.5) * 40;
+                        
+                        const newSentry = new Unit(spawnX, spawnY, this.team, 'sentry', spawnX/canvas.width, spawnY/canvas.height);
+                        newSentry.spawner = this;
+                        if (this.isBuffed && this.buffSource && this.buffSource.type === 'synchronizer') {
+                            newSentry.applyBuff(this.buffMultiplier, 99999, this.buffSource);
+                        }
+                        units.push(newSentry);
+                        this.mySentries.push(newSentry);
+                        updateUnitCounts();
+                    }
+                    this.findTarget(enemies);
+                    if (this.target) {
+                        if (getDistance(this, this.target) > this.attackRange) {
+                            const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                            this.x += Math.cos(angle) * this.speed * gameSpeed;
+                            this.y += Math.sin(angle) * this.speed * gameSpeed;
+                        } else this.attack(friendlies, enemies);
+                    } else this.x += (this.team === 1 ? this.speed : -this.speed) * gameSpeed;
+                } else if (this.type === 'sentry') {
+                    this.findTarget(enemies);
+                    if(this.target) this.attack(friendlies, enemies);
+                } else if (this.type === 'slither') {
+                    if (this.mySnake && this.mySnake.hp <= 0) this.mySnake = null;
+                    if (!this.mySnake) {
+                        this.attack(friendlies, enemies); // Attempt to summon if snake is not present
+                    }
+                     // Slither tries to stay behind friendly units
+                    let averageX = 0; let count = 0;
+                    friendlies.forEach(f => { if (f !== this) { averageX += f.x; count++; } });
+                    if (count > 0) {
+                        const targetX = (averageX / count) - (this.team === 1 ? 80 : -80);
+                        if (Math.abs(this.x - targetX) > 20) this.x += Math.sign(targetX - this.x) * this.speed * gameSpeed;
+                    } else this.x += (this.team === 1 ? this.speed * 0.5 : -this.speed * 0.5) * gameSpeed;
+                
+                } else if (this.type === 'snake') {
+                     this.body[0].x = this.x;
+                     this.body[0].y = this.y;
+                     for (let i = 1; i < this.body.length; i++) {
+                         const leadSegment = this.body[i-1];
+                         const currentSegment = this.body[i];
+                         const angle = Math.atan2(leadSegment.y - currentSegment.y, leadSegment.x - currentSegment.x);
+                         const dist = getDistance(leadSegment, currentSegment);
+                         const segmentSpacing = 5;
+                         if (dist > segmentSpacing) {
+                             currentSegment.x += Math.cos(angle) * (dist - segmentSpacing);
+                             currentSegment.y += Math.sin(angle) * (dist - segmentSpacing);
+                         }
+                     }
+                    this.findTarget(enemies);
+                     if (this.target) {
+                         if (getDistance(this, this.target) > this.attackRange) {
+                             const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                             this.x += Math.cos(angle) * this.speed * gameSpeed;
+                             this.y += Math.sin(angle) * this.speed * gameSpeed;
+                         } else {
+                             this.attack(friendlies, enemies);
+                         }
+                     } else {
+                         this.x += (this.team === 1 ? this.speed * 0.5 : -this.speed * 0.5) * gameSpeed;
+                     }
+                } else if (this.type === 'stopper') {
+                    this.stoppedTargets = this.stoppedTargets.filter(t => t.hp > 0 && t.isStopped && t.stoppedBy === this);
+
+                    if (this.stoppedTargets.length < this.maxStoppedTargets) {
+                        this.target = this.findStopperTargets(enemies)[0] || null;
+                    } else {
+                        this.target = null;
+                    }
+                    
+                    let closestEnemy = null;
+                    let minDistance = Infinity;
+                    enemies.forEach(e => {
+                        const d = getDistance(this, e);
+                        if (d < minDistance) {
+                            minDistance = d;
+                            closestEnemy = e;
+                        }
+                    });
+
+                    const kitingRange = 200; 
+                    if (closestEnemy && minDistance < kitingRange) {
+                        const angle = Math.atan2(closestEnemy.y - this.y, closestEnemy.x - this.x);
+                        this.x -= Math.cos(angle) * this.speed * gameSpeed;
+                        this.y -= Math.sin(angle) * this.speed * gameSpeed;
+                    } else if (this.target) {
+                        if (getDistance(this, this.target) > this.attackRange) {
+                            const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                            this.x += Math.cos(angle) * this.speed * gameSpeed;
+                            this.y += Math.sin(angle) * this.speed * gameSpeed;
+                        } else {
+                            this.attack(friendlies, enemies);
+                        }
+                    } else {
+                         this.x += (this.team === 1 ? this.speed * 0.2 : -this.speed * 0.2) * gameSpeed;
+                    }
+                    
+                    this.stoppedTargets.forEach(target => {
+                        if (target.hp > 0) {
+                            target.takeDamage(this.getAttackDamage() * gameSpeed, this);
+                            if (Math.random() < 0.1) {
+                               particles.push(new Particle(target.x, target.y, this.team, true, 'stopper_damage'));
+                            }
+                        }
+                    });
+
+                } else {
+                    this.findTarget(enemies);
+                    
+                    if (this.type === 'skirmisher' || this.type === 'summoner') {
+                        const kitingRange = this.type === 'summoner' ? 400 : 80;
+                        let isCurrentlyKiting = this.target && getDistance(this, this.target) < kitingRange;
+                        if (isCurrentlyKiting) {
+                            const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                            this.x -= Math.cos(angle) * this.speed * gameSpeed;
+                            this.y -= Math.sin(angle) * this.speed * gameSpeed;
+                            this.attack(friendlies, enemies);
+                        } else {
+                             if (this.target) {
+                                if (getDistance(this, this.target) > this.attackRange) {
+                                    const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                                    this.x += Math.cos(angle) * this.speed * gameSpeed;
+                                    this.y += Math.sin(angle) * this.speed * gameSpeed;
+                                } else this.attack(friendlies, enemies);
+                            } else this.x += (this.team === 1 ? this.speed : -this.speed) * gameSpeed;
+                        }
+                    } else if (this.type === 'shielder') {
+                        const keepDistance = 60;
+                        if (!this.target || getDistance(this, this.target) > keepDistance) {
+                             this.x += (this.team === 1 ? this.speed : -this.speed) * gameSpeed;
+                        }
+                    } else {
+                        if (this.target) {
+                            if (getDistance(this, this.target) > this.attackRange) {
+                                const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                                this.x += Math.cos(angle) * this.speed * gameSpeed;
+                                this.y += Math.sin(angle) * this.speed * gameSpeed;
+                            } else {
+                                this.attack(friendlies, enemies);
+                            }
+                        } else {
+                            this.x += (this.team === 1 ? this.speed : -this.speed) * gameSpeed;
+                        }
+                    }
+                }
+
+                const radius = this.width / 2;
+                this.x = Math.max(radius, Math.min(this.x, canvas.width - radius));
+                this.y = Math.max(radius, Math.min(this.y, canvas.height - radius));
+                this.relX = this.x / canvas.width; this.relY = this.y / canvas.height;
+            }
+            
+            attack(friendlies, enemies) {
+                if (this.isStopped) return;
+                const now = Date.now();
+                if (now - this.lastAttackTime > this.getAttackCooldown() / gameSpeed) {
+                    if (this.type === 'shielder' || this.type === 'synchronizer') return;
+
+                    if (this.type === 'sniper') {
+                        if (!this.isAiming) { this.isAiming = true; this.aimProgress = 0; } 
+                        else { specialProjectiles.push(new SniperBullet(this, this.target)); this.lastAttackTime = now; }
+                        return;
+                    }
+                    
+                    this.lastAttackTime = now;
+                    if (this.type === 'shooter') {
+                        projectiles.push(new Projectile(this, this.target, this.getAttackDamage(), this.team));
+                    } else if (this.type === 'sprayer') {
+                        if (this.target) {
+                            const baseAngle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                            const spread = UNIT_SPECS.sprayer.spreadAngle;
+                            const pelletAngle = baseAngle + (Math.random() - 0.5) * spread;
+                            specialProjectiles.push(new SprayerBullet(this, pelletAngle));
+                        }
+                    } else if (this.type === 'skirmisher') {
+                        this.isShooting = true; this.shootAnimProgress = this.shootAnimDuration;
+                        projectiles.push(new Projectile(this, this.target, this.getAttackDamage(), this.team));
+                    } else if (this.type === 'slasher' || this.type === 'swifter' || this.type === 'skeleton' || this.type === 'spiker' || this.type === 'snake') {
+                         if (this.target && getDistance(this, this.target) <= this.attackRange + 5) {
+                            this.target.takeDamage(this.getAttackDamage(), this);
+                            if (this.type !== 'snake') {
+                                if (!this.isSlashing) { this.isSlashing = true; this.slashAnimProgress = this.slashAnimDuration; }
+                            }
+                         }
+                    } else if (this.type === 'slammer') {
+                        if (this.target && getDistance(this, this.target) <= this.attackRange + 5) {
+                            this.target.takeDamage(this.getAttackDamage(), this);
+                            this.successfulAttacks++;
+                            if (this.successfulAttacks >= 2) {
+                                this.successfulAttacks = 0;
+                                const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                                this.target.stun(1.5); this.target.knockback(angle, 120);
+                            }
+                            if (!this.isSlashing) { this.isSlashing = true; this.slashAnimProgress = this.slashAnimDuration; }
+                         }
+                    } else if (this.type === 'scorcher') {
+                        specialProjectiles.push(new Fireball(this, this.target));
+                    } else if (this.type === 'shocker') {
+                        animations.push(new ChainLightning(this, this.target, enemies));
+                    } else if (this.type === 'streamer') {
+                        if(this.target) { this.isStreaming = true; this.streamProgress = this.streamDuration; }
+                    } else if (this.type === 'summoner') {
+                        this.mySkeletons = this.mySkeletons.filter(s => s.hp > 0);
+                        if (this.mySkeletons.length < 2) {
+                            this.lastSummonTime = now;
+                            const spawnX = this.x + (this.team === 1 ? 30 : -30) + (Math.random() - 0.5) * 10;
+                            const spawnY = this.y + (Math.random() - 0.5) * 40;
+                            const newSkeleton = new Unit(spawnX, spawnY, this.team, 'skeleton', spawnX / canvas.width, spawnY / canvas.height);
+                            if (this.isBuffed && this.buffSource && this.buffSource.type === 'synchronizer') {
+                                newSkeleton.applyBuff(this.buffMultiplier, 99999, this.buffSource);
+                            }
+                            units.push(newSkeleton);
+                            this.mySkeletons.push(newSkeleton);
+                            updateUnitCounts();
+                        }
+                    } else if (this.type === 'slither') {
+                        if (!this.mySnake) {
+                            const spawnX = this.x + (this.team === 1 ? 40 : -40);
+                            const spawnY = this.y;
+                            const newSnake = new Unit(spawnX, spawnY, this.team, 'snake', spawnX / canvas.width, spawnY / canvas.height);
+                            newSnake.slither = this;
+                            if (this.isBuffed && this.buffSource && this.buffSource.type === 'synchronizer') {
+                                newSnake.applyBuff(this.buffMultiplier, 99999, this.buffSource);
+                            }
+                            units.push(newSnake);
+                            this.mySnake = newSnake;
+                            updateUnitCounts();
+                        }
+                    } else if (this.type === 'sustainer') {
+                        if (!this.isHealing) {
+                            this.isHealing = true;
+                            this.healProgress = this.healDuration;
+                            this.healTargets = friendlies
+                                .filter(f => f.hp < f.maxHp && f !== this)
+                                .sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))
+                                .slice(0, 3);
+                            this.healParticleTimers = new Array(this.healTargets.length).fill(0);
+                        }
+                    } else if (this.type === 'skipper') {
+                        specialProjectiles.push(new RicochetBullet(this, this.target));
+                    } else if (this.type === 'spinner') {
+                        if (!this.isAttacking) {
+                            this.isAttacking = true;
+                            this.attackProgress = 0;
+                            this.hitDuringAttack = [];
+                        }
+                    } else if (this.type === 'spawner') {
+                         projectiles.push(new Projectile(this, this.target, this.getAttackDamage(), this.team));
+                    } else if (this.type === 'sentry') {
+                        specialProjectiles.push(new SentryBullet(this, this.target));
+                    } else if (this.type === 'stopper') {
+                        const targetsToStop = this.findStopperTargets(enemies)
+                            .filter(t => getDistance(this, t) <= this.attackRange)
+                            .slice(0, this.maxStoppedTargets - this.stoppedTargets.length);
+
+                        if (targetsToStop.length > 0) {
+                            this.isCasting = true;
+                            this.castProgress = 0;
+                            targetsToStop.forEach(target => {
+                                target.isStopped = true;
+                                target.stopDuration = this.stopEffectDuration / (1000/60); 
+                                target.stoppedBy = this;
+                                target.lastAttackTime = Date.now(); 
+                                if(target.type === 'streamer') target.isStreaming = false;
+                                if(target.type === 'sustainer') target.isHealing = false;
+                                this.stoppedTargets.push(target);
+                                animations.push(new StopEffect(this, target));
+                            });
+                        }
+                    } else if (this.type === 'swinger') {
+                        const swingArc = Math.PI / 1.5; // 120 degrees
+                        const baseAngle = this.target ? Math.atan2(this.target.y - this.y, this.target.x - this.x) : (this.team === 1 ? 0 : Math.PI);
+                        
+                        enemies.forEach(enemy => {
+                            const dist = getDistance(this, enemy);
+                            if (dist <= this.attackRange) {
+                                const angleToEnemy = Math.atan2(enemy.y - this.y, enemy.x - this.x);
+                                
+                                let angleDiff = Math.abs(baseAngle - angleToEnemy);
+                                if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
+
+                                if (angleDiff <= swingArc / 2) {
+                                    enemy.takeDamage(this.getAttackDamage(), this);
+                                }
+                            }
+                        });
+                        this.isSwinging = true;
+                        this.swingAnimProgress = this.swingAnimDuration;
+                    }
+                }
+            }
+            takeDamage(damage, attacker = null) {
+                 this.hp -= damage; 
+                 if (this.type === 'spiker' && attacker && this.reflectDamage > 0 && (attacker.type === 'slasher' || attacker.type === 'swifter' || attacker.type === 'slammer' || attacker.type === 'skeleton' || attacker.type === 'spiker' || attacker.type === 'swinger' || attacker.type === 'snake')) {
+                     if (getDistance(this, attacker) <= (this.width/2 + attacker.width/2 + 10)) {
+                         attacker.takeDamage(this.reflectDamage);
+                         for(let i=0; i < 5; i++) {
+                             particles.push(new Particle(this.x, this.y, this.team, true, 'reflect'));
+                         }
+                     }
+                 }
+            }
+            deflect() { this.deflectAnim = 10; }
+        }
+        
+        class Projectile {
+            constructor(shooter, target, damage, team) {
+                this.shooter = shooter; this.target = target;
+                this.damage = damage; this.team = team; this.speed = 4; this.radius = 4;
+                const angle = Math.atan2(this.target.y - shooter.y, this.target.x - shooter.x);
+                const nozzleTipDist = shooter.width / 2 + 8;
+                this.x = shooter.x + Math.cos(angle) * nozzleTipDist; this.y = shooter.y + Math.sin(angle) * nozzleTipDist;
+            }
+            update(enemies) { // Changed to accept enemies, though it doesn't use it directly
+                const enemyShielders = units.filter(u => u.team !== this.team && u.type === 'shielder');
+                for (const shielder of enemyShielders) {
+                    if (getDistance(this, shielder) < shielder.width / 2 + 5) {
+                        shielder.deflect();
+                        if (Math.random() < 0.5) { 
+                            this.team = shielder.team; this.target = this.shooter; this.shooter = shielder; return true;
+                        } else { shielder.takeDamage(this.damage * 0.5, this.shooter); return false; }
+                    }
+                }
+                if (!this.target || this.target.hp <= 0) return false;
+                const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                this.x += Math.cos(angle) * this.speed * gameSpeed;
+                this.y += Math.sin(angle) * this.speed * gameSpeed;
+                if (getDistance(this, this.target) < this.target.width / 2) { this.target.takeDamage(this.damage, this.shooter); return false; }
+                return true;
+            }
+            draw() {
+                 if (this.shooter && this.shooter.type === 'skirmisher') {
+                    ctx.save(); ctx.translate(this.x, this.y);
+                    const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x) + Math.PI / 2;
+                    ctx.rotate(angle); ctx.fillStyle = this.team === 1 ? '#67e8f9' : '#f9a8d4';
+                    ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(-4, 7); ctx.lineTo(4, 7);
+                    ctx.closePath(); ctx.fill(); ctx.restore();
+                 } else {
+                     ctx.fillStyle = this.team === 1 ? '#a7f3d0' : '#fecdd3';
+                     ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
+                 }
+            }
+        }
+
+        class SprayerBullet {
+            constructor(shooter, angle) {
+                this.shooter = shooter;
+                this.team = shooter.team;
+                this.damage = shooter.getAttackDamage();
+                this.angle = angle;
+                this.speed = 8;
+                this.radius = 4;
+                this.lifespan = 200;
+
+                const nozzleTipDist = shooter.width / 2 + 8;
+                this.x = shooter.x + Math.cos(angle) * nozzleTipDist;
+                this.y = shooter.y + Math.sin(angle) * nozzleTipDist;
+            }
+
+            update(enemies) { // Changed to accept enemies
+                // --- Deflection Logic ---
+                const enemyShielders = units.filter(u => u.team !== this.team && u.type === 'shielder');
+                for (const shielder of enemyShielders) {
+                    if (getDistance(this, shielder) < shielder.width / 2 + this.radius) {
+                        shielder.deflect();
+                        this.team = shielder.team;
+                        this.shooter = shielder;
+                        this.angle = Math.atan2(this.y - shielder.y, this.x - shielder.x) + (Math.random() - 0.5) * (Math.PI / 8);
+                        return true;
+                    }
+                }
+
+                // --- Movement ---
+                this.x += Math.cos(this.angle) * this.speed * gameSpeed;
+                this.y += Math.sin(this.angle) * this.speed * gameSpeed;
+                this.lifespan -= 1 * gameSpeed;
+
+                // --- Hit Detection ---
+                const currentEnemies = enemies || units.filter(u => u.team !== this.team);
+                for (const enemy of currentEnemies) {
+                    if (getDistance(this, enemy) < enemy.width / 2 + this.radius) {
+                        enemy.takeDamage(this.damage, this.shooter);
+                        return false;
+                    }
+                }
+
+                return this.lifespan > 0 && (this.x > 0 && this.x < canvas.width && this.y > 0 && this.y < canvas.height);
+            }
+
+            draw() {
+                ctx.fillStyle = this.team === 1 ? '#a7f3d0' : '#fecdd3';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        class SniperBullet {
+            constructor(caster, target) {
+                this.caster = caster; this.target = target;
+                this.damage = caster.getAttackDamage(); this.team = caster.team;
+                this.speed = 15; this.radius = 3;
+                const angle = Math.atan2(this.target.y - this.caster.y, this.target.x - this.caster.x);
+                const nozzleTipDist = this.caster.width / 2 + 28;
+                this.x = this.caster.x + Math.cos(angle) * nozzleTipDist;
+                this.y = this.caster.y + Math.sin(angle) * nozzleTipDist;
+                this.angle = angle;
+            }
+            update(enemies) {
+                if (!enemies) return true; // Failsafe if enemies aren't passed
+                const enemyShielders = units.filter(u => u.team !== this.team && u.type === 'shielder');
+                for (const shielder of enemyShielders) {
+                    if (getDistance(this, shielder) < shielder.width / 2 + 5) {
+                        shielder.deflect();
+                        if (Math.random() < 0.30) {
+                            this.team = shielder.team;
+                            const originalTeamUnits = units.filter(u => u.team === this.caster.team);
+                            let closestOriginalTeamUnit = null;
+                            let minDistance = Infinity;
+                            originalTeamUnits.forEach(u => {
+                                const d = getDistance(shielder, u);
+                                if (d < minDistance) { minDistance = d; closestOriginalTeamUnit = u; }
+                            });
+                            this.target = closestOriginalTeamUnit || this.caster;
+                            this.caster = shielder;
+                            this.angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                            return true;
+                        } else {
+                            shielder.takeDamage(this.damage * 0.5, this.caster);
+                            for(let i=0; i<8; i++) particles.push(new Particle(this.x, this.y, this.team, true, 'sniper_impact'));
+                            return false;
+                        }
+                    }
+                }
+                
+                this.x += Math.cos(this.angle) * this.speed * gameSpeed;
+                this.y += Math.sin(this.angle) * this.speed * gameSpeed;
+                
+                for(const enemy of enemies) {
+                    if (getDistance(this, enemy) < enemy.width/2 + this.radius) {
+                        enemy.takeDamage(this.damage, this.caster);
+                        for(let i=0; i<15; i++) {
+                            particles.push(new Particle(this.x, this.y, this.team, true, 'sniper_impact'));
+                        }
+                        return false;
+                    }
+                }
+                return (this.x > 0 && this.x < canvas.width && this.y > 0 && this.y < canvas.height);
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                ctx.fillStyle = this.team === 1 ? '#e0f2fe' : '#ffe4e6';
+                ctx.fillRect(-8, -this.radius/2, 16, this.radius);
+                ctx.restore();
+            }
+        }
+
+        class SentryBullet {
+            constructor(caster, target) {
+                this.caster = caster;
+                this.target = target;
+                this.damage = caster.getAttackDamage();
+                this.team = caster.team;
+                this.speed = 8;
+                this.radius = 1.5;
+                this.angle = Math.atan2(this.target.y - this.caster.y, this.target.x - this.caster.x);
+                this.x = this.caster.x + Math.cos(this.angle) * (this.caster.width / 2);
+                this.y = this.caster.y + Math.sin(this.angle) * (this.caster.width / 2);
+            }
+            update(enemies) {
+                if (!enemies) return true; // Failsafe
+                this.x += Math.cos(this.angle) * this.speed * gameSpeed;
+                this.y += Math.sin(this.angle) * this.speed * gameSpeed;
+
+                for (const enemy of enemies) {
+                    if (getDistance(this, enemy) < enemy.width / 2 + this.radius) {
+                        enemy.takeDamage(this.damage, this.caster);
+                        return false; 
+                    }
+                }
+                return (this.x > 0 && this.x < canvas.width && this.y > 0 && this.y < canvas.height);
+            }
+            draw() {
+                ctx.strokeStyle = this.team === 1 ? '#a5b4fc' : '#fda4af';
+                ctx.lineWidth = this.radius;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x - Math.cos(this.angle) * 10, this.y - Math.sin(this.angle) * 10);
+                ctx.stroke();
+            }
+        }
+
+        class RicochetBullet {
+            constructor(caster, target) {
+                this.caster = caster;
+                this.team = caster.team;
+                this.damage = caster.getAttackDamage();
+                this.target = target;
+                this.bounced = false;
+                this.speed = 4.5;
+                this.radius = 6;
+                const angle = Math.atan2(this.target.y - this.caster.y, this.target.x - this.caster.x);
+                const nozzleTipDist = this.caster.width / 2 + 8;
+                this.x = this.caster.x + Math.cos(angle) * nozzleTipDist;
+                this.y = this.caster.y + Math.sin(angle) * nozzleTipDist;
+            }
+            update(enemies) {
+                if (!this.target || this.target.hp <= 0) return false;
+                if (!enemies) return true; // Failsafe
+                const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                this.x += Math.cos(angle) * this.speed * gameSpeed;
+                this.y += Math.sin(angle) * this.speed * gameSpeed;
+                if (getDistance(this, this.target) < this.target.width / 2) {
+                    this.target.takeDamage(this.damage, this.caster);
+                    if (!this.bounced) {
+                        this.bounced = true;
+                        this.damage *= 0.6;
+                        let nextTarget = null;
+                        let minDistance = Infinity;
+                        enemies.forEach(enemy => {
+                            if (enemy !== this.target && enemy.hp > 0) {
+                                const d = getDistance(this.target, enemy);
+                                if (d < minDistance) { minDistance = d; nextTarget = enemy; }
+                            }
+                        });
+                        if (nextTarget) {
+                            this.target = nextTarget;
+                            for(let i=0; i < 5; i++) particles.push(new Particle(this.x, this.y, this.team, true));
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                return true;
+            }
+            draw() {
+                ctx.fillStyle = this.team === 1 ? '#67e8f9' : '#f9a8d4';
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = 'white'; ctx.lineWidth = 1.5; ctx.stroke();
+            }
+        }
+
+        class Fireball {
+            constructor(caster, target) {
+                this.caster = caster; this.target = target;
+                this.damage = caster.getAttackDamage(); this.team = caster.team;
+                this.speed = 3; this.radius = 7; this.explosionRadius = 60;
+                const angle = Math.atan2(this.target.y - this.caster.y, this.target.x - this.caster.x);
+                const nozzleTipDist = this.caster.width / 2 + 12;
+                this.x = this.caster.x + Math.cos(angle) * nozzleTipDist;
+                this.y = this.caster.y + Math.sin(angle) * nozzleTipDist;
+            }
+            update(enemies) {
+                if (!enemies) return true; // Failsafe
+                if (Math.random() > 0.3) particles.push(new Particle(this.x, this.y, this.team));
+                if (!this.target || this.target.hp <= 0) {
+                    animations.push(new Explosion(this.x, this.y, this.explosionRadius, this.damage, this.team, enemies, this.caster));
+                    return false;
+                }
+                const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                this.x += Math.cos(angle) * this.speed * gameSpeed; this.y += Math.sin(angle) * this.speed * gameSpeed;
+                if (getDistance(this, this.target) < this.target.width / 2 + this.radius) {
+                    animations.push(new Explosion(this.x, this.y, this.explosionRadius, this.damage, this.team, enemies, this.caster));
+                    return false;
+                }
+                return true;
+            }
+            draw() {
+                ctx.fillStyle = this.team === 1 ? '#fbbf24' : '#f97316';
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
+                ctx.filter = `blur(3px)`; ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
+                ctx.filter = 'none';
+            }
+        }
+
+        class Explosion {
+            constructor(x, y, radius, damage, team, enemies, caster) {
+                this.x = x; this.y = y; this.maxRadius = radius; this.currentRadius = 0; this.duration = 25;
+                enemies.forEach(enemy => { if (getDistance(this, enemy) <= this.maxRadius) enemy.takeDamage(damage, caster); });
+            }
+            update() {
+                this.duration -= 1 * gameSpeed; this.currentRadius = this.maxRadius * (1 - this.duration / 25);
+                return this.duration > 0;
+            }
+            draw() {
+                const alpha = Math.max(0, this.duration / 25);
+                ctx.fillStyle = `rgba(255, 120, 0, ${alpha * 0.6})`;
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.currentRadius, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.setLineDash([8, 6]);
+                ctx.strokeStyle = `rgba(255, 120, 0, ${alpha * 0.9})`;
+                ctx.lineWidth = 2; ctx.arc(this.x, this.y, this.maxRadius, 0, Math.PI * 2);
+                ctx.stroke(); ctx.setLineDash([]);
+            }
+        }
+        
+        class Puff {
+             constructor(x,y) { this.x = x; this.y = y; this.radius = 0; this.duration = 20; this.maxDuration = 20; }
+             update() { this.duration -= gameSpeed; return this.duration > 0; }
+             draw() {
+                 const progress = 1 - this.duration / this.maxDuration;
+                 const currentRadius = 30 * progress;
+                 const alpha = 1 - progress;
+                 ctx.fillStyle = `rgba(200, 200, 200, ${alpha * 0.5})`;
+                 ctx.beginPath();
+                 ctx.arc(this.x, this.y, currentRadius, 0, Math.PI * 2);
+                 ctx.fill();
+             }
+        }
+        
+        class StopEffect {
+            constructor(caster, target) {
+                this.caster = caster;
+                this.target = target;
+                this.duration = 40; 
+                this.startX = caster.x;
+                this.startY = caster.y;
+            }
+            update() {
+                this.duration -= 1 * gameSpeed;
+                return this.duration > 0;
+            }
+            draw() {
+                if (!this.target) return;
+                const progress = 1 - (this.duration / 40);
+                const endX = this.target.x;
+                const endY = this.target.y;
+                
+                const currentX = lerp(this.startX, endX, progress);
+                const currentY = lerp(this.startY, endY, progress);
+
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.fillStyle = `rgba(252, 165, 165, ${1 - progress})`;
+                ctx.filter = 'blur(5px)';
+                ctx.beginPath();
+                ctx.arc(currentX, currentY, 10, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+        
+        class ChainLightning {
+             constructor(caster, initialTarget, allEnemies) {
+                this.caster = caster; this.damage = caster.getAttackDamage();
+                this.duration = 20;
+                this.color = caster.team === 1 ? 'rgba(254, 240, 138,' : 'rgba(103, 232, 249,';
+                this.path = [caster]; this.jaggedPath = [];
+                const maxJumps = 3 + Math.floor(Math.random() * 3);
+                let currentTarget = initialTarget; let availableEnemies = [...allEnemies];
+                for (let i = 0; i < maxJumps; i++) {
+                    if (!currentTarget) break;
+                    currentTarget.takeDamage(this.damage, caster);
+                    this.path.push(currentTarget);
+                    availableEnemies = availableEnemies.filter(e => e !== currentTarget);
+                    if (availableEnemies.length === 0) break;
+                    let nextTarget = null; let minDistance = Infinity;
+                    availableEnemies.forEach(enemy => {
+                        const d = getDistance(currentTarget, enemy);
+                        if (d < minDistance) { minDistance = d; nextTarget = enemy; }
+                    });
+                    currentTarget = nextTarget;
+                }
+                this.generateJaggedPath();
+             }
+             generateJaggedPath() {
+                this.jaggedPath.push({x: this.path[0].x, y: this.path[0].y});
+                for (let i = 1; i < this.path.length; i++) {
+                    const start = this.path[i-1]; const end = this.path[i];
+                    const dx = end.x - start.x; const dy = end.y - start.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    const segments = Math.max(1, Math.floor(dist / 15));
+                    const perpendicular = { x: -dy / dist, y: dx / dist };
+                    for (let j = 1; j <= segments; j++) {
+                        const progress = j / segments;
+                        const midX = start.x + dx * progress; const midY = start.y + dy * progress;
+                        if (j < segments) {
+                            const offset = (Math.random() - 0.5) * 12;
+                            this.jaggedPath.push({x: midX + perpendicular.x * offset, y: midY + perpendicular.y * offset});
+                        } else this.jaggedPath.push({x: end.x, y: end.y});
+                    }
+                }
+             }
+             update() { this.duration -= 1 * gameSpeed; return this.duration > 0; }
+             draw() {
+                const alpha = Math.max(0, this.duration / 20);
+                ctx.strokeStyle = this.color + `${alpha})`; ctx.lineWidth = 2; ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(this.jaggedPath[0].x, this.jaggedPath[0].y);
+                for (let i = 1; i < this.jaggedPath.length; i++) ctx.lineTo(this.jaggedPath[i].x, this.jaggedPath[i].y);
+                ctx.stroke(); ctx.lineWidth = 5;
+                ctx.strokeStyle = this.color + `${alpha * 0.5})`;
+                ctx.filter = 'blur(4px)'; ctx.stroke(); ctx.filter = 'none';
+             }
+        }
+
+        class Particle {
+            constructor(x, y, team, isImpact = false, type = 'damage', target = null) {
+                this.x = x; this.y = y;
+                this.type = type;
+                this.target = target;
+                if (isImpact) {
+                    this.vx = (Math.random() - 0.5) * 4; this.vy = (Math.random() - 0.5) * 4;
+                    this.lifespan = 10 + Math.random() * 10;
+                } else {
+                    this.vx = (Math.random() - 0.5) * 2; this.vy = (Math.random() - 0.5) * 2;
+                    this.lifespan = 20 + Math.random() * 20;
+                }
+                this.maxLifespan = this.lifespan; this.size = 1 + Math.random() * 2.5;
+                
+                if (type === 'heal_beam') {
+                    this.lifespan = 60; this.maxLifespan = 60;
+                    this.size = 2 + Math.random() * 2;
+                    this.color = team === 1 ? 'rgba(52, 211, 153,' : 'rgba(134, 239, 172,';
+                } else if (type === 'sniper_impact') {
+                     this.vx = (Math.random() - 0.5) * 6; this.vy = (Math.random() - 0.5) * 6;
+                     this.lifespan = 15 + Math.random() * 15; this.maxLifespan = this.lifespan;
+                     this.color = team === 1 ? 'rgba(103, 232, 249,' : 'rgba(251, 113, 133,';
+                } else if (type === 'reflect') {
+                    this.vx = (Math.random() - 0.5) * 5; this.vy = (Math.random() - 0.5) * 5;
+                    this.lifespan = 10 + Math.random() * 5; this.maxLifespan = this.lifespan;
+                    this.color = team === 1 ? 'rgba(163, 230, 53,' : 'rgba(250, 204, 21,';
+                } else if (type === 'stopper_damage') {
+                    this.vx = (Math.random() - 0.5) * 1;
+                    this.vy = (Math.random() - 0.5) * 1;
+                    this.lifespan = 15 + Math.random() * 10;
+                    this.maxLifespan = this.lifespan;
+                    this.size = 1 + Math.random() * 1.5;
+                    this.color = 'rgba(252, 165, 165,';
+                } else if (isImpact) {
+                    this.color = team === 1 ? 'rgba(107, 235, 222,' : 'rgba(253, 164, 175,';
+                } else {
+                    this.color = team === 1 ? 'rgba(251, 191, 36,' : 'rgba(249, 115, 22,';
+                }
+            }
+            update() {
+                if (this.type === 'heal_beam' && this.target) {
+                    const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                    const speed = 4;
+                    this.x += Math.cos(angle) * speed * gameSpeed;
+                    this.y += Math.sin(angle) * speed * gameSpeed;
+                    if (getDistance(this, this.target) < 10) this.lifespan = 0;
+                } else {
+                    this.x += this.vx * gameSpeed;
+                    this.y += this.vy * gameSpeed;
+                }
+                this.lifespan -= 1 * gameSpeed;
+                return this.lifespan > 0;
+            }
+            draw() {
+                const alpha = Math.max(0, this.lifespan / this.maxLifespan);
+                ctx.fillStyle = this.color + `${alpha})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function update() {
+            if (!isBattleStarted) return;
+            const team1Units = units.filter(u => u.team === 1);
+            const team2Units = units.filter(u => u.team === 2);
+            units.forEach(unit => unit.update(unit.team === 1 ? team1Units : team2Units, unit.team === 1 ? team2Units : team1Units));
+            
+            projectiles = projectiles.filter(p => {
+                const enemies = p.team === 1 ? team2Units : team1Units;
+                return p.update(enemies);
+            });
+            specialProjectiles = specialProjectiles.filter(p => {
+                const enemies = p.team === 1 ? team2Units : team1Units;
+                return p.update(enemies);
+            });
+
+            animations = animations.filter(a => a.update());
+            particles = particles.filter(p => p.update());
+            const unitsAliveBefore = units.length;
+            units = units.filter(u => u.hp > 0);
+            if (units.length < unitsAliveBefore) updateUnitCounts();
+            const team1Alive = units.some(u => u.team === 1);
+            const team2Alive = units.some(u => u.team === 2);
+            if ((team1Units.length > 0 || team2Units.length > 0) && isBattleStarted) {
+                if (team1Alive && !team2Alive && team2Units.length > 0) endBattle("Blue Team Wins!");
+                else if (!team1Alive && team2Alive && team1Units.length > 0) endBattle("Red Team Wins!");
+                else if (!team1Alive && !team2Alive && team1Units.length > 0 && team2Units.length > 0) endBattle("Draw!");
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'rgba(59, 130, 246, 0.1)';
+            ctx.fillRect(0, 0, canvas.width / 3, canvas.height);
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.1)';
+            ctx.fillRect(canvas.width - canvas.width / 3, 0, canvas.width / 3, canvas.height);
+            units.forEach(unit => unit.draw());
+            projectiles.forEach(p => p.draw());
+            specialProjectiles.forEach(p => p.draw());
+            animations.forEach(a => a.draw());
+            particles.forEach(p => p.draw());
+            if (isPaused && isBattleStarted) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'white';
+                ctx.font = '50px "Roboto Mono"';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
+            }
+        }
+
+        function gameLoop() {
+            if (!isPaused) { update(); }
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function setup() {
+            isBattleStarted = false; isPaused = false; gameSpeed = 1.0;
+            pauseBtn.innerHTML = pauseIconSVG;
+            document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('selected'));
+            document.querySelector('.speed-btn[data-speed="1.0"]').classList.add('selected');
+            units = []; projectiles = []; specialProjectiles = []; animations = []; particles = [];
+            updateUnitCounts();
+            selectedUnit = null;
+            document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('selected'));
+            document.querySelectorAll('.unit-btn').forEach(b => b.disabled = false);
+            startBattleBtn.disabled = false;
+            statusMessage.style.opacity = 0; statusMessage.textContent = '';
+        }
+
+        function updateUnitCounts() {
+            blueCountDisplay.textContent = units.filter(u => u.team === 1).length;
+            redCountDisplay.textContent = units.filter(u => u.team === 2).length;
+        }
+
+        function endBattle(message) {
+             isBattleStarted = false; statusMessage.textContent = message;
+             statusMessage.style.opacity = 1;
+        }
+        
+        function selectUnit(type) {
+             selectedUnit = type;
+             document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('selected'));
+             document.getElementById(`select-${type}`).classList.add('selected');
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        selectShooterBtn.addEventListener('click', () => selectUnit('shooter'));
+        selectSlasherBtn.addEventListener('click', () => selectUnit('slasher'));
+        selectShielderBtn.addEventListener('click', () => selectUnit('shielder'));
+        selectSwifterBtn.addEventListener('click', () => selectUnit('swifter'));
+        selectScorcherBtn.addEventListener('click', () => selectUnit('scorcher'));
+        selectShockerBtn.addEventListener('click', () => selectUnit('shocker'));
+        selectSlammerBtn.addEventListener('click', () => selectUnit('slammer'));
+        selectSkirmisherBtn.addEventListener('click', () => selectUnit('skirmisher'));
+        selectStreamerBtn.addEventListener('click', () => selectUnit('streamer'));
+        selectSummonerBtn.addEventListener('click', () => selectUnit('summoner'));
+        selectSustainerBtn.addEventListener('click', () => selectUnit('sustainer'));
+        selectSynchronizerBtn.addEventListener('click', () => selectUnit('synchronizer'));
+        selectSniperBtn.addEventListener('click', () => selectUnit('sniper'));
+        selectSpikerBtn.addEventListener('click', () => selectUnit('spiker'));
+        selectSkipperBtn.addEventListener('click', () => selectUnit('skipper'));
+        selectSpinnerBtn.addEventListener('click', () => selectUnit('spinner'));
+        selectSpawnerBtn.addEventListener('click', () => selectUnit('spawner'));
+        selectStopperBtn.addEventListener('click', () => selectUnit('stopper'));
+        selectSprayerBtn.addEventListener('click', () => selectUnit('sprayer'));
+        selectSwingerBtn.addEventListener('click', () => selectUnit('swinger'));
+        selectSlitherBtn.addEventListener('click', () => selectUnit('slither'));
+
+        canvas.addEventListener('click', (e) => {
+            if (isBattleStarted || !selectedUnit || isPaused) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left; const y = e.clientY - rect.top;
+            const relX = x / canvas.width; const relY = y / canvas.height;
+            if (x < canvas.width / 3) {
+                 units.push(new Unit(x, y, 1, selectedUnit, relX, relY));
+            } else if (x > canvas.width - canvas.width / 3) {
+                 units.push(new Unit(x, y, 2, selectedUnit, relX, relY));
+            }
+            updateUnitCounts();
+        });
+        
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            mousePos.x = e.clientX - rect.left; mousePos.y = e.clientY - rect.top;
+            mousePos.onCanvas = true;
+        });
+        canvas.addEventListener('mouseleave', () => { mousePos.onCanvas = false; });
+
+        startBattleBtn.addEventListener('click', () => {
+            if (units.length === 0 || isBattleStarted) return;
+            if (isPaused) { isPaused = false; pauseBtn.innerHTML = pauseIconSVG; }
+            isBattleStarted = true; startBattleBtn.disabled = true;
+            document.querySelectorAll('.unit-btn').forEach(b => b.disabled = true);
+            selectedUnit = null;
+            document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('selected'));
+        });
+
+        pauseBtn.addEventListener('click', () => {
+            if (!isBattleStarted) return;
+            isPaused = !isPaused;
+            pauseBtn.innerHTML = isPaused ? playIconSVG : pauseIconSVG;
+        });
+
+        speedControls.addEventListener('click', (e) => {
+            const speedBtn = e.target.closest('.speed-btn');
+            if (speedBtn) {
+                gameSpeed = parseFloat(speedBtn.dataset.speed);
+                document.querySelectorAll('.speed-btn').forEach(btn => btn.classList.remove('selected'));
+                speedBtn.classList.add('selected');
+            }
+        });
+
+        resetBtn.addEventListener('click', setup);
+
+        resizeCanvas();
+        setup();
+        gameLoop();
+    </script>
+</body>
+</html>
+
