@@ -11,7 +11,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unit Battle Simulator - v2.1</title>
+    <title>Unit Battle Simulator - v2.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -69,10 +69,10 @@
             text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
             transition: opacity 0.5s ease-in-out;
         }
-        .unit-list::-webkit-scrollbar { width: 8px; }
-        .unit-list::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
-        .unit-list::-webkit-scrollbar-thumb { background: #4a4a4a; border-radius: 10px; }
-        .unit-list::-webkit-scrollbar-thumb:hover { background: #5c5c5c; }
+        .unit-list::-webkit-scrollbar, #stats-panel-content::-webkit-scrollbar { width: 8px; }
+        .unit-list::-webkit-scrollbar-track, #stats-panel-content::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
+        .unit-list::-webkit-scrollbar-thumb, #stats-panel-content::-webkit-scrollbar-thumb { background: #4a4a4a; border-radius: 10px; }
+        .unit-list::-webkit-scrollbar-thumb:hover, #stats-panel-content::-webkit-scrollbar-thumb:hover { background: #5c5c5c; }
 
         /* Tooltip Styles */
         #unit-tooltip {
@@ -113,6 +113,65 @@
             transform: scale(1.1);
             box-shadow: 0 0 15px rgba(167, 139, 250, 0.5);
         }
+
+        /* Stats Panel Styles */
+        #stats-panel {
+            position: fixed;
+            top: 0;
+            right: -450px; /* Start off-screen */
+            width: 400px;
+            height: 100%;
+            z-index: 60;
+            transition: right 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+        }
+        #stats-panel.open {
+            right: 0;
+        }
+        .stat-bar-container {
+            width: 100%;
+            background-color: rgba(0,0,0,0.3);
+            border-radius: 0.25rem;
+            overflow: hidden;
+            height: 14px;
+            position: relative;
+        }
+        .stat-bar {
+            height: 100%;
+            transition: width 0.3s ease-in-out;
+            border-radius: 0.25rem;
+        }
+        .stat-bar-label {
+            position: absolute;
+            left: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px black;
+        }
+         .stats-filter-btn {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            transition: all 0.2s ease-in-out;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .stats-filter-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .stats-filter-btn.selected {
+            background-color: #a78bfa;
+            color: #1a1a1a;
+            font-weight: bold;
+        }
+        .summary-bar {
+             height: 8px;
+             border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -128,6 +187,19 @@
             <div id="log-content"></div>
         </div>
     </div>
+    
+    <!-- Statistics Panel -->
+    <div id="stats-panel" class="glass-panel">
+        <div class="flex justify-between items-center mb-4 flex-shrink-0">
+            <h2 class="text-xl font-bold text-violet-300">Battle Statistics</h2>
+            <button id="close-stats-btn" class="text-gray-400 hover:text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div id="stats-panel-content" class="overflow-y-auto flex-grow">
+            <!-- Stats will be dynamically inserted here -->
+        </div>
+    </div>
 
 
     <div id="game-container" class="w-full h-full flex flex-col p-4 gap-4">
@@ -137,10 +209,14 @@
                 <button id="log-btn" title="Show Version History" class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.546-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </button>
-                <h1 class="text-2xl font-bold text-violet-300">Unit Battle Simulator Ver 2.1</h1>
+                <h1 class="text-2xl font-bold text-violet-300">Unit Battle Simulator Ver 2.4</h1>
             </div>
             <div class="text-right flex gap-4 items-center">
                 
+                <button id="show-stats-btn" title="Show Statistics" class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
+                     <svg class="w-6 h-6 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                </button>
+
                 <button id="toggle-range-btn" title="Toggle Unit Range Preview" class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
                     <img id="eye-icon" src="icon/icon_eye_open.svg" alt="Eye Open" class="w-6 h-6 hidden pointer-events-none">
                     <img id="eye-off-icon" src="icon/icon_eye_closed.svg" alt="Eye Closed" class="w-6 h-6 pointer-events-none">
@@ -300,7 +376,12 @@
         const tooltip = document.getElementById('unit-tooltip');
         const removeMessage = document.getElementById('remove-message');
 
-        // New elements
+        // New elements for stats panel
+        const showStatsBtn = document.getElementById('show-stats-btn');
+        const statsPanel = document.getElementById('stats-panel');
+        const closeStatsBtn = document.getElementById('close-stats-btn');
+        const statsPanelContent = document.getElementById('stats-panel-content');
+
         const logBtn = document.getElementById('log-btn');
         const logModal = document.getElementById('log-modal');
         const closeLogBtn = document.getElementById('close-log-btn');
@@ -350,6 +431,7 @@
 
         let selectedUnit = null;
         let units = [];
+        let allUnitsThisRound = []; // For stat tracking
         let projectiles = [];
         let specialProjectiles = [];
         let animations = [];
@@ -361,6 +443,12 @@
         let isRemoveModeActive = false;
         let unitToHighlight = null;
         let mousePos = { x: -1, y: -1, onCanvas: false };
+        let nextUnitId = 0;
+        
+        // State for stats panel
+        let statsFilter = 'all'; // 'all', 'alive', 'defeated'
+        let isSummarizedView = false;
+
 
         function resizeCanvas() {
             const container = canvas.parentElement;
@@ -413,10 +501,12 @@
 
         class Unit {
             constructor(x, y, team, type, relX, relY) {
+                this.id = nextUnitId++; // Unique ID for stat tracking
                 this.x = x; this.y = y;
                 this.relX = relX; this.relY = relY;
                 this.team = team; this.type = type;
                 const specs = UNIT_SPECS[type];
+                this.isSummon = specs.tags.includes('Summon');
                 this.hp = specs.hp; this.maxHp = specs.hp;
                 this.speed = specs.speed;
                 this.attackDamage = specs.attackDamage;
@@ -428,6 +518,15 @@
                 this.lastAttackTime = 0;
                 this.target = null;
                 this.width = 20; this.height = 20;
+
+                // Stats properties
+                this.damageDealt = 0;
+                this.damageTaken = 0;
+                this.healingDone = 0;
+                this.kills = 0;
+                this.minionKills = 0;
+                this.assists = 0;
+                
                 if (type === 'skeleton') { this.width = 15; this.height = 15; }
                 if (type === 'sentry') { this.width = 16; this.height = 16; }
                 if (type === 'swinger') { this.width = 28; this.height = 28; }
@@ -1226,7 +1325,9 @@
                             this.healTargets = this.healTargets.filter(t => t.hp > 0);
                             this.healTargets.forEach(target => {
                                 if (target.hp < target.maxHp) {
-                                    target.hp = Math.min(target.maxHp, target.hp + this.healAmount * gameSpeed);
+                                    const healVal = this.healAmount * gameSpeed;
+                                    target.hp = Math.min(target.maxHp, target.hp + healVal);
+                                    this.healingDone += healVal;
                                 }
                             });
                         }
@@ -1267,7 +1368,7 @@
                 this.applySeparation(friendlies);
 
                 if (this.type === 'sustainer') {
-                    const alliesToHeal = friendlies.filter(f => f.hp < f.maxHp && f !== this).sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp));
+                    const alliesToHeal = friendlies.filter(f => f.hp < f.maxHp && f !== this).sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.hp));
                     if (alliesToHeal.length > 0) this.attack(friendlies, enemies);
 
                     let averageX = 0; let count = 0;
@@ -1434,6 +1535,7 @@
                             newSentry.applyBuff(this.buffMultiplier, 99999, this.buffSource);
                         }
                         units.push(newSentry);
+                        allUnitsThisRound.push(newSentry);
                         this.mySentries.push(newSentry);
                         updateUnitCounts();
                     }
@@ -1544,7 +1646,8 @@
                     
                     this.stoppedTargets.forEach(target => {
                         if (target.hp > 0) {
-                            target.takeDamage(this.getAttackDamage() * gameSpeed, this);
+                            const damagePerFrame = this.getAttackDamage() * gameSpeed
+                            target.takeDamage(damagePerFrame, this);
                             if (Math.random() < 0.1) {
                                particles.push(new Particle(target.x, target.y, this.team, true, 'stopper_damage'));
                             }
@@ -1688,6 +1791,7 @@
                                 newSkeleton.applyBuff(this.buffMultiplier, 99999, this.buffSource);
                             }
                             units.push(newSkeleton);
+                            allUnitsThisRound.push(newSkeleton);
                             this.mySkeletons.push(newSkeleton);
                             updateUnitCounts();
                         }
@@ -1701,6 +1805,7 @@
                                     newBee.applyBuff(this.buffMultiplier, 99999, this.buffSource);
                                 }
                                 units.push(newBee);
+                                allUnitsThisRound.push(newBee);
                                 this.myBees.push(newBee);
                                 updateUnitCounts();
                             }
@@ -1715,6 +1820,7 @@
                                 newSnake.applyBuff(this.buffMultiplier, 99999, this.buffSource);
                             }
                             units.push(newSnake);
+                            allUnitsThisRound.push(newSnake);
                             this.mySnake = newSnake;
                             updateUnitCounts();
                         }
@@ -1805,13 +1911,27 @@
                 }
             }
             takeDamage(damage, attacker = null) {
-                 this.hp -= damage; 
+                 const actualDamage = Math.min(this.hp, damage);
+                 this.hp -= damage;
+                 this.damageTaken += actualDamage;
+
+                 if (attacker) {
+                     attacker.damageDealt += actualDamage;
+                 }
+                 
                  if (this.type === 'spiker' && attacker && this.reflectDamage > 0 && (attacker.type === 'slasher' || attacker.type === 'swifter' || attacker.type === 'slammer' || attacker.type === 'skeleton' || attacker.type === 'spiker' || attacker.type === 'swinger' || attacker.type === 'snake' || attacker.type === 'stalker' || attacker.type === 'bee')) {
                      if (getDistance(this, attacker) <= (this.width/2 + attacker.width/2 + 10)) {
-                         attacker.takeDamage(this.reflectDamage);
+                         attacker.takeDamage(this.reflectDamage, this);
                          for(let i=0; i < 5; i++) {
                              particles.push(new Particle(this.x, this.y, this.team, true, 'reflect'));
                          }
+                     }
+                 }
+
+                 if (this.hp <= 0 && attacker) {
+                     attacker.kills++;
+                     if (this.isSummon) {
+                         attacker.minionKills++;
                      }
                  }
             }
@@ -2468,7 +2588,12 @@
         }
 
         function gameLoop() {
-            if (!isPaused) { update(); }
+            if (!isPaused) { 
+                update(); 
+                if (isBattleStarted && statsPanel.classList.contains('open')) {
+                    updateStatsPanel();
+                }
+            }
             draw();
             requestAnimationFrame(gameLoop);
         }
@@ -2476,12 +2601,15 @@
         function setup() {
             isBattleStarted = false; isPaused = false; gameSpeed = 1.0;
             isRemoveModeActive = false;
+            nextUnitId = 0;
+            statsFilter = 'all';
+            isSummarizedView = false;
             removeUnitBtn.classList.remove('active');
             canvas.style.cursor = 'crosshair';
             pauseBtn.innerHTML = pauseIconSVG;
             document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('selected'));
             document.querySelector('.speed-btn[data-speed="1.0"]').classList.add('selected');
-            units = []; projectiles = []; specialProjectiles = []; animations = []; particles = [];
+            units = []; allUnitsThisRound = []; projectiles = []; specialProjectiles = []; animations = []; particles = [];
             updateUnitCounts();
             selectedUnit = null;
             document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('selected'));
@@ -2490,6 +2618,7 @@
             statusMessage.style.opacity = 0; statusMessage.textContent = '';
             removeMessage.style.opacity = 0;
             unitToHighlight = null;
+            statsPanelContent.innerHTML = ''; // Clear stats panel on reset
         }
 
         function updateUnitCounts() {
@@ -2500,6 +2629,7 @@
         function endBattle(message) {
              isBattleStarted = false; statusMessage.textContent = message;
              statusMessage.style.opacity = 1;
+             if (statsPanel.classList.contains('open')) updateStatsPanel();
         }
         
         function selectUnit(type) {
@@ -2514,6 +2644,128 @@
              selectedUnit = type;
              document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('selected'));
              document.querySelector(`[data-unit-type="${type}"]`).classList.add('selected');
+        }
+
+        function updateStatsPanel() {
+            const blueTeamUnits = allUnitsThisRound.filter(u => u.team === 1);
+            const redTeamUnits = allUnitsThisRound.filter(u => u.team === 2);
+
+            const blueTotalDamage = blueTeamUnits.reduce((sum, u) => sum + u.damageDealt, 0);
+            const blueTotalHealing = blueTeamUnits.reduce((sum, u) => sum + u.healingDone, 0);
+            const blueTotalKills = blueTeamUnits.reduce((sum, u) => sum + u.kills, 0);
+            const blueMinionKills = blueTeamUnits.reduce((sum, u) => sum + u.minionKills, 0);
+            const redTotalDamage = redTeamUnits.reduce((sum, u) => sum + u.damageDealt, 0);
+            const redTotalHealing = redTeamUnits.reduce((sum, u) => sum + u.healingDone, 0);
+            const redTotalKills = redTeamUnits.reduce((sum, u) => sum + u.kills, 0);
+            const redMinionKills = redTeamUnits.reduce((sum, u) => sum + u.minionKills, 0);
+            
+            const totalBattleDamage = Math.max(1, blueTotalDamage + redTotalDamage);
+            const totalBattleHealing = Math.max(1, blueTotalHealing + redTotalHealing);
+            const totalBattleDamageTaken = Math.max(1, allUnitsThisRound.reduce((sum, u) => sum + u.damageTaken, 0));
+
+            const blueDamagePercent = (blueTotalDamage / totalBattleDamage) * 100;
+            const redDamagePercent = (redTotalDamage / totalBattleDamage) * 100;
+            const blueHealingPercent = (blueTotalHealing / totalBattleHealing) * 100;
+            const redHealingPercent = (redTotalHealing / totalBattleHealing) * 100;
+
+            let html = `
+                <div class="mb-4">
+                    <h3 class="text-lg font-bold text-blue-400 mb-2">Blue Team</h3>
+                    <div class="space-y-2 text-xs">
+                        <div>
+                            <p class="text-gray-300 mb-1 flex justify-between"><span>Damage Dealt: ${blueDamagePercent.toFixed(1)}%</span> <span>${Math.round(blueTotalDamage)}</span></p>
+                            <div class="stat-bar-container"><div class="stat-bar bg-blue-500" style="width: ${blueDamagePercent}%"></div></div>
+                        </div>
+                        <div>
+                            <p class="text-gray-300 mb-1 flex justify-between"><span>Healing Done: ${blueHealingPercent.toFixed(1)}%</span> <span>${Math.round(blueTotalHealing)}</span></p>
+                            <div class="stat-bar-container"><div class="stat-bar bg-green-500" style="width: ${blueHealingPercent}%"></div></div>
+                        </div>
+                        <div class="pt-1">
+                            <p class="text-gray-300 flex justify-between"><span>Total Kills:</span> <span>${blueTotalKills}</span></p>
+                            <p class="text-gray-400 flex justify-between text-[0.7rem]"><span>Minion Kills:</span> <span>${blueMinionKills}</span></p>
+                        </div>
+                    </div>
+                </div>
+                 <div class="mb-4">
+                    <h3 class="text-lg font-bold text-red-400 mb-2">Red Team</h3>
+                     <div class="space-y-2 text-xs">
+                        <div>
+                             <p class="text-gray-300 mb-1 flex justify-between"><span>Damage Dealt: ${redDamagePercent.toFixed(1)}%</span> <span>${Math.round(redTotalDamage)}</span></p>
+                            <div class="stat-bar-container"><div class="stat-bar bg-red-500" style="width: ${redDamagePercent}%"></div></div>
+                        </div>
+                        <div>
+                             <p class="text-gray-300 mb-1 flex justify-between"><span>Healing Done: ${redHealingPercent.toFixed(1)}%</span> <span>${Math.round(redTotalHealing)}</span></p>
+                            <div class="stat-bar-container"><div class="stat-bar bg-green-500" style="width: ${redHealingPercent}%"></div></div>
+                        </div>
+                        <div class="pt-1">
+                             <p class="text-gray-300 flex justify-between"><span>Total Kills:</span> <span>${redTotalKills}</span></p>
+                             <p class="text-gray-400 flex justify-between text-[0.7rem]"><span>Minion Kills:</span> <span>${redMinionKills}</span></p>
+                        </div>
+                    </div>
+                </div>
+                <div id="unit-performance-section" class="border-t border-gray-600 pt-4">
+                     <div class="flex justify-between items-center mb-3">
+                         <h3 class="text-lg font-bold">Unit Performance</h3>
+                         <div class="flex items-center gap-2">
+                            <button class="stats-filter-btn ${isSummarizedView ? 'selected' : ''}" data-action="toggle-summary">Summarize</button>
+                         </div>
+                     </div>
+                     <div id="stats-filter-controls" class="flex items-center gap-2 mb-3">
+                        <button class="stats-filter-btn ${statsFilter === 'all' ? 'selected' : ''}" data-filter="all">All</button>
+                        <button class="stats-filter-btn ${statsFilter === 'alive' ? 'selected' : ''}" data-filter="alive">Alive</button>
+                        <button class="stats-filter-btn ${statsFilter === 'defeated' ? 'selected' : ''}" data-filter="defeated">Defeated</button>
+                     </div>
+
+                    <div class="space-y-3">
+            `;
+
+            let filteredUnits = allUnitsThisRound;
+            if (statsFilter === 'alive') {
+                filteredUnits = allUnitsThisRound.filter(u => u.hp > 0);
+            } else if (statsFilter === 'defeated') {
+                filteredUnits = allUnitsThisRound.filter(u => u.hp <= 0);
+            }
+
+            filteredUnits.sort((a,b) => b.damageDealt - a.damageDealt).forEach(unit => {
+                const teamColor = unit.team === 1 ? 'text-blue-300' : 'text-red-300';
+                const unitName = UNIT_SPECS[unit.type].name;
+                const status = unit.hp > 0 ? '' : ' (Defeated)';
+                
+                if (isSummarizedView) {
+                    html += `
+                    <div class="p-2 rounded-lg bg-gray-800/50">
+                        <div class="flex justify-between items-center text-sm">
+                           <p class="font-bold ${teamColor}">${unitName}${status}</p>
+                           <span class="text-xs text-gray-400">Kills: ${unit.kills}</span>
+                        </div>
+                        <div class="space-y-1 mt-2 text-xs">
+                            <div class="w-full bg-gray-900/50 rounded-full"><div class="summary-bar bg-orange-400" style="width: ${ (unit.damageDealt / totalBattleDamage) * 100}%" title="Damage Dealt: ${Math.round(unit.damageDealt)}"></div></div>
+                            <div class="w-full bg-gray-900/50 rounded-full"><div class="summary-bar bg-red-400" style="width: ${ (unit.damageTaken / totalBattleDamageTaken) * 100}%" title="Damage Taken: ${Math.round(unit.damageTaken)}"></div></div>
+                            ${ unit.healingDone > 0 ? `<div class="w-full bg-gray-900/50 rounded-full"><div class="summary-bar bg-green-400" style="width: ${ (unit.healingDone / totalBattleHealing) * 100}%" title="Healing Done: ${Math.round(unit.healingDone)}"></div></div>` : ''}
+                        </div>
+                    </div>
+                    `;
+                } else {
+                     const damageDealtPercent = totalBattleDamage > 1 ? `(${( (unit.damageDealt / totalBattleDamage) * 100).toFixed(1)}%)` : '';
+                     const damageTakenPercent = totalBattleDamageTaken > 1 ? `(${( (unit.damageTaken / totalBattleDamageTaken) * 100).toFixed(1)}%)` : '';
+                     const healingDonePercent = totalBattleHealing > 1 ? `(${( (unit.healingDone / totalBattleHealing) * 100).toFixed(1)}%)` : '';
+
+                     html += `
+                        <div class="p-3 rounded-lg bg-gray-800/50">
+                            <p class="font-bold ${teamColor}">${unitName}${status}</p>
+                            <div class="text-xs grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-gray-300">
+                               <span>Damage Dealt:</span> <span class="text-white font-semibold">${Math.round(unit.damageDealt)} ${damageDealtPercent}</span>
+                               <span>Damage Taken:</span> <span class="text-white font-semibold">${Math.round(unit.damageTaken)} ${damageTakenPercent}</span>
+                               <span>Healing Done:</span> <span class="text-white font-semibold">${Math.round(unit.healingDone)} ${healingDonePercent}</span>
+                               <span>Kills:</span> <span class="text-white font-semibold">${unit.kills}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            html += `</div></div>`;
+            statsPanelContent.innerHTML = html;
         }
 
         window.addEventListener('resize', resizeCanvas);
@@ -2592,6 +2844,7 @@
 
                 if (unitToRemove) {
                     units = units.filter(u => u !== unitToRemove);
+                    allUnitsThisRound = allUnitsThisRound.filter(u => u.id !== unitToRemove.id);
                     updateUnitCounts();
                     unitToHighlight = null;
                 }
@@ -2601,10 +2854,15 @@
             if (isBattleStarted || !selectedUnit || isPaused) return;
 
             const relX = x / canvas.width; const relY = y / canvas.height;
+            let newUnit;
             if (x < canvas.width / 3) {
-                 units.push(new Unit(x, y, 1, selectedUnit, relX, relY));
+                 newUnit = new Unit(x, y, 1, selectedUnit, relX, relY);
+                 units.push(newUnit);
+                 allUnitsThisRound.push(newUnit);
             } else if (x > canvas.width - canvas.width / 3) {
-                 units.push(new Unit(x, y, 2, selectedUnit, relX, relY));
+                 newUnit = new Unit(x, y, 2, selectedUnit, relX, relY);
+                 units.push(newUnit);
+                 allUnitsThisRound.push(newUnit);
             }
             updateUnitCounts();
         });
@@ -2661,6 +2919,31 @@
         resetBtn.addEventListener('click', setup);
 
         // --- New Event Listeners ---
+        showStatsBtn.addEventListener('click', () => {
+            updateStatsPanel(); // Update once on open
+            statsPanel.classList.add('open');
+        });
+
+        closeStatsBtn.addEventListener('click', () => {
+            statsPanel.classList.remove('open');
+        });
+        
+        statsPanelContent.addEventListener('click', (e) => {
+            const filterBtn = e.target.closest('[data-filter]');
+            const summaryBtn = e.target.closest('[data-action="toggle-summary"]');
+
+            if (filterBtn) {
+                statsFilter = filterBtn.dataset.filter;
+            }
+            if (summaryBtn) {
+                isSummarizedView = !isSummarizedView;
+            }
+            if (filterBtn || summaryBtn) {
+                 updateStatsPanel();
+            }
+        });
+
+
         logBtn.addEventListener('click', () => {
             fetch('log.html')
                 .then(response => response.ok ? response.text() : '<p>Error loading logs.</p>')
