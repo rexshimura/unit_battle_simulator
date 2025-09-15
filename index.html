@@ -11,7 +11,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unit Battle Simulator - v2.4</title>
+    <title>Unit Battle Simulator - v2.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -47,8 +47,12 @@
             transform: scale(1.05);
         }
         .action-btn.active {
-            background-color: #ef4444;
-            box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+            background-color: #8b5cf6;
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+        }
+        .action-btn.remove.active {
+             background-color: #ef4444;
+             box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
         }
         .speed-btn.selected {
             background-color: #8b5cf6;
@@ -75,7 +79,7 @@
         .unit-list::-webkit-scrollbar-thumb:hover, #stats-panel-content::-webkit-scrollbar-thumb:hover { background: #5c5c5c; }
 
         /* Tooltip Styles */
-        #unit-tooltip {
+        #unit-tooltip, #inspect-tooltip {
             position: fixed;
             display: none;
             padding: 12px;
@@ -130,6 +134,9 @@
         #stats-panel.open {
             right: 0;
         }
+        #stats-panel-content {
+            padding-right: 10px; /* Space for scrollbar */
+        }
         .stat-bar-container {
             width: 100%;
             background-color: rgba(0,0,0,0.3);
@@ -172,11 +179,23 @@
              height: 8px;
              border-radius: 4px;
         }
+        .progress-bar {
+            background-color: rgba(0,0,0,0.3);
+            border-radius: 9999px;
+            overflow: hidden;
+            height: 10px;
+        }
+        .progress-bar-inner {
+            height: 100%;
+            border-radius: 9999px;
+            transition: width 0.1s linear;
+        }
     </style>
 </head>
 <body>
-    <!-- Unit Info Tooltip -->
+    <!-- Tooltips -->
     <div id="unit-tooltip" class="glass-panel"></div>
+    <div id="inspect-tooltip" class="glass-panel"></div>
 
     <!-- Version Log Modal -->
     <div id="log-modal" class="modal-overlay hidden">
@@ -209,9 +228,12 @@
                 <button id="log-btn" title="Show Version History" class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.546-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </button>
-                <h1 class="text-2xl font-bold text-violet-300">Unit Battle Simulator Ver 2.4</h1>
+                <h1 class="text-2xl font-bold text-violet-300">Unit Battle Simulator Ver 2.3</h1>
             </div>
             <div class="text-right flex gap-4 items-center">
+                <button id="inspect-unit-btn" title="Inspect Unit" class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
+                     <svg class="w-6 h-6 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </button>
                 
                 <button id="show-stats-btn" title="Show Statistics" class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
                      <svg class="w-6 h-6 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
@@ -222,7 +244,7 @@
                     <img id="eye-off-icon" src="icon/icon_eye_closed.svg" alt="Eye Closed" class="w-6 h-6 pointer-events-none">
                 </button>
 
-                <button id="remove-unit-btn" title="Remove Unit" class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
+                <button id="remove-unit-btn" title="Remove Unit" class="action-btn remove p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
                     <img src="icon/icon_remove.svg" alt="Remove" class="w-6 h-6 pointer-events-none">
                 </button>
 
@@ -352,10 +374,12 @@
             </div>
 
             <!-- Game Canvas -->
-            <div class="relative flex-grow">
+            <div id="canvas-container" class="relative flex-grow">
                 <canvas id="gameCanvas" class="w-full h-full"></canvas>
                 <div id="status-message" class="status-message absolute inset-0 flex items-center justify-center text-5xl font-bold text-white pointer-events-none opacity-0 transition-opacity"></div>
                 <div id="remove-message" class="status-message absolute top-5 inset-x-0 flex items-center justify-center text-2xl font-bold text-red-400 pointer-events-none opacity-0 transition-opacity"></div>
+                <div id="inspect-message" class="status-message absolute top-5 inset-x-0 flex items-center justify-center text-2xl font-bold text-violet-300 pointer-events-none opacity-0 transition-opacity"></div>
+                <button id="stop-tracking-btn" class="hidden absolute top-4 right-4 action-btn bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-full">Stop Tracking</button>
             </div>
         </div>
     </div>
@@ -376,11 +400,16 @@
         const tooltip = document.getElementById('unit-tooltip');
         const removeMessage = document.getElementById('remove-message');
 
-        // New elements for stats panel
+        // New elements for stats and inspect panels
         const showStatsBtn = document.getElementById('show-stats-btn');
         const statsPanel = document.getElementById('stats-panel');
         const closeStatsBtn = document.getElementById('close-stats-btn');
         const statsPanelContent = document.getElementById('stats-panel-content');
+        const inspectUnitBtn = document.getElementById('inspect-unit-btn');
+        const inspectTooltip = document.getElementById('inspect-tooltip');
+        const inspectMessage = document.getElementById('inspect-message');
+        const stopTrackingBtn = document.getElementById('stop-tracking-btn');
+
 
         const logBtn = document.getElementById('log-btn');
         const logModal = document.getElementById('log-modal');
@@ -441,6 +470,8 @@
         let gameSpeed = 1.0;
         let showRangePreview = false;
         let isRemoveModeActive = false;
+        let isInspectModeActive = false;
+        let trackedUnit = null;
         let unitToHighlight = null;
         let mousePos = { x: -1, y: -1, onCanvas: false };
         let nextUnitId = 0;
@@ -500,8 +531,9 @@
         }
 
         class Unit {
-            constructor(x, y, team, type, relX, relY) {
+            constructor(x, y, team, type, relX, relY, summoner = null) {
                 this.id = nextUnitId++; // Unique ID for stat tracking
+                this.summoner = summoner;
                 this.x = x; this.y = y;
                 this.relX = relX; this.relY = relY;
                 this.team = team; this.type = type;
@@ -561,7 +593,6 @@
                 if (type === 'sniper') { this.isAiming = false; this.aimDuration = 120; this.aimProgress = 0; }
                 if (type === 'slither') { this.mySnake = null; }
                 if (type === 'snake') {
-                    this.slither = null;
                     this.body = Array.from({ length: 10 }, () => ({ x: this.x, y: this.y }));
                 }
                 if (type === 'stalker') {
@@ -586,7 +617,6 @@
                     this.lastSpawnTime = 0;
                     this.spawnCooldown = 4000;
                 }
-                if (type === 'sentry') { this.spawner = null; }
                  if (type === 'stopper') {
                     this.stoppedTargets = [];
                     this.stopEffectDuration = specs.stopDuration;
@@ -1529,8 +1559,7 @@
                         const spawnX = this.x + Math.cos(angle) * spawnDist;
                         const spawnY = this.y + (Math.random() - 0.5) * 40;
                         
-                        const newSentry = new Unit(spawnX, spawnY, this.team, 'sentry', spawnX/canvas.width, spawnY/canvas.height);
-                        newSentry.spawner = this;
+                        const newSentry = new Unit(spawnX, spawnY, this.team, 'sentry', spawnX/canvas.width, spawnY/canvas.height, this);
                         if (this.isBuffed && this.buffSource && this.buffSource.type === 'synchronizer') {
                             newSentry.applyBuff(this.buffMultiplier, 99999, this.buffSource);
                         }
@@ -1786,7 +1815,7 @@
                         if (this.mySkeletons.length < 2) {
                             const spawnX = this.x + (this.team === 1 ? 30 : -30) + (Math.random() - 0.5) * 10;
                             const spawnY = this.y + (Math.random() - 0.5) * 40;
-                            const newSkeleton = new Unit(spawnX, spawnY, this.team, 'skeleton', spawnX / canvas.width, spawnY / canvas.height);
+                            const newSkeleton = new Unit(spawnX, spawnY, this.team, 'skeleton', spawnX / canvas.width, spawnY / canvas.height, this);
                             if (this.isBuffed && this.buffSource && this.buffSource.type === 'synchronizer') {
                                 newSkeleton.applyBuff(this.buffMultiplier, 99999, this.buffSource);
                             }
@@ -1800,7 +1829,7 @@
                             if (this.myBees.length < 12) { 
                                 const spawnX = this.x - (this.team === 1 ? 20 : -20) + (Math.random() - 0.5) * 10;
                                 const spawnY = this.y + (Math.random() - 0.5) * 40;
-                                const newBee = new Unit(spawnX, spawnY, this.team, 'bee', spawnX / canvas.width, spawnY / canvas.height);
+                                const newBee = new Unit(spawnX, spawnY, this.team, 'bee', spawnX / canvas.width, spawnY / canvas.height, this);
                                 if (this.isBuffed && this.buffSource && this.buffSource.type === 'synchronizer') {
                                     newBee.applyBuff(this.buffMultiplier, 99999, this.buffSource);
                                 }
@@ -1814,8 +1843,7 @@
                         if (!this.mySnake) {
                             const spawnX = this.x + (this.team === 1 ? 40 : -40);
                             const spawnY = this.y;
-                            const newSnake = new Unit(spawnX, spawnY, this.team, 'snake', spawnX / canvas.width, spawnY / canvas.height);
-                            newSnake.slither = this;
+                            const newSnake = new Unit(spawnX, spawnY, this.team, 'snake', spawnX / canvas.width, spawnY / canvas.height, this);
                             if (this.isBuffed && this.buffSource && this.buffSource.type === 'synchronizer') {
                                 newSnake.applyBuff(this.buffMultiplier, 99999, this.buffSource);
                             }
@@ -1916,7 +1944,8 @@
                  this.damageTaken += actualDamage;
 
                  if (attacker) {
-                     attacker.damageDealt += actualDamage;
+                     const damageSource = attacker.summoner || attacker;
+                     damageSource.damageDealt += actualDamage;
                  }
                  
                  if (this.type === 'spiker' && attacker && this.reflectDamage > 0 && (attacker.type === 'slasher' || attacker.type === 'swifter' || attacker.type === 'slammer' || attacker.type === 'skeleton' || attacker.type === 'spiker' || attacker.type === 'swinger' || attacker.type === 'snake' || attacker.type === 'stalker' || attacker.type === 'bee')) {
@@ -1929,9 +1958,10 @@
                  }
 
                  if (this.hp <= 0 && attacker) {
-                     attacker.kills++;
+                     const killSource = attacker.summoner || attacker;
+                     killSource.kills++;
                      if (this.isSummon) {
-                         attacker.minionKills++;
+                         killSource.minionKills++;
                      }
                  }
             }
@@ -2512,7 +2542,7 @@
             ctx.fillRect(canvas.width - canvas.width / 3, 0, canvas.width / 3, canvas.height);
             
             // Draw all unit ranges if toggled, do this before drawing units
-            if (showRangePreview) {
+            if (showRangePreview && !isInspectModeActive) {
                 units.forEach(unit => {
                     if (unit.attackRange > 0) {
                         ctx.beginPath();
@@ -2558,23 +2588,38 @@
                 ctx.globalAlpha = 1.0;
             }
 
-            // --- Draw highlight for remove mode ---
-            if (isRemoveModeActive && unitToHighlight) {
+            // --- Draw highlight for remove/inspect mode ---
+            const unitUnderMouse = trackedUnit || (isInspectModeActive && unitToHighlight) || (isRemoveModeActive && unitToHighlight);
+            if(unitUnderMouse) {
+                const isInspecting = isInspectModeActive || trackedUnit;
+                const highlightColor = isInspecting ? 'rgba(167, 139, 250, 0.8)' : 'rgba(239, 68, 68, 0.8)';
+
                 ctx.save();
                 ctx.globalCompositeOperation = 'lighter';
                 ctx.beginPath();
-                ctx.arc(unitToHighlight.x, unitToHighlight.y, unitToHighlight.width / 2 + 8, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(239, 68, 68, 0.7)';
+                ctx.arc(unitUnderMouse.x, unitUnderMouse.y, unitUnderMouse.width / 2 + 8, 0, Math.PI * 2);
+                ctx.fillStyle = highlightColor.replace('0.8', '0.7');
                 ctx.filter = 'blur(8px)';
                 ctx.fill();
                 ctx.restore();
 
                 ctx.beginPath();
-                ctx.arc(unitToHighlight.x, unitToHighlight.y, unitToHighlight.width / 2 + 4, 0, Math.PI * 2);
-                ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
+                ctx.arc(unitUnderMouse.x, unitUnderMouse.y, unitUnderMouse.width / 2 + 4, 0, Math.PI * 2);
+                ctx.strokeStyle = highlightColor;
                 ctx.lineWidth = 3;
                 ctx.stroke();
+
+                if (isInspecting && unitUnderMouse.attackRange > 0) {
+                    ctx.beginPath();
+                    ctx.arc(unitUnderMouse.x, unitUnderMouse.y, unitUnderMouse.attackRange, 0, Math.PI * 2);
+                    ctx.setLineDash([8, 12]);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
             }
+
 
             if (isPaused && isBattleStarted) {
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
@@ -2595,16 +2640,23 @@
                 }
             }
             draw();
+            if(trackedUnit) updateInspectTooltip(trackedUnit); // Keep updating locked tooltip
             requestAnimationFrame(gameLoop);
         }
 
         function setup() {
             isBattleStarted = false; isPaused = false; gameSpeed = 1.0;
             isRemoveModeActive = false;
+            isInspectModeActive = false;
+            trackedUnit = null;
             nextUnitId = 0;
             statsFilter = 'all';
             isSummarizedView = false;
+            
             removeUnitBtn.classList.remove('active');
+            inspectUnitBtn.classList.remove('active');
+            stopTrackingBtn.classList.add('hidden');
+
             canvas.style.cursor = 'crosshair';
             pauseBtn.innerHTML = pauseIconSVG;
             document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('selected'));
@@ -2617,6 +2669,7 @@
             startBattleBtn.disabled = false;
             statusMessage.style.opacity = 0; statusMessage.textContent = '';
             removeMessage.style.opacity = 0;
+            inspectMessage.style.opacity = 0;
             unitToHighlight = null;
             statsPanelContent.innerHTML = ''; // Clear stats panel on reset
         }
@@ -2633,7 +2686,7 @@
         }
         
         function selectUnit(type) {
-             if (isRemoveModeActive) return;
+             if (isRemoveModeActive || isInspectModeActive) return;
              // --- Toggle logic ---
              if (selectedUnit === type) {
                 selectedUnit = null;
@@ -2647,8 +2700,8 @@
         }
 
         function updateStatsPanel() {
-            const blueTeamUnits = allUnitsThisRound.filter(u => u.team === 1);
-            const redTeamUnits = allUnitsThisRound.filter(u => u.team === 2);
+            const blueTeamUnits = allUnitsThisRound.filter(u => u.team === 1 && !u.isSummon);
+            const redTeamUnits = allUnitsThisRound.filter(u => u.team === 2 && !u.isSummon);
 
             const blueTotalDamage = blueTeamUnits.reduce((sum, u) => sum + u.damageDealt, 0);
             const blueTotalHealing = blueTeamUnits.reduce((sum, u) => sum + u.healingDone, 0);
@@ -2661,7 +2714,7 @@
             
             const totalBattleDamage = Math.max(1, blueTotalDamage + redTotalDamage);
             const totalBattleHealing = Math.max(1, blueTotalHealing + redTotalHealing);
-            const totalBattleDamageTaken = Math.max(1, allUnitsThisRound.reduce((sum, u) => sum + u.damageTaken, 0));
+            const totalBattleDamageTaken = Math.max(1, allUnitsThisRound.filter(u => !u.isSummon).reduce((sum, u) => sum + u.damageTaken, 0));
 
             const blueDamagePercent = (blueTotalDamage / totalBattleDamage) * 100;
             const redDamagePercent = (redTotalDamage / totalBattleDamage) * 100;
@@ -2719,11 +2772,11 @@
                     <div class="space-y-3">
             `;
 
-            let filteredUnits = allUnitsThisRound;
+            let filteredUnits = allUnitsThisRound.filter(u => !u.isSummon);
             if (statsFilter === 'alive') {
-                filteredUnits = allUnitsThisRound.filter(u => u.hp > 0);
+                filteredUnits = filteredUnits.filter(u => u.hp > 0);
             } else if (statsFilter === 'defeated') {
-                filteredUnits = allUnitsThisRound.filter(u => u.hp <= 0);
+                filteredUnits = filteredUnits.filter(u => u.hp <= 0);
             }
 
             filteredUnits.sort((a,b) => b.damageDealt - a.damageDealt).forEach(unit => {
@@ -2738,10 +2791,12 @@
                            <p class="font-bold ${teamColor}">${unitName}${status}</p>
                            <span class="text-xs text-gray-400">Kills: ${unit.kills}</span>
                         </div>
-                        <div class="space-y-1 mt-2 text-xs">
+                        <div class="space-y-1 mt-2 text-xs grid grid-cols-[auto,1fr] gap-x-2 items-center">
+                            <span class="text-gray-400">Dealt:</span>
                             <div class="w-full bg-gray-900/50 rounded-full"><div class="summary-bar bg-orange-400" style="width: ${ (unit.damageDealt / totalBattleDamage) * 100}%" title="Damage Dealt: ${Math.round(unit.damageDealt)}"></div></div>
+                            <span class="text-gray-400">Taken:</span>
                             <div class="w-full bg-gray-900/50 rounded-full"><div class="summary-bar bg-red-400" style="width: ${ (unit.damageTaken / totalBattleDamageTaken) * 100}%" title="Damage Taken: ${Math.round(unit.damageTaken)}"></div></div>
-                            ${ unit.healingDone > 0 ? `<div class="w-full bg-gray-900/50 rounded-full"><div class="summary-bar bg-green-400" style="width: ${ (unit.healingDone / totalBattleHealing) * 100}%" title="Healing Done: ${Math.round(unit.healingDone)}"></div></div>` : ''}
+                            ${ unit.healingDone > 0 ? `<span class="text-gray-400">Heal:</span><div class="w-full bg-gray-900/50 rounded-full"><div class="summary-bar bg-green-400" style="width: ${ (unit.healingDone / totalBattleHealing) * 100}%" title="Healing Done: ${Math.round(unit.healingDone)}"></div></div>` : '<span/><span/>'}
                         </div>
                     </div>
                     `;
@@ -2850,6 +2905,32 @@
                 }
                 return;
             }
+            
+            if (isInspectModeActive) {
+                let unitToTrack = null;
+                let closestDist = Infinity;
+                units.forEach(unit => {
+                    const dist = getDistance({x, y}, unit);
+                    if (dist < unit.width / 2 + 5 && dist < closestDist) {
+                        unitToTrack = unit;
+                        closestDist = dist;
+                    }
+                });
+
+                if (unitToTrack) {
+                    if (trackedUnit === unitToTrack) { // Click again to untrack
+                        trackedUnit = null;
+                        stopTrackingBtn.classList.add('hidden');
+                        inspectMessage.style.opacity = 1;
+                    } else {
+                        trackedUnit = unitToTrack;
+                        stopTrackingBtn.classList.remove('hidden');
+                        inspectMessage.style.opacity = 0;
+                    }
+                }
+                return;
+            }
+
 
             if (isBattleStarted || !selectedUnit || isPaused) return;
 
@@ -2872,19 +2953,26 @@
             mousePos.x = e.clientX - rect.left; mousePos.y = e.clientY - rect.top;
             mousePos.onCanvas = true;
 
-            if (isRemoveModeActive) {
-                unitToHighlight = null; 
-                for (const unit of units) {
-                    if (getDistance(mousePos, unit) < unit.width / 2 + 5) {
-                        unitToHighlight = unit;
-                        break; 
-                    }
+            unitToHighlight = null; 
+            let closestDist = Infinity;
+            for (const unit of units) {
+                const dist = getDistance(mousePos, unit)
+                if (dist < unit.width / 2 + 5 && dist < closestDist) {
+                    unitToHighlight = unit;
+                    closestDist = dist;
                 }
+            }
+            
+            if (isInspectModeActive && unitToHighlight && !trackedUnit) {
+                updateInspectTooltip(unitToHighlight, e);
+            } else if (!trackedUnit) {
+                inspectTooltip.style.display = 'none';
             }
         });
         canvas.addEventListener('mouseleave', () => { 
             mousePos.onCanvas = false; 
             unitToHighlight = null;
+            if (!trackedUnit) inspectTooltip.style.display = 'none';
         });
 
         startBattleBtn.addEventListener('click', () => {
@@ -2977,7 +3065,11 @@
             isRemoveModeActive = !isRemoveModeActive;
             removeUnitBtn.classList.toggle('active', isRemoveModeActive);
             canvas.style.cursor = isRemoveModeActive ? 'pointer' : 'crosshair';
+            
             if (isRemoveModeActive) {
+                // Deactivate inspect mode if active
+                if(isInspectModeActive) inspectUnitBtn.click();
+
                 selectedUnit = null;
                 document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('selected'));
                 removeMessage.textContent = 'Click a unit to remove';
@@ -2987,6 +3079,33 @@
                 unitToHighlight = null;
             }
         });
+        
+        inspectUnitBtn.addEventListener('click', () => {
+            isInspectModeActive = !isInspectModeActive;
+            inspectUnitBtn.classList.toggle('active', isInspectModeActive);
+            canvas.style.cursor = isInspectModeActive ? 'pointer' : 'crosshair';
+
+            if(isInspectModeActive) {
+                // Deactivate remove mode if active
+                if(isRemoveModeActive) removeUnitBtn.click();
+                
+                inspectMessage.textContent = 'Hover or Click a unit to observe';
+                inspectMessage.style.opacity = 1;
+            } else {
+                inspectMessage.style.opacity = 0;
+                trackedUnit = null;
+                stopTrackingBtn.classList.add('hidden');
+                inspectTooltip.style.display = 'none';
+            }
+        });
+        
+        stopTrackingBtn.addEventListener('click', () => {
+            trackedUnit = null;
+            stopTrackingBtn.classList.add('hidden');
+            inspectMessage.style.opacity = 1;
+            inspectTooltip.style.display = 'none';
+        });
+
 
         roleSorter.addEventListener('click', (e) => {
             const roleBtn = e.target.closest('.role-btn');
@@ -3011,6 +3130,58 @@
                 });
             }
         });
+        
+        function updateInspectTooltip(unit, event) {
+            if (!unit) {
+                inspectTooltip.style.display = 'none';
+                return;
+            }
+            
+            const stats = UNIT_SPECS[unit.type];
+            const tagsHTML = stats.tags.map(tag => `<span class="bg-gray-600 text-violet-300 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">${tag}</span>`).join('');
+            
+            const cooldownProgress = isBattleStarted ? Math.min(1, (Date.now() - unit.lastAttackTime) / (unit.getAttackCooldown() / gameSpeed)) * 100 : 0;
+
+            let effectsHTML = '';
+            if (unit.isBuffed) effectsHTML += `<div class="text-xs text-green-400">Buffed by ${unit.buffSource.type}</div>`;
+            if (unit.isStunned) effectsHTML += `<div class="text-xs text-yellow-400">Stunned</div>`;
+            if (unit.isStopped) effectsHTML += `<div class="text-xs text-red-400">Stopped by ${unit.stoppedBy.type}</div>`;
+            if (unit.isSilenced) effectsHTML += `<div class="text-xs text-gray-400">Silenced</div>`;
+            if (effectsHTML === '') effectsHTML = '<div class="text-xs text-gray-500">None</div>';
+
+
+            inspectTooltip.innerHTML = `
+                <h3 class="text-lg font-bold ${unit.team === 1 ? 'text-blue-300' : 'text-red-300'} mb-2">${stats.name}</h3>
+                 <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    <span class="text-gray-400">HP:</span> 
+                    <span class="text-white">${Math.ceil(unit.hp)} / ${unit.maxHp}</span>
+                 </div>
+                 <div class="text-sm">
+                    <span class="text-gray-400">Attack Speed:</span>
+                    <div class="progress-bar mt-1">
+                        <div class="progress-bar-inner bg-yellow-400" style="width: ${cooldownProgress}%"></div>
+                    </div>
+                 </div>
+                 <div class="mt-2 text-sm">
+                     <span class="text-gray-400">Status Effects:</span>
+                     ${effectsHTML}
+                 </div>
+                <div class="mt-3 pt-2 border-t border-gray-600">
+                    ${tagsHTML}
+                </div>
+            `;
+            
+            inspectTooltip.style.display = 'block';
+            if (trackedUnit) {
+                 const rect = canvas.getBoundingClientRect();
+                 inspectTooltip.style.left = `${rect.left + unit.x + 20}px`;
+                 inspectTooltip.style.top = `${rect.top + unit.y - 40}px`;
+            } else if (event) {
+                 inspectTooltip.style.left = `${event.clientX + 15}px`;
+                 inspectTooltip.style.top = `${event.clientY + 15}px`;
+            }
+
+        }
 
 
         resizeCanvas();
