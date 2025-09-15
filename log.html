@@ -1,62 +1,78 @@
-<!-- Add Tailwind CSS to your project for this to work: <script src="https://cdn.tailwindcss.com"></script> -->
- <script src="https://cdn.tailwindcss.com"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Version History</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background-color: #111827; /* bg-gray-900 */
+        }
+        /* Basic styles for the tooltip */
+        .tooltip-container {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip {
+            visibility: hidden;
+            width: max-content;
+            background-color: #111827;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 10px;
+            position: absolute;
+            z-index: 10;
+            top: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 0.75rem;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+        .tooltip::after {
+            content: "";
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: transparent transparent #111827 transparent;
+        }
+        .tooltip-container:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        /* Custom scrollbar for version log */
+        #version-log::-webkit-scrollbar {
+            width: 8px;
+        }
+        #version-log::-webkit-scrollbar-track {
+            background: #1f2937; /* Dark Gray */
+            border-radius: 10px;
+        }
+        #version-log::-webkit-scrollbar-thumb {
+            background: #6d28d9; /* Dark Violet */
+            border-radius: 10px;
+        }
+        #version-log::-webkit-scrollbar-thumb:hover {
+            background: #8b5cf6; /* Lighter Violet */
+        }
 
-<style>
-    /* Basic styles for the tooltip */
-    .tooltip-container {
-        position: relative;
-        display: inline-block;
-    }
-    .tooltip {
-        visibility: hidden;
-        width: max-content;
-        background-color: #111827;
-        color: #fff;
-        text-align: center;
-        border-radius: 6px;
-        padding: 5px 10px;
-        position: absolute;
-        z-index: 10; /* Increased z-index to pop out */
-        top: 125%; /* Position below the button */
-        left: 50%;
-        transform: translateX(-50%);
-        opacity: 0;
-        transition: opacity 0.2s;
-        font-size: 0.75rem;
-        font-weight: 600;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-    }
-     .tooltip::after {
-        content: "";
-        position: absolute;
-        bottom: 100%; /* Arrow at the top of the tooltip */
-        left: 50%;
-        margin-left: -5px;
-        border-width: 5px;
-        border-style: solid;
-        border-color: transparent transparent #111827 transparent; /* Arrow points up */
-    }
-    .tooltip-container:hover .tooltip {
-        visibility: visible;
-        opacity: 1;
-    }
-    
-    /* Custom scrollbar for version log */
-    #version-log::-webkit-scrollbar {
-        width: 8px;
-    }
-    #version-log::-webkit-scrollbar-track {
-        background: #1f2937; /* Dark Gray */
-        border-radius: 10px;
-    }
-    #version-log::-webkit-scrollbar-thumb {
-        background: #6d28d9; /* Dark Violet */
-        border-radius: 10px;
-    }
-    #version-log::-webkit-scrollbar-thumb:hover {
-        background: #8b5cf6; /* Lighter Violet */
-    }
-</style>
+        /* Styles for the modal to be hidden by default */
+        #supportModal.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="p-4">
 
 <div class="max-w-2xl mx-auto text-gray-300">
     <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-600">
@@ -66,7 +82,7 @@
             </h2>
         </div>
         <div class="flex items-center gap-3">
-             <h1 class="text-gray-400 text-sm">Made By: Rexshimura</h1>
+            <h1 class="text-gray-400 text-sm">Made By: Rexshimura</h1>
             <div class="tooltip-container">
                 <a href="https://github.com/rexshimura" target="_blank" class="action-btn w-10 h-10 rounded-full bg-gray-900 hover:bg-gray-700 flex items-center justify-center text-white transition-colors">
                     <span class="tooltip">GitHub</span>
@@ -74,224 +90,191 @@
                     <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
                 </a>
             </div>
-            <div class="tooltip-container">
-                 <a href="support-me.html" class="action-btn w-10 h-10 rounded-full bg-violet-700 hover:bg-violet-600 flex items-center justify-center text-white transition-colors">
-                    <span class="tooltip">Support Me</span>
-                    <!-- Heart/Support Icon SVG -->
-                    <svg class="w-6 h-6" viewBox="0 0 20 20" fill="currentColor"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/></svg>
-                </a>
+            <div>
+              
             </div>
         </div>
     </div>
 
-  <!-- Scrollable container -->
-  <div id="version-log" class="space-y-2 max-h-96 overflow-y-auto pr-2 scroll-smooth">
-
-    <details class="bg-gray-800 rounded-xl p-3">
-      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
-        COMING SOON
-      </summary>
-      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
-        <li>???</li>
-      </ul>
-    </details>
-  
-    <details class="bg-gray-800 rounded-xl p-3">
-      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
-        V2.6 - Get Over Here!
-      </summary>
-      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
-        <li>Added new unit: <strong>Strangler</strong>.</li>
-        <li>Strangler is a melee control unit that can hook and stun enemies.</li>
-        <li>Added Version Module and App Logo</li>
-        <li>Added Github & Support Buttons</li>
-      </ul>
-    </details>
-
-    <details class="bg-gray-800 rounded-xl p-3">
-      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
-        V2.5 - Intuitiveness Improvements
-      </summary>
-      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
-        <li>Added hover tooltips for unit stats and abilities.</li>
-        <li>Improved drag-and-drop functionality for unit placement.</li>
-        <li>Reworked Stop & Reset Functions</li>
-      </ul>
-    </details>
-
-    <details class="bg-gray-800 rounded-xl p-3">
-      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
-        V2.4 - Fixed Unit Issues
-      </summary>
-      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
-        <li>Resolved issues with unit targeting and movement.</li>
-        <li>Bug on Spiker Unit Fixed.</li>
-      </ul>
-    </details>
-
-    <details class="bg-gray-800 rounded-xl p-3">
-      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
-        V2.3 - Bug Fixes
-      </summary>
-      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
-        <li>Fixed various bugs and improved overall stability.</li>
-      </ul>
-    </details>
-
-    <details class="bg-gray-800 rounded-xl p-3">
-      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
-        V2.2 - Added Unit Tracking
-      </summary>
-      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
-        <li>Implemented a unit tracking system to monitor unit performance.</li>
-      </ul>
-    </details>
-
-    <details class="bg-gray-800 rounded-xl p-3">
-      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
-        V2.2 - Added Statistics
-      </summary>
-      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
-        <li>Implemented a statistics panel to track game metrics.</li>
-      </ul>
-    </details>
-
-    <details class="bg-gray-800 rounded-xl p-3">
-      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
-        V2.1 - Improved UI Icons
-      </summary>
-      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
-        <li>Updated UI icons for better clarity and aesthetics.</li>
-      </ul>
-    </details>
-
-    <details class="bg-gray-800 rounded-xl p-3">
-      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
-        V2.0 - Beezy Update
-      </summary>
-      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
-        <li>Added new unit: <strong>Swarmer</strong>.</li>
-        <li>Swarmer is a ranged unit that spawns bees for battle.</li>
-      </ul>
-    </details>
-
-    <details class="bg-gray-800 rounded-xl p-3">
-      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
-        V1.9 - Remove & Indicate
-      </summary>
-      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
-        <li>Added a delete unit function to remove units from the battlefield.</li>
-        <li>Implemented a range indicator to visualize unit attack ranges.</li>
-      </ul>
-    </details>
-    
-    <details class="bg-gray-800 rounded-xl p-3">
-      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
-        V1.8 - Stalker & Filter Function
-      </summary>
-      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
-        <li>Added new unit: <strong>Stalker</strong>.</li>
-        <li>Stalker is a fast melee assassin that silences targets and deals burst damage.</li>
-        <li>Introduced a filter function to show/hide specific units in the UI.</li>
-      </ul>
-    </details>
-
-    <details class="bg-gray-800 rounded-xl p-3">
-      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
-        V1.7 - Version Log System
-      </summary>
-      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
-        <li>Introduced this collapsible version log system.</li>
-      </ul>
-    </details>
-
-    <details class="bg-gray-800 rounded-xl p-3">
-      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
-        V1.6 - The Snake Slithers
-      </summary>
-      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
-        <li>Fixed multiple bugs and refined unit stat balances.</li>
-        <li>Added new unit: <strong>Slither</strong>.</li>
-      </ul>
-    </details>
-
-    <details class="bg-gray-800 rounded-xl p-3">
-      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
-        V1.5 - The Grand Unit Expansion
-      </summary>
-      <p class="text-sm mt-2">Introduced a wide range of new units and mechanics:</p>
-      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
-        <li>Summoner, Sustainer, Synchronizer</li>
-        <li>Sniper, Spiker, Spinner</li>
-        <li>Spawner, Stopper, Sprayer</li>
-        <li>Swinger</li>
-      </ul>
-    </details>
-
-    <details class="bg-gray-800 rounded-xl p-3">
-      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
-        V1.4 - Tactics & Particles
-      </summary>
-      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
-        <li>Added Slammer, Skirmisher, and Streamer.</li>
-        <li>Improved unit particles.</li>
-      </ul>
-    </details>
-
-    <details class="bg-gray-800 rounded-xl p-3">
-      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
-        V1.3 - Hot & Shocking
-      </summary>
-      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
-        <li>Introduced new units: Scorcher and Shocker.</li>
-        <li>Adjusted stats of existing units for better balance.</li>
-      </ul>
-    </details>
-
-    <details class="bg-gray-800 rounded-xl p-3">
-      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
-        V1.2 - Fast & Defensive
-      </summary>
-      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
-        <li>Added new units: Shielder and Swifter.</li>
-        <li>Improved overall unit behavior and interactions.</li>
-      </ul>
-    </details>
-
-    <details class="bg-gray-800 rounded-xl p-3">
-      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
-        V1.1 - UI & Controls Update
-      </summary>
-      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
-        <li>Improved user interface.</li>
-        <li>Added start, pause, stop, and adjustable game speed controls.</li>
-      </ul>
-    </details>
-
-    <details class="bg-gray-800 rounded-xl p-3">
-      <summary class="cursor-pointer font-bold text-violet-300 text-lg">
-        V1.0 - Initial Core Release
-      </summary>
-      <p class="text-sm mt-2">The battle begins with a core set of units:</p>
-      <ul class="list-disc list-inside text-sm mt-2 space-y-1">
-        <li>Shooter</li>
-        <li>Slasher</li>
-      </ul>
-    </details>
-  </div>
+    <!-- Scrollable container -->
+    <div id="version-log" class="space-y-2 max-h-96 overflow-y-auto pr-2 scroll-smooth">
+        <details class="bg-gray-800 rounded-xl p-3">
+            <summary class="cursor-pointer font-bold text-violet-300 text-lg">COMING SOON</summary>
+            <ul class="list-disc list-inside text-sm mt-2 space-y-1"><li>???</li></ul>
+        </details>
+        <details class="bg-gray-800 rounded-xl p-3">
+            <summary class="cursor-pointer font-bold text-violet-300 text-lg">V2.6 - Get Over Here!</summary>
+            <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                <li>Added new unit: <strong>Strangler</strong>.</li>
+                <li>Strangler is a melee control unit that can hook and stun enemies.</li>
+                <li>Added Version Module and App Logo</li>
+                <li>Added Github & Support Buttons</li>
+            </ul>
+        </details>
+        <details class="bg-gray-800 rounded-xl p-3">
+            <summary class="cursor-pointer font-bold text-violet-300 text-lg">V2.5 - Intuitiveness Improvements</summary>
+            <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                <li>Added hover tooltips for unit stats and abilities.</li>
+                <li>Improved drag-and-drop functionality for unit placement.</li>
+                <li>Reworked Stop & Reset Functions</li>
+            </ul>
+        </details>
+        <details class="bg-gray-800 rounded-xl p-3">
+            <summary class="cursor-pointer font-bold text-violet-300 text-lg">V2.4 - Fixed Unit Issues</summary>
+            <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                <li>Resolved issues with unit targeting and movement.</li>
+                <li>Bug on Spiker Unit Fixed.</li>
+            </ul>
+        </details>
+        <details class="bg-gray-800 rounded-xl p-3">
+            <summary class="cursor-pointer font-bold text-violet-300 text-lg">V2.3 - Bug Fixes</summary>
+            <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                <li>Fixed various bugs and improved overall stability.</li>
+            </ul>
+        </details>
+        <details class="bg-gray-800 rounded-xl p-3">
+            <summary class="cursor-pointer font-bold text-violet-300 text-lg">V2.2 - Added Unit Tracking</summary>
+            <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                <li>Implemented a unit tracking system to monitor unit performance.</li>
+            </ul>
+        </details>
+        <details class="bg-gray-800 rounded-xl p-3">
+            <summary class="cursor-pointer font-bold text-violet-300 text-lg">V2.2 - Added Statistics</summary>
+            <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                <li>Implemented a statistics panel to track game metrics.</li>
+            </ul>
+        </details>
+        <details class="bg-gray-800 rounded-xl p-3">
+            <summary class="cursor-pointer font-bold text-violet-300 text-lg">V2.1 - Improved UI Icons</summary>
+            <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                <li>Updated UI icons for better clarity and aesthetics.</li>
+            </ul>
+        </details>
+        <details class="bg-gray-800 rounded-xl p-3">
+            <summary class="cursor-pointer font-bold text-violet-300 text-lg">V2.0 - Beezy Update</summary>
+            <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                <li>Added new unit: <strong>Swarmer</strong>.</li>
+                <li>Swarmer is a ranged unit that spawns bees for battle.</li>
+            </ul>
+        </details>
+        <details class="bg-gray-800 rounded-xl p-3">
+            <summary class="cursor-pointer font-bold text-violet-300 text-lg">V1.9 - Remove & Indicate</summary>
+            <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                <li>Added a delete unit function to remove units from the battlefield.</li>
+                <li>Implemented a range indicator to visualize unit attack ranges.</li>
+            </ul>
+        </details>
+        <details class="bg-gray-800 rounded-xl p-3">
+            <summary class="cursor-pointer font-bold text-violet-300 text-lg">V1.8 - Stalker & Filter Function</summary>
+            <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                <li>Added new unit: <strong>Stalker</strong>.</li>
+                <li>Stalker is a fast melee assassin that silences targets and deals burst damage.</li>
+                <li>Introduced a filter function to show/hide specific units in the UI.</li>
+            </ul>
+        </details>
+        <details class="bg-gray-800 rounded-xl p-3">
+            <summary class="cursor-pointer font-bold text-violet-300 text-lg">V1.7 - Version Log System</summary>
+            <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                <li>Introduced this collapsible version log system.</li>
+            </ul>
+        </details>
+        <details class="bg-gray-800 rounded-xl p-3">
+            <summary class="cursor-pointer font-bold text-violet-300 text-lg">V1.6 - The Snake Slithers</summary>
+            <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                <li>Fixed multiple bugs and refined unit stat balances.</li>
+                <li>Added new unit: <strong>Slither</strong>.</li>
+            </ul>
+        </details>
+        <details class="bg-gray-800 rounded-xl p-3">
+            <summary class="cursor-pointer font-bold text-violet-300 text-lg">V1.5 - The Grand Unit Expansion</summary>
+            <p class="text-sm mt-2">Introduced a wide range of new units and mechanics:</p>
+            <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                <li>Summoner, Sustainer, Synchronizer</li>
+                <li>Sniper, Spiker, Spinner</li>
+                <li>Spawner, Stopper, Sprayer</li>
+                <li>Swinger</li>
+            </ul>
+        </details>
+        <details class="bg-gray-800 rounded-xl p-3">
+            <summary class="cursor-pointer font-bold text-violet-300 text-lg">V1.4 - Tactics & Particles</summary>
+            <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                <li>Added Slammer, Skirmisher, and Streamer.</li>
+                <li>Improved unit particles.</li>
+            </ul>
+        </details>
+        <details class="bg-gray-800 rounded-xl p-3">
+            <summary class="cursor-pointer font-bold text-violet-300 text-lg">V1.3 - Hot & Shocking</summary>
+            <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                <li>Introduced new units: Scorcher and Shocker.</li>
+                <li>Adjusted stats of existing units for better balance.</li>
+            </ul>
+        </details>
+        <details class="bg-gray-800 rounded-xl p-3">
+            <summary class="cursor-pointer font-bold text-violet-300 text-lg">V1.2 - Fast & Defensive</summary>
+            <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                <li>Added new units: Shielder and Swifter.</li>
+                <li>Improved overall unit behavior and interactions.</li>
+            </ul>
+        </details>
+        <details class="bg-gray-800 rounded-xl p-3">
+            <summary class="cursor-pointer font-bold text-violet-300 text-lg">V1.1 - UI & Controls Update</summary>
+            <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                <li>Improved user interface.</li>
+                <li>Added start, pause, stop, and adjustable game speed controls.</li>
+            </ul>
+        </details>
+        <details class="bg-gray-800 rounded-xl p-3">
+            <summary class="cursor-pointer font-bold text-violet-300 text-lg">V1.0 - Initial Core Release</summary>
+            <p class="text-sm mt-2">The battle begins with a core set of units:</p>
+            <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                <li>Shooter</li>
+                <li>Slasher</li>
+            </ul>
+        </details>
+    </div>
 </div>
 
 <script>
-  // Auto scroll into view smoothly when a summary is clicked
-  document.querySelectorAll("#version-log summary").forEach(summary => {
-    summary.addEventListener("click", function(e) {
-      const details = this.parentElement;
-      setTimeout(() => {
-        if (details.open) {
-          details.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    // Wait for the DOM to be fully loaded before running scripts
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- Script for Version Log Accordion ---
+        document.querySelectorAll("#version-log summary").forEach(summary => {
+            summary.addEventListener("click", function(e) {
+                const details = this.parentElement;
+                setTimeout(() => {
+                    if (details.open) {
+                        details.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                    }
+                }, 200);
+            });
+        });
+
+        // Function to show the modal
+        function showModal() {
+            supportModal.classList.remove('hidden');
         }
-      }, 200); // delay so it scrolls after expansion
+        // Function to hide the modal
+        function hideModal() {
+            supportModal.classList.add('hidden');
+        }
+        // Event Listeners
+        if (openModalBtn) {
+            openModalBtn.addEventListener('click', showModal);
+        }
+        if (closeModalBtn) {
+            closeModalBtn.addEventListener('click', hideModal);
+        }
+        // Close modal if the background is clicked
+        if (supportModal) {
+            supportModal.addEventListener('click', function(event) {
+                if (event.target === supportModal) {
+                    hideModal();
+                }
+            });
+        }
     });
-  });
 </script>
+
+</body>
+</html>
 
