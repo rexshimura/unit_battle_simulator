@@ -1,7 +1,86 @@
+<!-- Add Tailwind CSS to your project for this to work: <script src="https://cdn.tailwindcss.com"></script> -->
+<style>
+    /* Basic styles for the tooltip */
+    .tooltip-container {
+        position: relative;
+        display: inline-block;
+    }
+    .tooltip {
+        visibility: hidden;
+        width: max-content;
+        background-color: #111827;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px 10px;
+        position: absolute;
+        z-index: 10; /* Increased z-index to pop out */
+        top: 125%; /* Position below the button */
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity 0.2s;
+        font-size: 0.75rem;
+        font-weight: 600;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    }
+     .tooltip::after {
+        content: "";
+        position: absolute;
+        bottom: 100%; /* Arrow at the top of the tooltip */
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: transparent transparent #111827 transparent; /* Arrow points up */
+    }
+    .tooltip-container:hover .tooltip {
+        visibility: visible;
+        opacity: 1;
+    }
+    
+    /* Custom scrollbar for version log */
+    #version-log::-webkit-scrollbar {
+        width: 8px;
+    }
+    #version-log::-webkit-scrollbar-track {
+        background: #1f2937; /* Dark Gray */
+        border-radius: 10px;
+    }
+    #version-log::-webkit-scrollbar-thumb {
+        background: #6d28d9; /* Dark Violet */
+        border-radius: 10px;
+    }
+    #version-log::-webkit-scrollbar-thumb:hover {
+        background: #8b5cf6; /* Lighter Violet */
+    }
+</style>
+
 <div class="max-w-2xl mx-auto text-gray-300">
-  <h2 class="text-2xl font-bold mb-4 text-violet-200 border-b border-gray-600 pb-2">
-    Version History
-  </h2>
+    <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-600">
+        <div>
+            <h2 class="text-2xl font-bold text-violet-200">
+                Version History
+            </h2>
+        </div>
+        <div class="flex items-center gap-3">
+             <h1 class="text-gray-400 text-sm">Made By: Rexshimura</h1>
+            <div class="tooltip-container">
+                <a href="https://github.com/rexshimura" target="_blank" class="action-btn w-10 h-10 rounded-full bg-gray-900 hover:bg-gray-700 flex items-center justify-center text-white transition-colors">
+                    <span class="tooltip">GitHub</span>
+                    <!-- GitHub Icon SVG -->
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+                </a>
+            </div>
+            <div class="tooltip-container">
+                 <a href="support-me.html" class="action-btn w-10 h-10 rounded-full bg-violet-700 hover:bg-violet-600 flex items-center justify-center text-white transition-colors">
+                    <span class="tooltip">Support Me</span>
+                    <!-- Heart/Support Icon SVG -->
+                    <svg class="w-6 h-6" viewBox="0 0 20 20" fill="currentColor"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/></svg>
+                </a>
+            </div>
+        </div>
+    </div>
 
   <!-- Scrollable container -->
   <div id="version-log" class="space-y-2 max-h-96 overflow-y-auto pr-2 scroll-smooth">
@@ -212,3 +291,4 @@
     });
   });
 </script>
+
