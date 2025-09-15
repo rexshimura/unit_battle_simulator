@@ -1,5 +1,5 @@
 <!-- MADE BY REXSHIMURA - 2025 -->
-<!-- NOTE: NO DONT CHANGE THE LOG FUNCTIONALITY -->
+<!-- NOTE: NO DONT CHANGE THE LOG FUNCTIONALITY AND VERSION-->
 
 <!-- ABOUT:  -->
 <!-- This is the main HTML file for the Unit Battle Simulator web application.  -->
@@ -11,7 +11,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unit Battle Simulator - v2.5</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="author" content="Rexshimura">
+    <meta name="description" content="A web-based battle simulator where users can place and pit various units against each other in real-time.">
+
+    <title></title>
+    <script>
+        fetch("version.txt").then(r=>r.text()).then(v=>{
+        document.title=`Unit Battle Simulator - ${v.trim()}`;
+        });
+    </script>
+
+    <link rel="icon" type="image/x-icon" href="icon/app.ico">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -232,7 +244,16 @@
                 <button id="log-btn" title="Show Version History" class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.546-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </button>
-                <h1 class="text-2xl font-bold text-violet-300">Unit Battle Simulator Ver 2.5</h1>
+                <h1 id="version-header" class="text-2xl font-bold text-violet-300"></h1>
+                <!-- DONT CHANGE THIS PART -->
+                <script>
+                    fetch("version.txt")
+                        .then(r => r.text())
+                        .then(v => {
+                        document.getElementById("version-header").textContent =
+                            `Unit Battle Simulator Ver ${v.trim()}`;
+                        });
+                </script>
             </div>
             <div class="text-right flex gap-4 items-center">
                 <button id="inspect-unit-btn" data-tooltip-title="Inspect Unit" data-tooltip-desc="Hover over or click a unit to see its detailed stats in real-time." class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
@@ -352,6 +373,9 @@
                      <button data-unit-type="swarmer" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
                         <p class="font-bold">Swarmer</p><p class="text-xs text-gray-400">Spawns multiple bees</p>
                     </button>
+                    <button data-unit-type="strangler" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Strangler</p><p class="text-xs text-gray-400">Hooks and stuns an enemy.</p>
+                    </button>
                 </div>
                 <div class="mt-auto flex-shrink-0">
                     <div class="mt-6 pt-4 border-t border-gray-600 flex justify-around items-center">
@@ -435,33 +459,34 @@
         // === CONFIGURATION: Tweak unit stats here! ===
         // =======================================================
         const UNIT_SPECS = {
-            'shooter':      { name: 'Shooter', tags: ['Ranged', 'Basic'], hp: 50,  speed: 0.5, attackDamage: 9,  attackRange: 800, attackCooldown: 650,  color: { team1: '#3b82f6', team2: '#ef4444' } },
-            'slasher':      { name: 'Slasher', tags: ['Melee', 'Basic'], hp: 100, speed: 1.0, attackDamage: 13,   attackRange: 20,  attackCooldown: 500,  color: { team1: '#60a5fa', team2: '#f87171' } },
-            'shielder':     { name: 'Shielder', tags: ['Tank', 'Defense'], hp: 175, speed: 0.4, attackDamage: 0,    attackRange: 0,   attackCooldown: 0,    color: { team1: '#1d4ed8', team2: '#b91c1c' } },
-            'swifter':      { name: 'Swifter', tags: ['Melee', 'Assassin'], hp: 50,  speed: 3.8, attackDamage: 15,   attackRange: 20,  attackCooldown: 700,  color: { team1: '#a78bfa', team2: '#f472b6' } },
-            'scorcher':     { name: 'Scorcher', tags: ['Ranged', 'AoE'], hp: 80,  speed: 0.6, attackDamage: 25,   attackRange: 500, attackCooldown: 2000, color: { team1: '#f59e0b', team2: '#f97316' } },
-            'shocker':      { name: 'Shocker', tags: ['Ranged', 'Chain'], hp: 70,  speed: 0.8, attackDamage: 12,   attackRange: 200, attackCooldown: 1200, color: { team1: '#eab308', team2: '#0891b2' } },
-            'slammer':      { name: 'Slammer', tags: ['Melee', 'Crowd-Control'], hp: 120, speed: 1.0, attackDamage: 15,   attackRange: 40,  attackCooldown: 1000, color: { team1: '#94a3b8', team2: '#7f1d1d' } },
-            'skirmisher':   { name: 'Skirmisher', tags: ['Ranged', 'Kiter'], hp: 60,  speed: 1.8, attackDamage: 8,    attackRange: 300, attackCooldown: 700,  color: { team1: '#2dd4bf', team2: '#fb7185' } },
-            'streamer':     { name: 'Streamer', tags: ['Ranged', 'Laser'], hp: 65,  speed: 0.4, attackDamage: 0.25, attackRange: 800, attackCooldown: 5800, color: { team1: '#14b8a6', team2: '#f43f5e' } },
-            'summoner':     { name: 'Summoner', tags: ['Support', 'Summoner'], hp: 70,  speed: 0.3, attackDamage: 0,    attackRange: 1000, attackCooldown: 1300, color: { team1: '#a855f7', team2: '#ec4899' } },
-            'skeleton':     { name: 'Skeleton', tags: ['Melee', 'Summon'], hp: 15,  speed: 1.01,attackDamage: 8,    attackRange: 20,  attackCooldown: 800,  color: { team1: '#d1d5db', team2: '#9ca3af' } },
-            'sustainer':    { name: 'Sustainer', tags: ['Support', 'Healer'], hp: 80,  speed: 0.8, attackDamage: 0,    attackRange: 800, attackCooldown: 900, color: { team1: '#10b981', team2: '#22d3ee' }, healAmount: 0.30 },
-            'synchronizer': { name: 'Synchronizer', tags: ['Support', 'Buffer'], hp: 90,  speed: 0.9, attackDamage: 0,    attackRange: 300, attackCooldown: 100,  color: { team1: '#c084fc', team2: '#fb7185' }, buffAmount: 1.48 },
-            'sniper':       { name: 'Sniper', tags: ['Ranged', 'High-Damage', 'Assassin'], hp: 60,  speed: 0.3, attackDamage: 75,   attackRange: 2000,attackCooldown: 5050, color: { team1: '#67e8f9', team2: '#be123c' } },
-            'spiker':       { name: 'Spiker', tags: ['Tank', 'Reflect'], hp: 400, speed: 0.4, attackDamage: 5,    attackRange: 15,  attackCooldown: 1000, color: { team1: '#84cc16', team2: '#ca8a04' }, reflectDamage: 16 },
-            'skipper':      { name: 'Skipper', tags: ['Ranged', 'Ricochet'], hp: 70,  speed: 0.7, attackDamage: 12,   attackRange: 600, attackCooldown: 1500, color: { team1: '#22d3ee', team2: '#f472b6' } },
-            'spinner':      { name: 'Spinner', tags: ['Melee', 'Defense', 'AoE'], hp: 110, speed: 1.3, attackDamage: 17,    attackRange: 80,  attackCooldown: 1300, color: { team1: '#fde047', team2: '#f87171' } },
-            'spawner':      { name: 'Spawner', tags: ['Ranged', 'Summoner'], hp: 85,  speed: 0.4, attackDamage: 9,    attackRange: 300, attackCooldown: 1300, color: { team1: '#d8b4fe', team2: '#fbcfe8' } },
-            'sentry':       { name: 'Sentry', tags: ['Ranged', 'Summon'], hp: 5,  speed: 0,   attackDamage: 1,  attackRange: 400, attackCooldown: 270,  color: { team1: '#a5b4fc', team2: '#fda4af' } },
-            'stopper':      { name: 'Stopper', tags: ['Support', 'Disabler'], hp: 90,  speed: 0.6, attackDamage: 0.05, attackRange: 1000, attackCooldown: 6000, color: { team1: '#fca5a5', team2: '#67e8f9' }, stopDuration: 6500, maxTargets: 2 },
-            'sprayer':      { name: 'Sprayer', tags: ['Ranged', 'Rapid-Fire'], hp: 75,  speed: 0.9, attackDamage: 2.0,  attackRange: 650, attackCooldown: 100,  color: { team1: '#06b6d4', team2: '#db2777' }, spreadAngle: Math.PI / 12 },
-            'swinger':      { name: 'Swinger', tags: ['Melee', 'AoE'], hp: 110, speed: 0.8, attackDamage: 65,   attackRange: 50,  attackCooldown: 1500, color: { team1: '#fca5a5', team2: '#93c5fd' } },
-            'slither':      { name: 'Slither', tags: ['Support', 'Summoner'], hp: 80,  speed: 0.4, attackDamage: 0,    attackRange: 500, attackCooldown: 9000, color: { team1: '#0d9488', team2: '#7c2d12' } },
-            'snake':        { name: 'Snake', tags: ['Melee', 'Summon'], hp: 50, speed: 1.5, attackDamage: 10,   attackRange: 25,  attackCooldown: 430,  color: { team1: '#14b8a6', team2: '#9a3412' } },
-            'stalker':      { name: 'Stalker', tags: ['Melee', 'Assassin'], hp: 70, speed: 3.5, attackDamage: 20, attackRange: 400, attackCooldown: 700, color: { team1: '#4338ca', team2: '#be185d' }, silenceDuration: 2000 },
-            'swarmer':      { name: 'Swarmer', tags: ['Support', 'Summoner'], hp: 80,  speed: 0.3, attackDamage: 0,    attackRange: 1000, attackCooldown: 1500, color: { team1: '#f59e0b', team2: '#fb923c' } },
-            'bee':          { name: 'Bee',     tags: ['Melee', 'Summon'],     hp: 2,   speed: 7, attackDamage: 1,    attackRange: 30,  attackCooldown: 500,  color: { team1: '#facc15', team2: '#fef08a' } },
+            'shooter':      { name: 'Shooter', tags: ['Ranged', 'Basic'],         hp: 50,  speed: 0.5,  attackDamage: 9,    attackRange: 800,  attackCooldown: 650,  color: { team1: '#3b82f6', team2: '#ef4444' } },
+            'slasher':      { name: 'Slasher', tags: ['Melee', 'Basic'],          hp: 100, speed: 1.0,  attackDamage: 13,   attackRange: 35,   attackCooldown: 500,  color: { team1: '#60a5fa', team2: '#f87171' } },
+            'shielder':     { name: 'Shielder', tags: ['Tank', 'Defense'],        hp: 175, speed: 0.4,  attackDamage: 0,    attackRange: 0,    attackCooldown: 0,    color: { team1: '#1d4ed8', team2: '#b91c1c' } },
+            'swifter':      { name: 'Swifter', tags: ['Melee', 'Assassin'],       hp: 50,  speed: 3.9,  attackDamage: 15,   attackRange: 27,   attackCooldown: 700,  color: { team1: '#a78bfa', team2: '#f472b6' } },
+            'scorcher':     { name: 'Scorcher', tags: ['Ranged', 'AoE'],          hp: 80,  speed: 0.6,  attackDamage: 25,   attackRange: 500,  attackCooldown: 2000, color: { team1: '#f59e0b', team2: '#f97316' } },
+            'shocker':      { name: 'Shocker', tags: ['Ranged', 'Chain'],         hp: 70,  speed: 0.8,  attackDamage: 12,   attackRange: 200,  attackCooldown: 1200, color: { team1: '#eab308', team2: '#0891b2' } },
+            'slammer':      { name: 'Slammer', tags: ['Melee', 'Control'],        hp: 120, speed: 1.0,  attackDamage: 15,   attackRange: 45,   attackCooldown: 1000, color: { team1: '#94a3b8', team2: '#7f1d1d' } },
+            'skirmisher':   { name: 'Skirmisher', tags: ['Ranged', 'Kiter'],      hp: 60,  speed: 1.8,  attackDamage: 8,    attackRange: 300,  attackCooldown: 700,  color: { team1: '#2dd4bf', team2: '#fb7185' } },
+            'streamer':     { name: 'Streamer', tags: ['Ranged', 'Laser'],        hp: 65,  speed: 0.4,  attackDamage: 0.25, attackRange: 800,  attackCooldown: 5800, color: { team1: '#14b8a6', team2: '#f43f5e' } },
+            'summoner':     { name: 'Summoner', tags: ['Support', 'Summoner'],    hp: 70,  speed: 0.3,  attackDamage: 0,    attackRange: 1000, attackCooldown: 1300, color: { team1: '#a855f7', team2: '#ec4899' } },
+            'skeleton':     { name: 'Skeleton', tags: ['Melee', 'Summon'],        hp: 15,  speed: 1.01, attackDamage: 8,    attackRange: 20,   attackCooldown: 800,  color: { team1: '#d1d5db', team2: '#9ca3af' } },
+            'sustainer':    { name: 'Sustainer', tags: ['Support', 'Healer'],     hp: 80,  speed: 0.8,  attackDamage: 0,    attackRange: 800,  attackCooldown: 900, color: { team1: '#10b981', team2: '#22d3ee' }, healAmount: 0.30 },
+            'synchronizer': { name: 'Synchronizer', tags: ['Support', 'Buffer'],  hp: 90,  speed: 0.9,  attackDamage: 0,    attackRange: 300,  attackCooldown: 100,  color: { team1: '#c084fc', team2: '#fb7185' }, buffAmount: 1.48 },
+            'sniper':       { name: 'Sniper', tags: ['Ranged', 'Assassin'],       hp: 60,  speed: 0.3,  attackDamage: 75,   attackRange: 2000, attackCooldown: 5050, color: { team1: '#67e8f9', team2: '#be123c' } },
+            'spiker':       { name: 'Spiker', tags: ['Tank', 'Reflect'],          hp: 400, speed: 0.4,  attackDamage: 5,    attackRange: 15,   attackCooldown: 1000, color: { team1: '#84cc16', team2: '#ca8a04' }, reflectDamage: 16 },
+            'skipper':      { name: 'Skipper', tags: ['Ranged', 'Ricochet'],      hp: 70,  speed: 0.7,  attackDamage: 12,   attackRange: 600,  attackCooldown: 1500, color: { team1: '#22d3ee', team2: '#f472b6' } },
+            'spinner':      { name: 'Spinner', tags: ['Melee', 'Defense', 'AoE'], hp: 110, speed: 1.3,  attackDamage: 17,   attackRange: 80,   attackCooldown: 1300, color: { team1: '#fde047', team2: '#f87171' } },
+            'spawner':      { name: 'Spawner', tags: ['Ranged', 'Summoner'],      hp: 85,  speed: 0.4,  attackDamage: 9,    attackRange: 300,  attackCooldown: 1300, color: { team1: '#d8b4fe', team2: '#fbcfe8' } },
+            'sentry':       { name: 'Sentry', tags: ['Ranged', 'Summon'],         hp: 5,   speed: 0,    attackDamage: 1,    attackRange: 400,  attackCooldown: 270,  color: { team1: '#a5b4fc', team2: '#fda4af' } },
+            'stopper':      { name: 'Stopper', tags: ['Support', 'Disabler'],     hp: 90,  speed: 0.6,  attackDamage: 0.05, attackRange: 1000, attackCooldown: 6000, color: { team1: '#fca5a5', team2: '#67e8f9' }, stopDuration: 6500, maxTargets: 2 },
+            'sprayer':      { name: 'Sprayer', tags: ['Ranged', 'Rapid-Fire'],    hp: 75,  speed: 0.9,  attackDamage: 2.0,  attackRange: 650,  attackCooldown: 100,  color: { team1: '#06b6d4', team2: '#db2777' }, spreadAngle: Math.PI / 12 },
+            'swinger':      { name: 'Swinger', tags: ['Melee', 'AoE'],            hp: 110, speed: 0.8,  attackDamage: 65,   attackRange: 55,   attackCooldown: 1500, color: { team1: '#fca5a5', team2: '#93c5fd' } },
+            'slither':      { name: 'Slither', tags: ['Support', 'Summoner'],     hp: 80,  speed: 0.4,  attackDamage: 0,    attackRange: 500,  attackCooldown: 9000, color: { team1: '#0d9488', team2: '#7c2d12' } },
+            'snake':        { name: 'Snake', tags: ['Melee', 'Summon'],           hp: 50,  speed: 1.5,  attackDamage: 10,   attackRange: 25,   attackCooldown: 430,  color: { team1: '#14b8a6', team2: '#9a3412' } },
+            'stalker':      { name: 'Stalker', tags: ['Melee', 'Assassin'],       hp: 70,  speed: 4,    attackDamage: 20,   attackRange: 400,  attackCooldown: 700, color: { team1: '#4338ca', team2: '#be185d' }, silenceDuration: 2000 },
+            'swarmer':      { name: 'Swarmer', tags: ['Support', 'Summoner'],     hp: 80,  speed: 0.3,  attackDamage: 0,    attackRange: 1000, attackCooldown: 1500, color: { team1: '#f59e0b', team2: '#fb923c' } },
+            'bee':          { name: 'Bee',     tags: ['Melee', 'Summon'],         hp: 2,   speed: 7,    attackDamage: 1,    attackRange: 30,   attackCooldown: 500,  color: { team1: '#facc15', team2: '#fef08a' } },
+            'strangler':    { name: 'Strangler', tags: ['Melee', 'Control'],      hp: 150, speed: 0.7,  attackDamage: 18,   attackRange: 25,   attackCooldown: 800, hookCooldown: 7000, hookRange: 950, stunDuration: 5000, color: { team1: '#0d9488', team2: '#831843' } },
         };
         // =======================================================
 
@@ -594,6 +619,9 @@
                 this.isBuffed = false; this.buffDuration = 0;
                 this.buffMultiplier = 1; this.buffSource = null;
 
+                this.isHooked = false;
+                this.hookedBy = null;
+
                 if (type === 'slammer') { this.successfulAttacks = 0; }
                 if (type === 'skirmisher') { this.isShooting = false; this.shootAnimDuration = 15; this.shootAnimProgress = 0; }
                 if (type === 'streamer') { this.isStreaming = false; this.streamDuration = 240; this.streamProgress = 0; }
@@ -637,6 +665,11 @@
                     this.bodyAngle = 0;
                 }
                 if (type === 'swarmer') { this.myBees = []; }
+                if (type === 'strangler') {
+                    this.lastHookTime = -14000; // Ready to hook at the start
+                    this.hookTarget = null;
+                    this.activeHook = null;
+                }
             }
 
             getAttackDamage() { return this.attackDamage * this.buffMultiplier; }
@@ -911,10 +944,28 @@
                     ctx.fillRect(cooldownBarX, cooldownBarY, cooldownBarWidth * cooldownProgress, cooldownBarHeight);
                 }
 
+                if (this.type === 'strangler') {
+                    const skillCooldownBarY = cooldownBarY + (cooldownProgress >= 0 && cooldownProgress < 1 ? cooldownBarHeight + 1 : 0);
+                    const skillCooldownProgress = Math.min(1, (now - this.lastHookTime) / (UNIT_SPECS.strangler.hookCooldown / gameSpeed));
+                    
+                    if (isBattleStarted && skillCooldownProgress < 1) {
+                        ctx.fillStyle = '#4c1d95'; // Darker base for skill
+                        ctx.fillRect(cooldownBarX, skillCooldownBarY, cooldownBarWidth, cooldownBarHeight);
+                        ctx.fillStyle = '#818cf8'; // Lavender for skill cooldown
+                        ctx.fillRect(cooldownBarX, skillCooldownBarY, cooldownBarWidth * skillCooldownProgress, cooldownBarHeight);
+                    }
+                }
 
-                if (this.isStunned) {
+
+                if (this.isStunned && !this.isHooked) {
                     ctx.fillStyle = 'rgba(253, 224, 71, 0.8)'; ctx.font = 'bold 18px "Roboto Mono"';
                     ctx.textAlign = 'center'; ctx.fillText('Zzz', this.x, this.y - this.height - 18);
+                }
+                 if (this.isHooked) {
+                    ctx.fillStyle = 'rgba(129, 140, 248, 0.9)';
+                    ctx.font = 'bold 20px "Roboto Mono"';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('🔗', this.x, this.y - this.height - 18);
                 }
                 if (this.isStopped) {
                     ctx.fillStyle = 'rgba(252, 165, 165, 0.9)';
@@ -1077,7 +1128,7 @@
                     ctx.closePath();
                     ctx.fill();
                     ctx.restore();
-                } else if (this.type === 'slasher' || this.type === 'swifter' || this.type === 'skeleton' || this.type === 'stalker') {
+                } else if (this.type === 'slasher' || this.type === 'swifter' || this.type === 'skeleton' || this.type === 'stalker' || this.type === 'strangler') {
                     if (this.isSlashing) {
                         const progress = this.slashAnimProgress / this.slashAnimDuration;
                         const arc = Math.PI / 1.5;
@@ -1289,7 +1340,7 @@
             }
             
             update(friendlies, enemies) {
-                 if (this.isSilenced) {
+                if (this.isSilenced) {
                     this.silenceDuration -= 1 * gameSpeed;
                     if (this.silenceDuration <= 0) this.isSilenced = false;
                 }
@@ -1301,7 +1352,13 @@
                 }
                 if (this.isStunned) {
                     this.stunDuration -= 1 * gameSpeed;
-                    if (this.stunDuration <= 0) this.isStunned = false;
+                    if (this.stunDuration <= 0) {
+                        this.isStunned = false;
+                        if(this.isHooked) { // If the stun wears off but still hooked, unhook.
+                            this.isHooked = false;
+                            this.hookedBy = null;
+                        }
+                    }
                 }
                  if (this.isStopped) {
                     let durationDecrease = 1 * gameSpeed;
@@ -1335,6 +1392,19 @@
                     this.y = lerp(this.knockbackStartY, this.knockbackTargetY, this.knockbackProgress);
                     if (this.knockbackProgress >= 1) this.isBeingKnockedBack = false;
                 }
+                if (this.isHooked && this.hookedBy) {
+                    const dist = getDistance(this, this.hookedBy);
+                    if (dist > this.hookedBy.width) {
+                        const angle = Math.atan2(this.hookedBy.y - this.y, this.hookedBy.x - this.x);
+                        const pullSpeed = 10;
+                        this.x += Math.cos(angle) * pullSpeed * gameSpeed;
+                        this.y += Math.sin(angle) * pullSpeed * gameSpeed;
+                    }
+                     // Keep applying stun while hooked
+                    if (!this.isStunned) this.stun(0.1);
+                    return; // No other actions while hooked
+                }
+
 
                 if (this.type === 'stopper' && this.isCasting) {
                     if (this.isSilenced) this.isCasting = false;
@@ -1406,8 +1476,36 @@
                 }
                 
                 this.applySeparation(friendlies);
-
-                if (this.type === 'sustainer') {
+                if (this.type === 'strangler') {
+                    if (this.activeHook) { // Can't move while hooking
+                        this.relX = this.x / canvas.width; this.relY = this.y / canvas.height;
+                        return;
+                    }
+                    const now = Date.now();
+                    const spec = UNIT_SPECS.strangler;
+                    if (now - this.lastHookTime > spec.hookCooldown / gameSpeed && !this.isSilenced) {
+                        let potentialTargets = enemies.filter(e => getDistance(this, e) <= spec.hookRange && !e.isSummon);
+                        if (potentialTargets.length > 0) {
+                            this.hookTarget = potentialTargets[Math.floor(Math.random() * potentialTargets.length)];
+                            this.lastHookTime = now;
+                            const hook = new HookProjectile(this, this.hookTarget);
+                            specialProjectiles.push(hook);
+                            this.activeHook = hook;
+                        }
+                    }
+                    this.findTarget(enemies);
+                    if (this.target) {
+                        if (getDistance(this, this.target) > this.attackRange) {
+                            const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                            this.x += Math.cos(angle) * this.speed * gameSpeed;
+                            this.y += Math.sin(angle) * this.speed * gameSpeed;
+                        } else {
+                            this.attack(friendlies, enemies);
+                        }
+                    } else {
+                        this.x += (this.team === 1 ? this.speed : -this.speed) * 0.5 * gameSpeed;
+                    }
+                } else if (this.type === 'sustainer') {
                     const alliesToHeal = friendlies.filter(f => f.hp < f.maxHp && f !== this).sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.hp));
                     if (alliesToHeal.length > 0) this.attack(friendlies, enemies);
 
@@ -1793,7 +1891,7 @@
                     } else if (this.type === 'skirmisher') {
                         this.isShooting = true; this.shootAnimProgress = this.shootAnimDuration;
                         projectiles.push(new Projectile(this, this.target, this.getAttackDamage(), this.team));
-                    } else if (this.type === 'slasher' || this.type === 'swifter' || this.type === 'skeleton' || this.type === 'spiker' || this.type === 'snake' || this.type === 'bee') {
+                    } else if (this.type === 'slasher' || this.type === 'swifter' || this.type === 'skeleton' || this.type === 'spiker' || this.type === 'snake' || this.type === 'bee' || this.type === 'strangler') {
                          if (this.target && getDistance(this, this.target) <= this.attackRange + 5) {
                             this.target.takeDamage(this.getAttackDamage(), this);
                             if (this.type === 'bee') {
@@ -1976,6 +2074,91 @@
                  }
             }
             deflect() { this.deflectAnim = 10; }
+        }
+        
+        class HookProjectile {
+            constructor(caster, target) {
+                this.caster = caster;
+                this.target = target;
+                this.speed = 10;
+                this.x = caster.x;
+                this.y = caster.y;
+                this.isReturning = false;
+                this.hasHit = false;
+            }
+
+            update() {
+                if (!this.caster || this.caster.hp <= 0) {
+                    if (this.target && this.target.isHooked) {
+                        this.target.isHooked = false;
+                        this.target.hookedBy = null;
+                        this.target.isStunned = false; // also free from stun
+                    }
+                    if(this.caster) this.caster.activeHook = null;
+                    return false;
+                }
+
+                let destination = this.isReturning ? this.caster : this.target;
+
+                if (!destination || (destination.hp <= 0 && !this.isReturning)) {
+                    this.isReturning = true;
+                    destination = this.caster;
+                }
+
+                const dist = getDistance(this, destination);
+                if (dist < this.speed) {
+                    if (this.isReturning) {
+                        if (this.target && this.target.isHooked) {
+                           this.target.isHooked = false;
+                           this.target.hookedBy = null;
+                        }
+                        this.caster.activeHook = null;
+                        return false;
+                    } else {
+                        this.hasHit = true;
+                        this.isReturning = true;
+                        if (destination.hp > 0) {
+                            destination.isHooked = true;
+                            destination.hookedBy = this.caster;
+                            destination.stun(UNIT_SPECS.strangler.stunDuration / 1000);
+                        }
+                    }
+                }
+
+                const angle = Math.atan2(destination.y - this.y, destination.x - this.x);
+                this.x += Math.cos(angle) * this.speed * gameSpeed;
+                this.y += Math.sin(angle) * this.speed * gameSpeed;
+
+                return true; 
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.moveTo(this.caster.x, this.caster.y);
+                ctx.lineTo(this.x, this.y);
+                ctx.strokeStyle = '#94a3b8';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                const dest = this.isReturning ? this.caster : this.target;
+                if (dest) {
+                     const angle = Math.atan2(dest.y - this.y, dest.x - this.x);
+                     ctx.rotate(angle + Math.PI / 2);
+                }
+                ctx.fillStyle = '#e5e7eb';
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(-5, 5);
+                ctx.lineTo(-2, 5);
+                ctx.arc(0, 5, 2.5, Math.PI, 0, true);
+                ctx.lineTo(2, 5);
+                ctx.lineTo(5, 5);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
         }
         
         class Projectile {
@@ -2568,6 +2751,14 @@
                         ctx.setLineDash([]);
                         ctx.globalAlpha = 1.0;
                     }
+                    if (unit.type === 'strangler') {
+                        ctx.beginPath();
+                        ctx.arc(unit.x, unit.y, UNIT_SPECS.strangler.hookRange, 0, Math.PI * 2);
+                        ctx.globalAlpha = 0.05;
+                        ctx.fillStyle = unit.team === 1 ? '#0d9488' : '#831843';
+                        ctx.fill();
+                        ctx.globalAlpha = 1.0;
+                    }
                 });
             }
 
@@ -2595,6 +2786,16 @@
                     ctx.stroke();
                     ctx.setLineDash([]);
                 }
+                if (showRangePreview && specs.hookRange > 0) {
+                    ctx.beginPath();
+                    ctx.arc(mousePos.x, mousePos.y, specs.hookRange, 0, Math.PI * 2);
+                    ctx.setLineDash([8, 12]);
+                    ctx.strokeStyle = 'rgba(13, 148, 136, 0.5)';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
                 ctx.globalAlpha = 1.0;
             }
 
@@ -2624,6 +2825,15 @@
                     ctx.arc(unitUnderMouse.x, unitUnderMouse.y, unitUnderMouse.attackRange, 0, Math.PI * 2);
                     ctx.setLineDash([8, 12]);
                     ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+                if (isInspecting && unitUnderMouse.type === 'strangler') {
+                     ctx.beginPath();
+                    ctx.arc(unitUnderMouse.x, unitUnderMouse.y, UNIT_SPECS.strangler.hookRange, 0, Math.PI * 2);
+                    ctx.setLineDash([8, 12]);
+                    ctx.strokeStyle = 'rgba(13, 148, 136, 0.5)';
                     ctx.lineWidth = 1.5;
                     ctx.stroke();
                     ctx.setLineDash([]);
@@ -2893,6 +3103,15 @@
                         <span class="text-gray-400">Range:</span> <span class="text-white">${stats.attackRange}</span>
                         <span class="text-gray-400">Cooldown:</span> <span class="text-white">${stats.attackCooldown}ms</span>
                     </div>`;
+                
+                if (stats.hookCooldown) {
+                     statsHTML += `
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mt-1">
+                        <span class="text-gray-400">Hook Range:</span> <span class="text-white">${stats.hookRange}</span>
+                        <span class="text-gray-400">Hook CD:</span> <span class="text-white">${stats.hookCooldown}ms</span>
+                    </div>`;
+                }
+
 
                 if (stats.burstDamage) {
                     statsHTML = `
@@ -3224,9 +3443,15 @@
             const cooldownProgress = isBattleStarted ? Math.min(1, (Date.now() - unit.lastAttackTime) / (unit.getAttackCooldown() / gameSpeed)) * 100 : 0;
 
             let effectsHTML = '';
-            if (unit.isBuffed) effectsHTML += `<div class="text-xs text-green-400">Buffed by ${unit.buffSource.type}</div>`;
-            if (unit.isStunned) effectsHTML += `<div class="text-xs text-yellow-400">Stunned</div>`;
-            if (unit.isStopped) effectsHTML += `<div class="text-xs text-red-400">Stopped by ${unit.stoppedBy.type}</div>`;
+            if (unit.isBuffed) effectsHTML += `<div class="text-xs text-green-400">Buffed by ${UNIT_SPECS[unit.buffSource.type].name}</div>`;
+
+            if (unit.isHooked && unit.hookedBy) {
+                effectsHTML += `<div class="text-xs text-indigo-400">Hooked & Stunned by ${UNIT_SPECS[unit.hookedBy.type].name}</div>`;
+            } else if (unit.isStunned) {
+                effectsHTML += `<div class="text-xs text-yellow-400">Stunned</div>`;
+            }
+            
+            if (unit.isStopped) effectsHTML += `<div class="text-xs text-red-400">Stopped by ${UNIT_SPECS[unit.stoppedBy.type].name}</div>`;
             if (unit.isSilenced) effectsHTML += `<div class="text-xs text-gray-400">Silenced</div>`;
             if (effectsHTML === '') effectsHTML = '<div class="text-xs text-gray-500">None</div>';
 
