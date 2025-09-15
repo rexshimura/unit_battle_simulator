@@ -11,7 +11,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unit Battle Simulator - v2.4</title>
+    <title>Unit Battle Simulator - v2.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -39,6 +39,10 @@
             color: #1a1a1a;
             transform: scale(1.05);
             box-shadow: 0 0 15px rgba(167, 139, 250, 0.5);
+        }
+        /* This makes the description text dark when selected */
+        .unit-btn.selected p {
+            color: #1a1a1a;
         }
         .action-btn {
             transition: all 0.2s ease-in-out;
@@ -228,23 +232,23 @@
                 <button id="log-btn" title="Show Version History" class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.546-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </button>
-                <h1 class="text-2xl font-bold text-violet-300">Unit Battle Simulator Ver 2.4</h1>
+                <h1 class="text-2xl font-bold text-violet-300">Unit Battle Simulator Ver 2.5</h1>
             </div>
             <div class="text-right flex gap-4 items-center">
-                <button id="inspect-unit-btn" title="Inspect Unit" class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
+                <button id="inspect-unit-btn" data-tooltip-title="Inspect Unit" data-tooltip-desc="Hover over or click a unit to see its detailed stats in real-time." class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
                      <svg class="w-6 h-6 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </button>
                 
-                <button id="show-stats-btn" title="Show Statistics" class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
+                <button id="show-stats-btn" data-tooltip-title="Battle Statistics" data-tooltip-desc="Opens a panel showing detailed performance stats for all units in the battle." class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
                      <svg class="w-6 h-6 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                 </button>
 
-                <button id="toggle-range-btn" title="Toggle Unit Range Preview" class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
+                <button id="toggle-range-btn" data-tooltip-title="Toggle Range Preview" data-tooltip-desc="Shows or hides the attack range circles for all units on the battlefield." class="action-btn p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
                     <img id="eye-icon" src="icon/icon_eye_open.svg" alt="Eye Open" class="w-6 h-6 hidden pointer-events-none">
                     <img id="eye-off-icon" src="icon/icon_eye_closed.svg" alt="Eye Closed" class="w-6 h-6 pointer-events-none">
                 </button>
 
-                <button id="remove-unit-btn" title="Remove Unit" class="action-btn remove p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
+                <button id="remove-unit-btn" data-tooltip-title="Remove Unit" data-tooltip-desc="Activates remove mode. Click on a unit on the field to delete it." class="action-btn remove p-2 rounded-full bg-gray-700 hover:bg-gray-600 shadow-lg text-white">
                     <img src="icon/icon_remove.svg" alt="Remove" class="w-6 h-6 pointer-events-none">
                 </button>
 
@@ -260,19 +264,19 @@
                 
                 <!-- Role Sorter -->
                 <div id="role-sorter" class="flex justify-around mb-4 border-b border-gray-600 pb-2">
-                    <button data-role="all" class="role-btn p-2 rounded-full selected" title="All">
+                    <button data-role="all" class="role-btn p-2 rounded-full selected" data-tooltip-title="All Units" data-tooltip-desc="Show all available units.">
                         <img src="icon/icon_all.svg" alt="All" class="w-6 h-6 pointer-events-none">
                     </button>
-                    <button data-role="Melee" class="role-btn p-2 rounded-full" title="Melee">
+                    <button data-role="Melee" class="role-btn p-2 rounded-full" data-tooltip-title="Melee Units" data-tooltip-desc="Filter for units that fight up close.">
                         <img src="icon/icon_melee.svg" alt="Melee" class="w-6 h-6 pointer-events-none">
                     </button>
-                    <button data-role="Ranged" class="role-btn p-2 rounded-full" title="Ranged">
+                    <button data-role="Ranged" class="role-btn p-2 rounded-full" data-tooltip-title="Ranged Units" data-tooltip-desc="Filter for units that attack from a distance.">
                         <img src="icon/icon_range.svg" alt="Ranged" class="w-6 h-6 pointer-events-none">
                     </button>
-                    <button data-role="Tank" class="role-btn p-2 rounded-full" title="Tank">
+                    <button data-role="Tank" class="role-btn p-2 rounded-full" data-tooltip-title="Tank Units" data-tooltip-desc="Filter for durable units that absorb damage.">
                         <img src="icon/icon_tank.svg" alt="Tank" class="w-6 h-6 pointer-events-none">
                     </button>
-                    <button data-role="Support" class="role-btn p-2 rounded-full" title="Support">
+                    <button data-role="Support" class="role-btn p-2 rounded-full" data-tooltip-title="Support Units" data-tooltip-desc="Filter for units that heal, buff, or control the battlefield.">
                         <img src="icon/icon_support.svg" alt="Support" class="w-6 h-6 pointer-events-none">
                     </button>
                 </div>
@@ -351,13 +355,13 @@
                 </div>
                 <div class="mt-auto flex-shrink-0">
                     <div class="mt-6 pt-4 border-t border-gray-600 flex justify-around items-center">
-                         <button id="start-battle-btn" title="Start Battle" class="action-btn p-3 rounded-full bg-green-600 hover:bg-green-500 shadow-lg text-white">
+                         <button id="start-battle-btn" data-tooltip-title="Start / Stop Battle" data-tooltip-desc="Start the simulation. Click again while running to stop and completely clear the field." class="action-btn p-3 rounded-full bg-green-600 hover:bg-green-500 shadow-lg text-white">
                             <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                          </button>
-                         <button id="pause-btn" title="Pause/Resume" class="action-btn p-3 rounded-full bg-yellow-600 hover:bg-yellow-500 shadow-lg text-white">
+                         <button id="pause-btn" data-tooltip-title="Pause / Resume" data-tooltip-desc="Pause or resume the current battle simulation." class="action-btn p-3 rounded-full bg-yellow-600 hover:bg-yellow-500 shadow-lg text-white">
                             <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                          </button>
-                         <button id="reset-btn" title="Reset" class="action-btn p-3 rounded-full bg-red-600 hover:bg-red-500 shadow-lg text-white">
+                         <button id="reset-btn" data-tooltip-title="Reset Positions" data-tooltip-desc="Resets all units to their positions at the start of the last battle." class="action-btn p-3 rounded-full bg-red-600 hover:bg-red-500 shadow-lg text-white">
                             <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
                          </button>
                     </div>
@@ -376,6 +380,7 @@
             <!-- Game Canvas -->
             <div id="canvas-container" class="relative flex-grow">
                 <canvas id="gameCanvas" class="w-full h-full"></canvas>
+                <div id="selection-message" class="status-message absolute top-5 left-5 text-lg font-bold text-violet-300 pointer-events-none opacity-0 transition-opacity"></div>
                 <div id="status-message" class="status-message absolute inset-0 flex items-center justify-center text-5xl font-bold text-white pointer-events-none opacity-0 transition-opacity"></div>
                 <div id="remove-message" class="status-message absolute top-5 inset-x-0 flex items-center justify-center text-2xl font-bold text-red-400 pointer-events-none opacity-0 transition-opacity"></div>
                 <div id="inspect-message" class="status-message absolute top-5 inset-x-0 flex items-center justify-center text-2xl font-bold text-violet-300 pointer-events-none opacity-0 transition-opacity"></div>
@@ -397,6 +402,7 @@
         const pauseBtn = document.getElementById('pause-btn');
         const speedControls = document.getElementById('speed-controls');
         const statusMessage = document.getElementById('status-message');
+        const selectionMessage = document.getElementById('selection-message');
         const tooltip = document.getElementById('unit-tooltip');
         const removeMessage = document.getElementById('remove-message');
 
@@ -422,6 +428,7 @@
         const removeUnitBtn = document.getElementById('remove-unit-btn');
         
         const playIconSVG = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
+        const stopIconSVG = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>`;
         const pauseIconSVG = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
 
         // =======================================================
@@ -475,10 +482,13 @@
         let unitToHighlight = null;
         let mousePos = { x: -1, y: -1, onCanvas: false };
         let nextUnitId = 0;
+        let initialUnitPlacement = [];
         
         // State for stats panel
         let statsFilter = 'all'; // 'all', 'alive', 'defeated'
         let isSummarizedView = false;
+        let statsUpdateCounter = 0;
+        const STATS_UPDATE_INTERVAL = 15; // Approx. 4 updates per second at 60fps
 
 
         function resizeCanvas() {
@@ -2635,8 +2645,11 @@
         function gameLoop() {
             if (!isPaused) { 
                 update(); 
-                if (isBattleStarted && statsPanel.classList.contains('open')) {
+                // Throttled stats panel update
+                statsUpdateCounter++;
+                if (isBattleStarted && statsPanel.classList.contains('open') && statsUpdateCounter >= STATS_UPDATE_INTERVAL) {
                     updateStatsPanel();
+                    statsUpdateCounter = 0;
                 }
             }
             draw();
@@ -2645,6 +2658,7 @@
         }
 
         function setup() {
+            initialUnitPlacement = [];
             isBattleStarted = false; isPaused = false; gameSpeed = 1.0;
             isRemoveModeActive = false;
             isInspectModeActive = false;
@@ -2658,6 +2672,7 @@
             stopTrackingBtn.classList.add('hidden');
 
             canvas.style.cursor = 'crosshair';
+            startBattleBtn.innerHTML = playIconSVG;
             pauseBtn.innerHTML = pauseIconSVG;
             document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('selected'));
             document.querySelector('.speed-btn[data-speed="1.0"]').classList.add('selected');
@@ -2666,12 +2681,41 @@
             selectedUnit = null;
             document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('selected'));
             document.querySelectorAll('.unit-btn').forEach(b => b.disabled = false);
-            startBattleBtn.disabled = false;
             statusMessage.style.opacity = 0; statusMessage.textContent = '';
+            selectionMessage.style.opacity = 0; selectionMessage.textContent = '';
             removeMessage.style.opacity = 0;
             inspectMessage.style.opacity = 0;
             unitToHighlight = null;
             statsPanelContent.innerHTML = ''; // Clear stats panel on reset
+        }
+        
+        function resetBattlefield() {
+            isBattleStarted = false;
+            isPaused = false;
+            
+            projectiles = [];
+            specialProjectiles = [];
+            animations = [];
+            particles = [];
+            units = [];
+            allUnitsThisRound = [];
+            nextUnitId = 0;
+
+            if (initialUnitPlacement.length > 0) {
+                initialUnitPlacement.forEach(proto => {
+                    const newUnit = new Unit(proto.x, proto.y, proto.team, proto.type, proto.relX, proto.relY);
+                    units.push(newUnit);
+                    allUnitsThisRound.push(newUnit);
+                });
+            }
+            
+            // Reset UI
+            startBattleBtn.innerHTML = playIconSVG;
+            pauseBtn.innerHTML = pauseIconSVG;
+            document.querySelectorAll('.unit-btn').forEach(b => b.disabled = false);
+            statusMessage.style.opacity = 0;
+            statusMessage.textContent = '';
+            updateUnitCounts();
         }
 
         function updateUnitCounts() {
@@ -2682,21 +2726,26 @@
         function endBattle(message) {
              isBattleStarted = false; statusMessage.textContent = message;
              statusMessage.style.opacity = 1;
+             startBattleBtn.innerHTML = playIconSVG; // Show play icon to indicate it can be started again
              if (statsPanel.classList.contains('open')) updateStatsPanel();
         }
         
         function selectUnit(type) {
              if (isRemoveModeActive || isInspectModeActive) return;
-             // --- Toggle logic ---
+             
              if (selectedUnit === type) {
                 selectedUnit = null;
                 document.querySelector(`[data-unit-type="${type}"]`).classList.remove('selected');
+                selectionMessage.style.opacity = 0;
                 return;
              }
 
              selectedUnit = type;
              document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('selected'));
              document.querySelector(`[data-unit-type="${type}"]`).classList.add('selected');
+
+             selectionMessage.textContent = 'Currently selecting: ' + UNIT_SPECS[type].name;
+             selectionMessage.style.opacity = 1;
         }
 
         function updateStatsPanel() {
@@ -2879,6 +2928,23 @@
             }
         });
 
+        // --- Generic Tooltip logic for header icons ---
+        document.querySelectorAll('[data-tooltip-title]').forEach(el => {
+            el.addEventListener('mouseenter', (e) => {
+                const title = el.dataset.tooltipTitle;
+                const desc = el.dataset.tooltipDesc;
+                
+                tooltip.innerHTML = `
+                    <h3 class="text-lg font-bold text-violet-300 mb-2">${title}</h3>
+                    <p class="text-sm text-gray-300">${desc}</p>
+                `;
+                tooltip.style.display = 'block';
+            });
+            el.addEventListener('mouseleave', () => {
+                tooltip.style.display = 'none';
+            });
+        });
+
 
         canvas.addEventListener('click', (e) => {
             const rect = canvas.getBoundingClientRect();
@@ -2976,9 +3042,23 @@
         });
 
         startBattleBtn.addEventListener('click', () => {
-            if (units.length === 0 || isBattleStarted) return;
+            if (isBattleStarted) {
+                // If battle is running, stop it and clear the field completely
+                endBattle("Battle Stopped");
+                setup(); // This will clear the canvas entirely
+                return;
+            }
+
+            if (units.length === 0) return;
+
+            // Save current placement as the one to reset to
+            initialUnitPlacement = units.map(u => ({ x: u.x, y: u.y, team: u.team, type: u.type, relX: u.relX, relY: u.relY }));
+
             if (isPaused) { isPaused = false; pauseBtn.innerHTML = pauseIconSVG; }
-            isBattleStarted = true; startBattleBtn.disabled = true;
+            isBattleStarted = true;
+            startBattleBtn.innerHTML = stopIconSVG; // Change to stop icon
+            
+            // Disable unit placement UI and clear selections
             document.querySelectorAll('.unit-btn').forEach(b => b.disabled = true);
             isRemoveModeActive = false;
             removeUnitBtn.classList.remove('active');
@@ -2986,6 +3066,7 @@
             unitToHighlight = null;
             canvas.style.cursor = 'crosshair';
             selectedUnit = null;
+            selectionMessage.style.opacity = 0; // Hide selection message on start
             document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('selected'));
         });
 
@@ -3004,7 +3085,7 @@
             }
         });
 
-        resetBtn.addEventListener('click', setup);
+        resetBtn.addEventListener('click', resetBattlefield);
 
         // --- New Event Listeners ---
         showStatsBtn.addEventListener('click', () => {
@@ -3190,3 +3271,4 @@
     </script>
 </body>
 </html>
+
