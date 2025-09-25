@@ -703,21 +703,21 @@
 
         const UNIT_SPECS = {
             'swordsman':   { name: 'Swordsman',   tags: ['Melee', 'Basic'],  hp: 100, speed: 1.0,  attackDamage: 13.5, attackRange: 40,   attackCooldown: 720,  color: { team1: '#60a5fa', team2: '#f87171' } },
-            'guardian':    { name: 'Guardian',    tags: ['Tank', 'Melee'],   hp: 200, speed: 0.4,  attackDamage: 10,   attackRange: 35,   attackCooldown: 1200, color: { team1: '#60a5fa', team2: '#f87171' }, deflectChance: 0.5 },
-            'spearman':    { name: 'Spearman',    tags: ['Melee'],           hp: 90,  speed: 0.9,  attackDamage: 10,   attackRange: 80,   attackCooldown: 450,  color: { team1: '#60a5fa', team2: '#f87171' } },
+            'guardian':    { name: 'Guardian',    tags: ['Tank', 'Melee'],   hp: 200, speed: 0.4,  attackDamage: 10,   attackRange: 35,   attackCooldown: 1200, color: { team1: '#60a5fa', team2: '#f87171' }, deflectChance: 0.70 },
+            'spearman':    { name: 'Spearman',    tags: ['Melee'],           hp: 90,  speed: 0.9,  attackDamage: 10,   attackRange: 80,   attackCooldown: 470,  color: { team1: '#60a5fa', team2: '#f87171' } },
             'musketeer':   { name: 'Musketeer',   tags: ['Ranged', 'Basic'], hp: 50,  speed: 0.5,  attackDamage: 18,   attackRange: 600,  attackCooldown: 2450, color: { team1: '#60a5fa', team2: '#f87171' } },
-            'archer':      { name: 'Archer',      tags: ['Ranged', 'Basic'], hp: 60,  speed: 0.7,  attackDamage: 8,    attackRange: 420,  attackCooldown: 1000, color: { team1: '#60a5fa', team2: '#f87171' } },
+            'archer':      { name: 'Archer',      tags: ['Ranged', 'Basic'], hp: 60,  speed: 0.7,  attackDamage: 12,   attackRange: 420,  attackCooldown: 1000, color: { team1: '#60a5fa', team2: '#f87171' } },
             'flamecaller': { name: 'Flamecaller', tags: ['Ranged'],          hp: 60,  speed: 0.6,  attackDamage: 25,   attackRange: 350,  attackCooldown: 5500, color: { team1: '#54c7d1', team2: '#e39a5b' }, aoeRadius: 80, aoeDamage: 25 },
             'wizard':      { name: 'Wizard',      tags: ['Ranged'],          hp: 70,  speed: 0.7,  attackDamage: 2,    attackRange: 300,  attackCooldown: 400,  color: { team1: '#a78bfa', team2: '#fde047' }, chainTargets: 5, chainRange: 150 },
-            'cryomancer':  { name: 'Cryomancer',  tags: ['Ranged', 'Support'], hp: 80, speed: 0.6, attackDamage: 15,   attackRange: 300,  attackCooldown: 2000, color: { team1: '#a5f3fc', team2: '#67e8f9' }, specialTriggerCount: 2, waveDamage: 3, freezeStacksApplied: 1, freezeTriggerCount: 3, freezeDuration: 2500, chillDuration: 5000 },
-            'priest':      { name: 'Priest',      tags: ['Support'],         hp: 70,  speed: 0.7,  attackDamage: 0,    attackRange: 0,    attackCooldown: 4000, color: { team1: '#c1f3f5', team2: '#f2e56b' }, healAmount: 45, healRadius: 300, lightHealTriggerCount: 4, lightHealArmorBonus: 25, lightHealArmorDuration: 5000 },
+            'cryomancer':  { name: 'Cryomancer',  tags: ['Ranged', 'Support'], hp: 80, speed: 0.6, attackDamage: 15,   attackRange: 300, attackCooldown: 2000, color: { team1: '#a5f3fc', team2: '#67e8f9' }, specialTriggerCount: 2, waveDamage: 3, freezeStacksApplied: 1, freezeTriggerCount: 3, freezeDuration: 2500, chillDuration: 5000 },
+            'priest':      { name: 'Priest',      tags: ['Support'],         hp: 70,  speed: 0.7,  attackDamage: 0,    attackRange: 0,    attackCooldown: 4000, color: { team1: '#c1f3f5', team2: '#f2e56b' }, healAmount: 25, healRadius: 300, lightHealTriggerCount: 4, lightHealArmorBonus: 25, lightHealArmorDuration: 5000 },
             'bard':        { name: 'Bard',        tags: ['Support'],         hp: 80,  speed: 0.8,  attackDamage: 0,    attackRange: 0,    attackCooldown: 2000, color: { team1: '#60a5fa', team2: '#f87171' }, buffRadius: 250, damageBoost: 0.20, attackSpeedBoost: 0.50, buffDuration: 2200 },
             'druid':       { name: 'Druid',       tags: ['Support'],         hp: 90,  speed: 0.7,  attackDamage: 0,    attackRange: 300,  attackCooldown: 1000, color: { team1: '#86efac', team2: '#fcd34d' }, healAmount: 10, multiHealTriggerCount: 4, multiHealTargets: 3, multiHealDuration: 4000, multiHealAmount: 5},
-            'alchemist':   { name: 'Alchemist',   tags: ['Ranged', 'Support'], hp: 85, speed: 0.7, attackDamage: 5,    attackRange: 320,  attackCooldown: 2200, color: { team1: '#4ade80', team2: '#ca8a04' }, poisonDuration: 5000, dps: 5, poisonAoeRadius: 40, specialTriggerCount: 2, antiHealTargets: 3, healReductionAmount: 0.99, healReductionDuration: 8000 },
+            'alchemist':   { name: 'Alchemist',   tags: ['Ranged', 'Support'], hp: 85, speed: 0.7, attackDamage: 5,    attackRange: 320,  attackCooldown: 2200, color: { team1: '#4ade80', team2: '#ca8a04' }, poisonDuration: 5000, dps: 5, poisonAoeRadius: 40, specialTriggerCount: 2, antiHealTargets: 3, healReductionAmount: 0.97, healReductionDuration: 8000 },
             'sledgehammer':{ name: 'Sledgehammer',tags: ['Melee', 'Tank'],   hp: 160, speed: 0.5,  attackDamage: 30,   attackRange: 45,   attackCooldown: 2800, color: { team1: '#60a5fa', team2: '#f87171' }, critMultiplier: 2.5, critTargets: ['guardian', 'rockgolem'] },
             'duelist':     { name: 'Duelist',     tags: ['Melee'],           hp: 90,  speed: 1.1,  attackDamage: 12,   attackRange: 40,   attackCooldown: 680,  color: { team1: '#60a5fa', team2: '#f87171' }, burstTriggerCount: 3, burstSlashCount: 3, burstSlashCooldown: 120 },
             'rockgolem':   { name: 'Rock Golem',  tags: ['Tank', 'Melee'],   hp: 360, speed: 0.3,  attackDamage: 8,    attackRange: 50,   attackCooldown: 4500, color: { team1: '#60a5fa', team2: '#f87171' }, aoeRadius: 100, aoeDamage: 10, stunDuration: 850, size: 28 },
-            'troll':       { name: 'Troll',       tags: ['Melee', 'Tank'],   hp: 250, speed: 0.35, attackDamage: 55,   attackRange: 60,   attackCooldown: 3500, color: { team1: '#166534', team2: '#78350f' }, size: 35, alwaysCrit: true, smashTriggerCount: 3, smashAoeRadius: 120, smashStunDuration: 1500, smashKnockback: 150, smashSlowDuration: 3000, smashSlowAmount: 0.5 },
+            'troll':       { name: 'Troll',       tags: ['Melee', 'Tank'],   hp: 250, speed: 0.35, attackDamage: 55,   attackRange: 60,   attackCooldown: 3500, color: { team1: '#166534', team2: '#78350f' }, size: 35, alwaysCrit: true, smashTriggerCount: 3, smashAoeRadius: 120, smashStunDuration: 1500, smashKnockback: 120, smashSlowDuration: 3000, smashSlowAmount: 0.5 },
         };
 
         let selectedUnit = null;
@@ -1509,7 +1509,7 @@
                 const alliesToHeal = friendlies.filter(f => f.hp < f.maxHp && f !== this);
                 if (alliesToHeal.length === 0) { this.target = null; return; }
 
-                alliesToHeal.sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp));
+                alliesToHeal.sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.hp));
                 this.target = alliesToHeal[0];
             }
             
@@ -1833,16 +1833,6 @@
                      modifiedDamage *= (1 + attacker.buffs.bard.damageBoost);
                  }
                 
-                // Guardian-specific damage reductions
-                if (this.type === 'guardian' && attacker) {
-                    if (attacker.type === 'spearman') {
-                        modifiedDamage *= 0.5; // 50% less damage from spearmen
-                    }
-                    if (attacker.type === 'archer') {
-                        modifiedDamage *= 0.6; // 40% less damage from archers
-                    }
-                }
-
                 if (attackerSpecs && attackerSpecs.alwaysCrit) {
                      bypassesArmor = true; // Crits also ignore armor
                      animations.push(new FloatingText(`CRIT! ${Math.round(modifiedDamage)}`, this.x, this.y - 20, '#f97316'));
@@ -3202,4 +3192,3 @@
     </script>
 </body>
 </html>
-
