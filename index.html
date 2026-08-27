@@ -290,6 +290,9 @@
                      <button data-unit-type="wizard" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
                         <p class="font-bold">Wizard</p><p class="text-xs text-gray-400">Ranged, chain electric</p>
                     </button>
+                    <button data-unit-type="abyssal_summoner" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
+                        <p class="font-bold">Abyssal Summoner</p><p class="text-xs text-gray-400">Spawns fierce shadow snakes</p>
+                    </button>
                     <button data-unit-type="priest" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600">
                         <p class="font-bold">Priest</p><p class="text-xs text-gray-400">Heals & armors allies</p>
                     </button>
@@ -355,9 +358,6 @@
         // === BATTLE STATISTICS LOGIC ===
         // =======================================================
 
-        /**
-         * Updates the content of the battle statistics panel based on the current state of the battle.
-         */
         function updateStatsPanel() {
             const statsPanelContent = document.getElementById('stats-panel-content');
             if (!statsPanelContent) return;
@@ -472,9 +472,6 @@
             statsPanelContent.innerHTML = html;
         }
 
-        /**
-         * Initializes all event listeners related to the statistics panel.
-         */
         function initStatsEventListeners() {
             const showStatsBtn = document.getElementById('show-stats-btn');
             const statsPanel = document.getElementById('stats-panel');
@@ -506,12 +503,8 @@
             });
         }
 
-        /**
-         * Initializes all hotkey event listeners for the application.
-         */
         function initHotkeys() {
             document.addEventListener('keydown', (e) => {
-                // We don't want hotkeys to fire if a user is typing in an input field in the future
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
                     return;
                 }
@@ -542,11 +535,6 @@
         // === UI INTERACTION LOGIC ===
         // =======================================================
         
-        /**
-         * Updates the tooltip that shows detailed real-time stats for a specific unit.
-         * @param {Unit} unit - The unit to display information for.
-         * @param {MouseEvent} event - The mouse event, used for positioning the tooltip.
-         */
         function updateInspectTooltip(unit, event) {
             const inspectTooltip = document.getElementById('inspect-tooltip');
             if (!unit || !inspectTooltip) {
@@ -565,9 +553,8 @@
             const cooldownProgress = isBattleStarted ? Math.min(1, (Date.now() - unit.lastAttackTime) / (currentCooldown / gameSpeed)) * 100 : 0;
             const healthPercentage = (unit.hp / unit.maxHp) * 100;
             const healthColor = healthPercentage > 50 ? 'bg-green-500' : healthPercentage > 25 ? 'bg-yellow-500' : 'bg-red-500';
-            const armorPercentage = (unit.armor / unit.maxHp) * 100; // Show armor relative to max HP
+            const armorPercentage = (unit.armor / unit.maxHp) * 100;
 
-            // ================= NEW: Expanded Tooltip HTML =================
             let extraStatsHTML = `
                 ${stats.attackDamage > 0 ? `<span class="text-gray-400">Damage:</span> <span class="text-white">${stats.attackDamage}</span>` : ''}
                 ${stats.attackRange > 0 ? `<span class="text-gray-400">Range:</span> <span class="text-white">${stats.attackRange}</span>` : ''}
@@ -600,7 +587,6 @@
                     ${tagsHTML}
                 </div>
             `;
-            // ==============================================================
 
             inspectTooltip.style.display = 'block';
             if (trackedUnit) {
@@ -613,9 +599,6 @@
             }
         }
 
-        /**
-         * Initializes all event listeners for the main UI controls (inspect, remove, toggle range).
-         */
         function initInteractionEventListeners() {
             const toggleRangeBtn = document.getElementById('toggle-range-btn');
             const eyeIcon = document.getElementById('eye-icon');
@@ -698,8 +681,7 @@
         const stopIconSVG = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>`;
         const pauseIconSVG = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
 
-        // CONFIG: New global settings for armor and crits
-        const ARMOR_DAMAGE_REDUCTION_PERCENT = 0.50; // 50% damage reduction
+        const ARMOR_DAMAGE_REDUCTION_PERCENT = 0.50;
 
         const UNIT_SPECS = {
             'swordsman':   { name: 'Swordsman',   tags: ['Melee', 'Basic'],  hp: 100, speed: 1.0,  attackDamage: 13.5, attackRange: 40,   attackCooldown: 720,  color: { team1: '#60a5fa', team2: '#f87171' } },
@@ -710,6 +692,7 @@
             'flamecaller': { name: 'Flamecaller', tags: ['Ranged'],          hp: 60,  speed: 0.6,  attackDamage: 25,   attackRange: 350,  attackCooldown: 5500, color: { team1: '#54c7d1', team2: '#e39a5b' }, aoeRadius: 80, aoeDamage: 25 },
             'wizard':      { name: 'Wizard',      tags: ['Ranged'],          hp: 70,  speed: 0.7,  attackDamage: 2,    attackRange: 300,  attackCooldown: 400,  color: { team1: '#a78bfa', team2: '#fde047' }, chainTargets: 5, chainRange: 150 },
             'cryomancer':  { name: 'Cryomancer',  tags: ['Ranged', 'Support'], hp: 80, speed: 0.6, attackDamage: 15,   attackRange: 300,  attackCooldown: 2000, color: { team1: '#a5f3fc', team2: '#67e8f9' }, specialTriggerCount: 2, waveDamage: 3, freezeStacksApplied: 1, freezeTriggerCount: 3, freezeDuration: 2500, chillDuration: 5000 },
+            'abyssal_summoner': { name: 'Abyssal Summoner', tags: ['Ranged', 'Support'], hp: 20, speed: 0.2, attackDamage: 0, attackRange: 0, attackCooldown: 100, color: { team1: '#8b5cf6', team2: '#ec4899' }, maxSnakes: 3, snakeHp: 1, snakeDamage: 2, snakeSpeed: 1.4, snakeAttackRange: 30, snakeAttackCooldown: 1000, snakeLifetime: 8000 },
             'priest':      { name: 'Priest',      tags: ['Support'],         hp: 70,  speed: 0.7,  attackDamage: 0,    attackRange: 0,    attackCooldown: 4000, color: { team1: '#c1f3f5', team2: '#f2e56b' }, healAmount: 45, healRadius: 300, lightHealTriggerCount: 4, lightHealArmorBonus: 25, lightHealArmorDuration: 5000 },
             'bard':        { name: 'Bard',        tags: ['Support'],         hp: 80,  speed: 0.8,  attackDamage: 0,    attackRange: 0,    attackCooldown: 2000, color: { team1: '#60a5fa', team2: '#f87171' }, buffRadius: 250, damageBoost: 0.20, attackSpeedBoost: 0.50, buffDuration: 2200 },
             'druid':       { name: 'Druid',       tags: ['Support'],         hp: 90,  speed: 0.7,  attackDamage: 0,    attackRange: 300,  attackCooldown: 1000, color: { team1: '#86efac', team2: '#fcd34d' }, healAmount: 10, multiHealTriggerCount: 4, multiHealTargets: 3, multiHealDuration: 4000, multiHealAmount: 5},
@@ -811,6 +794,7 @@
 
                 this.armor = 0;
                 this.coldStacks = 0;
+                this.ownedSnakes = [];
 
                 this.isBeingKnockedBack = false;
                 this.knockbackTargetX = 0;
@@ -853,13 +837,12 @@
 
                 this.buffs = {};
                 this.stunnedUntil = 0;
-                this.stunType = null; // Can be 'stun', 'freeze' etc.
+                this.stunType = null;
             }
 
             draw() {
                 ctx.save();
 
-                // Freeze effect - content drawn BEFORE unit
                 if (this.stunType === 'freeze' && Date.now() < this.stunnedUntil) {
                     ctx.save();
                     const size = this.width * 0.8;
@@ -884,11 +867,13 @@
 
                 ctx.fillStyle = this.color;
 
-                if (this.type === 'druid' || this.type === 'cryomancer') {
+                if (this.type === 'druid' || this.type === 'cryomancer' || this.type === 'abyssal_summoner') {
                     const glowSize = Math.sin(this.glowAnimProgress) * 5 + 20;
                     ctx.globalCompositeOperation = 'lighter';
                      if (this.type === 'cryomancer') {
                          ctx.fillStyle = this.team === 1 ? 'rgba(165, 243, 252, 0.4)' : 'rgba(103, 232, 249, 0.4)';
+                     } else if (this.type === 'abyssal_summoner') {
+                         ctx.fillStyle = this.team === 1 ? 'rgba(139, 92, 246, 0.4)' : 'rgba(236, 72, 153, 0.4)';
                      } else {
                          ctx.fillStyle = this.team === 1 ? 'rgba(74, 222, 128, 0.4)' : 'rgba(163, 230, 53, 0.4)';
                      }
@@ -896,8 +881,8 @@
                     ctx.beginPath();
                     ctx.arc(this.x, this.y, glowSize, 0, Math.PI * 2);
                     ctx.fill();
-                    ctx.restore(); // Restore context for drawing the unit itself
-                    ctx.save();   // And save it again for potential freeze effect
+                    ctx.restore();
+                    ctx.save();
                     if (this.stunType === 'freeze' && Date.now() < this.stunnedUntil) {
                        ctx.filter = 'saturate(0.3) brightness(1.5)';
                     }
@@ -924,7 +909,7 @@
                     ctx.fill();
                 }
                 
-                ctx.restore(); // Restore after unit and potential freeze effect
+                ctx.restore();
 
                 this.drawEquipment();
                 
@@ -935,7 +920,6 @@
                 ctx.strokeStyle = ctx.fillStyle;
                 ctx.stroke();
                 
-                // --- HEALTH BAR AND BUFF BARS ---
                 const barWidth = 30;
                 let barY = this.y - this.height - 15;
 
@@ -958,17 +942,16 @@
 
                     ctx.fillStyle = 'rgba(75, 85, 99, 0.5)';
                     ctx.fillRect(this.x - barWidth / 2, barY, barWidth, barHeight);
-                    ctx.fillStyle = '#d946ef'; // fuchsia for heal reduction
+                    ctx.fillStyle = '#d946ef';
                     ctx.fillRect(this.x - barWidth / 2, barY, barWidth * progress, barHeight);
                     barY += barHeight + 1;
                 }
                 
-                // Health + Armor Bar
                 const healthBarHeight = 5;
                 const healthBarX = this.x - barWidth / 2;
                 const healthBarY = barY;
 
-                ctx.fillStyle = '#4b5563'; // Background
+                ctx.fillStyle = '#4b5563';
                 ctx.fillRect(healthBarX, healthBarY, barWidth, healthBarHeight);
 
                 const healthWidth = (this.hp / this.maxHp) * barWidth;
@@ -978,10 +961,9 @@
                 ctx.fillStyle = healthColor;
                 ctx.fillRect(healthBarX, healthBarY, healthWidth, healthBarHeight);
                 
-                ctx.fillStyle = 'rgba(103, 232, 249, 0.8)'; // Lighter, semi-transparent cyan for armor overlay
+                ctx.fillStyle = 'rgba(103, 232, 249, 0.8)';
                 ctx.fillRect(healthBarX + healthWidth, healthBarY, Math.min(armorWidth, barWidth - healthWidth), healthBarHeight);
 
-                // Cooldown Bar
                 let specialBarY = healthBarY + healthBarHeight + 1;
                 if (isBattleStarted && this.attackCooldown > 0) {
                     const cooldownBarHeight = 3;
@@ -1000,7 +982,6 @@
                     specialBarY += cooldownBarHeight + 1;
                 }
                 
-                // Special Ability Counter Bars
                 const specialBarHeight = 4;
                 if ((this.type === 'duelist' || this.type === 'druid' || this.type === 'priest' || this.type === 'troll' || this.type === 'cryomancer' || this.type === 'alchemist') && isBattleStarted) {
                     ctx.fillStyle = 'rgba(75, 85, 99, 0.5)';
@@ -1042,7 +1023,7 @@
                              break;
                     }
 
-                    if (this.isMultiHealActive) { // Druid specific active state
+                    if (this.isMultiHealActive) {
                          const progress = (activeEndTime - Date.now()) / activeDuration;
                          ctx.fillStyle = activeColor;
                          ctx.fillRect(healthBarX, specialBarY, barWidth * progress, specialBarHeight);
@@ -1055,7 +1036,6 @@
                     }
                 }
 
-                // Buff Icons
                 let iconX = this.x;
                 const iconSpacing = 12;
                 if (this.buffs.bard && Date.now() < this.buffs.bard.expires) {
@@ -1140,6 +1120,16 @@
                     ctx.lineTo(0, bowHeight / 2.2);
                     ctx.stroke();
                     ctx.restore();
+                } else if (this.type === 'abyssal_summoner') {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(angle);
+                    ctx.strokeStyle = '#a855f7';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(this.width / 2 + 5, 0, 6, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.restore();
                 } else if (this.type === 'swordsman') {
                     let swordAngle = angle;
                     if (this.isSlashing) {
@@ -1222,7 +1212,7 @@
                     const offsetY = Math.sin(angle + Math.PI / 2) * offsetDistance;
                     ctx.save();
                     ctx.translate(this.x + offsetX, this.y + offsetY);
-                    ctx.fillStyle = '#fde047'; // Gold color
+                    ctx.fillStyle = '#fde047';
                     ctx.shadowColor = '#fef08a';
                     ctx.shadowBlur = 10;
                     ctx.fillRect(this.width / 2, -crossVLength / 2, crossWidth, crossVLength);
@@ -1238,20 +1228,18 @@
                     
                     ctx.save();
                     ctx.translate(this.x, this.y);
-                    ctx.rotate(angle + (Math.sin(throwProgress * Math.PI) * -Math.PI / 2)); // Wind up and throw motion
+                    ctx.rotate(angle + (Math.sin(throwProgress * Math.PI) * -Math.PI / 2));
 
                     const flaskBodyWidth = 10;
                     const flaskNeckHeight = 4;
                     const flaskNeckWidth = 4;
-                    
                     const flaskX = 8;
-                    // Liquid
+
                     ctx.fillStyle = this.team === 1 ? '#a3e635' : '#facc15';
                     ctx.beginPath();
                     ctx.arc(flaskX, 0, flaskBodyWidth/2, 0, Math.PI * 2);
                     ctx.fill();
 
-                    // Glass
                     ctx.fillStyle = 'rgba(200, 220, 255, 0.4)';
                     ctx.beginPath();
                     ctx.arc(flaskX, 0, flaskBodyWidth/2, 0, Math.PI * 2);
@@ -1386,7 +1374,7 @@
                     ctx.save();
                     ctx.translate(this.x, this.y);
                     ctx.rotate(angle + Math.PI / 2.5);
-                    ctx.strokeStyle = '#854d0e'; // Brown
+                    ctx.strokeStyle = '#854d0e';
                     ctx.lineWidth = 3;
                     
                     ctx.beginPath();
@@ -1396,7 +1384,7 @@
                     ctx.lineTo(-8, 5);
                     ctx.stroke();
 
-                    ctx.strokeStyle = '#fde047'; // Gold
+                    ctx.strokeStyle = '#fde047';
                     ctx.lineWidth = 1;
                     for (let i = -6; i <= 6; i += 3) {
                         ctx.beginPath();
@@ -1410,12 +1398,11 @@
                     const progress = this.swingAnimProgress / this.swingAnimDuration;
                     
                     if (this.isSwinging) {
-                        // Raise and slam animation
                         if (progress > 0.5) { 
-                            const raiseProgress = (1 - progress) * 2; // from 1 to 0
+                            const raiseProgress = (1 - progress) * 2;
                             weaponAngle -= raiseProgress * (Math.PI / 1.5);
                         } else {
-                            const slamProgress = progress * 2; // from 0 to 1
+                            const slamProgress = progress * 2;
                             weaponAngle += slamProgress * Math.PI;
                         }
                     }
@@ -1433,10 +1420,10 @@
                     ctx.rotate(weaponAngle);
                     
                     const handleStart = this.width / 2 - 10;
-                    ctx.fillStyle = '#a16207'; // Brown for handle
+                    ctx.fillStyle = '#a16207';
                     ctx.fillRect(handleStart, -handleWidth / 2, handleLength, handleWidth);
                     
-                    ctx.fillStyle = this.type === 'troll' ? '#78716c' : '#a8a29e'; // Darker gray for troll
+                    ctx.fillStyle = this.type === 'troll' ? '#78716c' : '#a8a29e';
                     const headX = handleStart + handleLength;
                     ctx.fillRect(headX, -headHeight / 2, headWidth, headHeight);
 
@@ -1563,7 +1550,7 @@
                 }
                 
                 if (this.buffs.poison && Date.now() < this.buffs.poison.expires) {
-                    const damage = this.buffs.poison.dps * (1000/60 / 1000) * gameSpeed; // damage per frame
+                    const damage = this.buffs.poison.dps * (1000/60 / 1000) * gameSpeed;
                     const actualDamage = Math.min(this.hp, damage);
                     this.hp -= actualDamage;
                     this.damageTaken += actualDamage;
@@ -1595,12 +1582,12 @@
                     currentSpeed *= (1 - this.buffs.slow.amount);
                 }
 
-                if (this.type === 'druid' || this.type === 'priest' || this.type === 'bard') {
+                if (this.type === 'druid' || this.type === 'priest' || this.type === 'bard' || this.type === 'abyssal_summoner') {
                     if (this.type === 'druid') {
                         this.findAllyTarget(friendlies.filter(f => getDistance(this, f) <= this.attackRange));
                         if(this.target) {
                            this.attack(friendlies);
-                           return; // If healing, stay put
+                           return;
                         }
                     }
                    
@@ -1615,7 +1602,7 @@
                             }
                         });
                         const avgY = totalY / (friendlies.length - 1);
-                        const followDistance = this.type === 'priest' ? 120 : 100;
+                        const followDistance = (this.type === 'priest' || this.type === 'abyssal_summoner') ? 120 : 100;
                         const targetX = this.team === 1 ? frontmostX - followDistance : frontmostX + followDistance;
                         const dist = getDistance(this, {x: targetX, y: avgY});
                         if(dist > 30) {
@@ -1628,7 +1615,6 @@
                     return;
                 }
                 
-                // Melee and Ranged unit logic
                 this.applySeparation(friendlies);
                 this.findTarget(enemies);
                 if (this.target) {
@@ -1697,6 +1683,22 @@
                 if (now - this.lastAttackTime > currentCooldown / gameSpeed) {
                     this.lastAttackTime = now;
 
+if (this.type === 'abyssal_summoner') {
+                        const specs = UNIT_SPECS.abyssal_summoner;
+                        this.ownedSnakes = this.ownedSnakes.filter(s => s.hp > 0 && units.includes(s));
+                        if (this.ownedSnakes.length < specs.maxSnakes) {
+                            const sideOffset = (this.ownedSnakes.length % 2 === 0) ? 1 : -1;
+                            const baseAngle = this.team === 1 ? 0 : Math.PI;
+                            const spawnX = this.x + Math.cos(baseAngle + (Math.PI / 2) * sideOffset) * 15;
+                            const spawnY = this.y + Math.sin(baseAngle + (Math.PI / 2) * sideOffset) * 15;
+
+                            const snake = new ShadowSnake(spawnX, spawnY, this.team, this);
+                            units.push(snake);
+                            allUnitsThisRound.push(snake);
+                            this.ownedSnakes.push(snake);
+                        }
+                        return;
+                    }
                     if (this.type === 'wizard') {
                         if(this.target) {
                             this.isCasting = true;
@@ -1786,7 +1788,7 @@
                             animations.push(new TrollSmashAnimation(this, specs.smashAoeRadius, this.attackDamage, specs.smashStunDuration, specs.smashKnockback, units));
                         } else {
                              if (this.target && getDistance(this, this.target) <= this.attackRange + 5) {
-                                this.target.takeDamage(this.attackDamage, this, true); // Always crit/ignore armor
+                                this.target.takeDamage(this.attackDamage, this, true);
                                 for(let i = 0; i < 5; i++) {
                                     particles.push(new Particle(this.target.x, this.target.y, this.team, true, 'rock'));
                                 }
@@ -1833,18 +1835,17 @@
                      modifiedDamage *= (1 + attacker.buffs.bard.damageBoost);
                  }
                 
-                // Guardian-specific damage reductions
                 if (this.type === 'guardian' && attacker) {
                     if (attacker.type === 'spearman') {
-                        modifiedDamage *= 0.5; // 50% less damage from spearmen
+                        modifiedDamage *= 0.5;
                     }
                     if (attacker.type === 'archer') {
-                        modifiedDamage *= 0.6; // 40% less damage from archers
+                        modifiedDamage *= 0.6;
                     }
                 }
 
                 if (attackerSpecs && attackerSpecs.alwaysCrit) {
-                     bypassesArmor = true; // Crits also ignore armor
+                     bypassesArmor = true;
                      animations.push(new FloatingText(`CRIT! ${Math.round(modifiedDamage)}`, this.x, this.y - 20, '#f97316'));
                 } else if (attackerSpecs && attackerSpecs.critTargets && attackerSpecs.critTargets.includes(this.type)) {
                     modifiedDamage *= attackerSpecs.critMultiplier;
@@ -1873,6 +1874,124 @@
                  }
             }
             deflect() { this.deflectAnim = 10; }
+        }
+        class ShadowSnake extends Unit {
+            constructor(x, y, team, summoner) {
+                super(x, y, team, 'swordsman', x / canvas.width, y / canvas.height);
+                const specs = UNIT_SPECS.abyssal_summoner;
+                this.hp = specs.snakeHp;
+                this.maxHp = specs.snakeHp;
+                this.speed = specs.snakeSpeed * 1.8;
+                this.attackDamage = specs.snakeDamage;
+                this.attackRange = 25;
+                this.summoner = summoner;
+                this.width = 14;
+                this.height = 14;
+                this.color = team === 1 ? '#a855f7' : '#f472b6';
+                this.hasBitten = false;
+                this.isReturning = false;
+                this.wiggleOffset = Math.random() * Math.PI * 2; // Unique curve phase for erratic movement
+            }
+
+            update(friendlies, enemies) {
+                if (!this.summoner || this.summoner.hp <= 0) {
+                    this.hp = 0;
+                    return;
+                }
+
+                if (this.hasBitten) {
+                    this.isReturning = true;
+                }
+
+                if (this.isReturning) {
+                    const distToOwner = getDistance(this, this.summoner);
+                    if (distToOwner < 20) {
+                        this.hp = this.maxHp;
+                        this.hasBitten = false;
+                        this.isReturning = false;
+                    } else {
+                        const angle = Math.atan2(this.summoner.y - this.y, this.summoner.x - this.x);
+                        this.x += Math.cos(angle) * this.speed * gameSpeed * 1.5;
+                        this.y += Math.sin(angle) * this.speed * gameSpeed * 1.5;
+                        return;
+                    }
+                } else {
+                    if (enemies.length > 0) {
+                        // Allow multiple snakes to focus on available enemies if numbers are low (swarming)
+                        const sortedEnemies = [...enemies].sort((a, b) => getDistance(this, a) - getDistance(this, b));
+                        // If there are fewer enemies than snakes, or to distribute targets dynamically, pick based on index or closest
+                        this.target = sortedEnemies[0];
+
+                        if (this.target) {
+                            const dist = getDistance(this, this.target);
+                            if (dist <= this.attackRange) {
+                                this.target.takeDamage(this.attackDamage, this);
+                                animations.push(new FloatingText(`SNAP! ${this.attackDamage}`, this.target.x, this.target.y - 15, '#c084fc'));
+                                this.hasBitten = true;
+                            } else {
+                                // Calculate erratic / curving movement path using a sine offset perpendicular to travel angle
+                                const baseAngle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                                this.wiggleOffset += 0.15 * gameSpeed;
+                                const curveAngle = baseAngle + Math.sin(this.wiggleOffset) * 0.8; // Curves erratically side-to-side
+
+                                this.x += Math.cos(curveAngle) * this.speed * gameSpeed;
+                                this.y += Math.sin(curveAngle) * this.speed * gameSpeed;
+                            }
+                        }
+                    } else {
+                        this.isReturning = true;
+                    }
+                }
+
+                const radius = this.width / 2;
+                this.x = Math.max(radius, Math.min(this.x, canvas.width - radius));
+                this.y = Math.max(radius, Math.min(this.y, canvas.height - radius));
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                let angle = 0;
+                if (this.isReturning && this.summoner) {
+                    angle = Math.atan2(this.summoner.y - this.y, this.summoner.x - this.x);
+                } else if (this.target) {
+                    angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                }
+                ctx.rotate(angle);
+
+                ctx.fillStyle = this.color;
+                const segments = 5;
+                for (let i = 0; i < segments; i++) {
+                    const segOffset = -i * 4;
+                    const currentW = Math.max(3, 10 - i * 1.5);
+                    ctx.beginPath();
+                    ctx.arc(segOffset, Math.sin(Date.now() / 60 + i + this.wiggleOffset) * 4, currentW / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Menacing Head
+                ctx.fillStyle = this.team === 1 ? '#7e22ce' : '#db2777';
+                ctx.beginPath();
+                ctx.ellipse(3, 0, 6, 3, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#fef08a';
+                ctx.fillRect(4, -2, 1, 1);
+                ctx.fillRect(4, 1, 1, 1);
+
+                ctx.restore();
+
+                const barWidth = 20;
+                const barHeight = 2;
+                const barX = this.x - barWidth / 2;
+                const barY = this.y - this.height - 6;
+
+                ctx.fillStyle = '#4b5563';
+                ctx.fillRect(barX, barY, barWidth, barHeight);
+                ctx.fillStyle = this.isReturning ? '#38bdf8' : '#a855f7';
+                ctx.fillRect(barX, barY, (this.hp / this.maxHp) * barWidth, barHeight);
+            }
         }
         
         class Projectile {
@@ -1935,7 +2054,7 @@
                 if(Math.random() < 0.3) {
                     particles.push(new Particle(this.x, this.y, this.team, false, 'ice'));
                 }
-                return super.update(enemies); // Use base projectile logic for collision
+                return super.update(enemies);
             }
 
             draw() {
@@ -2087,7 +2206,7 @@
                 if (distToTarget < this.speed * gameSpeed) {
                     const specs = UNIT_SPECS.alchemist;
                     animations.push(new PoisonSplashAnimation(this.x, this.y, specs.poisonAoeRadius, this.team, this.shooter));
-                    return false; // Remove projectile
+                    return false;
                 }
                 
                 const angle = Math.atan2(this.targetPos.y - this.y, this.targetPos.x - this.x);
@@ -2252,7 +2371,7 @@
                 const startX = this.caster.x + Math.cos(this.angle) * this.caster.width/2;
                 const startY = this.caster.y + Math.sin(this.angle) * this.caster.width/2;
                 const endX = this.target.x - Math.cos(this.angle) * this.target.width/2;
-                const endY = this.target.y - Math.sin(this.angle) * this.target.width/2;
+                const endY = this.target.y - Math.sin(this.angle) * this.target.height/2;
                 const currentX = startX + (endX - startX) * progress;
                 const currentY = startY + (endY - startY) * progress;
                 ctx.beginPath();
@@ -2448,12 +2567,12 @@
         
         class TrollSmashAnimation extends GroundSmashAnimation {
             constructor(caster, radius, damage, stunDuration, knockback, allUnits) {
-                super(caster, radius, 0, stunDuration, allUnits); // Pass 0 for damage to handle it specially
+                super(caster, radius, 0, stunDuration, allUnits);
                 const specs = UNIT_SPECS.troll;
                 const enemies = allUnits.filter(u => u.team !== caster.team);
                 enemies.forEach(unit => {
                     if (getDistance(this, unit) <= this.maxRadius) {
-                        unit.takeDamage(damage, caster, true); // true for ignoresArmor
+                        unit.takeDamage(damage, caster, true);
                         
                         const angle = Math.atan2(unit.y - this.y, unit.x - this.x);
                         const targetX = unit.x + Math.cos(angle) * knockback;
@@ -2986,8 +3105,6 @@
              selectionMessage.style.opacity = 1;
         }
 
-        // === MAIN SCRIPT INITIALIZATION ===
-
         window.addEventListener('resize', resizeCanvas);
         
         document.querySelectorAll('.unit-btn').forEach(btn => {
@@ -3188,7 +3305,6 @@
             }
         });
 
-        // Initialize everything
         initInteractionEventListeners();
         initStatsEventListeners();
         initHotkeys();
@@ -3202,4 +3318,3 @@
     </script>
 </body>
 </html>
-
