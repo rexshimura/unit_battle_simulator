@@ -1,0 +1,249 @@
+html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+            cursor: default;
+        }
+        .glass-panel {
+            background: rgba(40, 40, 40, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+        }
+        .unit-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .unit-btn.selected {
+            background-color: #a78bfa;
+            color: #1a1a1a;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(167, 139, 250, 0.5);
+        }
+        /* This makes the description text dark when selected */
+        .unit-btn.selected p {
+            color: #1a1a1a;
+        }
+        .action-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .action-btn:hover {
+            transform: scale(1.05);
+        }
+        .action-btn.active {
+            background-color: #8b5cf6;
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+        }
+        .action-btn.remove.active {
+             background-color: #ef4444;
+             box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+        }
+        .speed-btn.selected {
+            background-color: #8b5cf6;
+            color: #f0f0f0;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+        }
+        #gameCanvas {
+            cursor: crosshair;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .status-message {
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+            transition: opacity 0.5s ease-in-out;
+        }
+        .unit-list::-webkit-scrollbar, #stats-panel-content::-webkit-scrollbar { width: 8px; }
+        .unit-list::-webkit-scrollbar-track, #stats-panel-content::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
+        .unit-list::-webkit-scrollbar-thumb, #stats-panel-content::-webkit-scrollbar-thumb { background: #4a4a4a; border-radius: 10px; }
+        .unit-list::-webkit-scrollbar-thumb:hover, #stats-panel-content::-webkit-scrollbar-thumb:hover { background: #5c5c5c; }
+
+        /* Tooltip Styles */
+        #unit-tooltip, #inspect-tooltip {
+            position: fixed;
+            display: none;
+            padding: 12px;
+            z-index: 100;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            width: 280px;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        
+        /* Role Sorter Styles */
+        .role-btn {
+            transition: all 0.2s ease-in-out;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .role-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .role-btn.selected {
+            background-color: #a78bfa;
+            color: #1a1a1a;
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(167, 139, 250, 0.5);
+        }
+
+        /* Stats Panel Styles */
+        #stats-panel {
+            position: fixed;
+            top: 0;
+            right: -450px; /* Start off-screen */
+            width: 400px;
+            height: 100%;
+            z-index: 60;
+            transition: right 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+        }
+        #stats-panel.open {
+            right: 0;
+        }
+        #stats-panel-content {
+            padding-right: 10px; /* Space for scrollbar */
+        }
+        .stat-bar-container {
+            width: 100%;
+            background-color: rgba(0,0,0,0.3);
+            border-radius: 0.25rem;
+            overflow: hidden;
+            height: 14px;
+            position: relative;
+        }
+        .stat-bar {
+            height: 100%;
+            transition: width 0.3s ease-in-out;
+            border-radius: 0.25rem;
+        }
+        .stat-bar-label {
+            position: absolute;
+            left: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px black;
+        }
+         .stats-filter-btn {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            transition: all 0.2s ease-in-out;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .stats-filter-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .stats-filter-btn.selected {
+            background-color: #a78bfa;
+            color: #1a1a1a;
+            font-weight: bold;
+        }
+        .summary-bar {
+             height: 8px;
+             border-radius: 4px;
+        }
+        .progress-bar {
+            background-color: rgba(0,0,0,0.3);
+            border-radius: 9999px;
+            overflow: hidden;
+            height: 10px;
+        }
+        .progress-bar-inner {
+            height: 100%;
+            border-radius: 9999px;
+            transition: width 0.1s linear;
+        }
+/* Grid View Styles */
+.unit-list.grid-view {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem !important;
+    align-content: start !important;
+}
+.unit-list.grid-view > .unit-btn {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0.5rem !important;
+    margin-top: 0 !important;
+    aspect-ratio: 1 / 1 !important;
+}
+.unit-list.grid-view > .unit-btn > div {
+    display: none !important;
+}
+
+/* Ensure hidden units stay hidden regardless of grid/list view */
+.unit-list > .unit-btn.filtered-out,
+.unit-list.grid-view > .unit-btn.filtered-out {
+    display: none !important;
+}
+
+/* Sidebar Collapse Styles */
+#side-panel {
+    transition: width 0.3s ease-in-out, padding 0.3s ease-in-out;
+    overflow: hidden;
+}
+#side-panel.collapsed {
+    width: 80px !important;
+    padding: 1.5rem 0.5rem !important;
+}
+#side-panel.collapsed #role-sorter,
+#side-panel.collapsed .unit-list,
+#side-panel.collapsed #view-toggle-btn,
+#side-panel.collapsed .side-panel-title,
+#side-panel.collapsed .speed-title {
+    display: none !important;
+}
+#side-panel.collapsed #side-panel-header {
+    justify-content: center !important;
+    border-bottom: none;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0;
+}
+#side-panel.collapsed #collapse-btn svg {
+    transform: rotate(180deg);
+}
+#side-panel.collapsed .controls-row {
+    flex-direction: column !important;
+    gap: 0.75rem;
+    border-top: none;
+    margin-top: 0;
+    padding-top: 0;
+}
+#side-panel.collapsed #speed-controls {
+    grid-template-columns: 1fr !important;
+}
+
+/* Maintain canvas size and center it in the remaining space when sidebar is collapsed */
+@media (min-width: 768px) {
+    body:has(#side-panel.collapsed) #canvas-container {
+        max-width: calc(100vw - 304px) !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+}

@@ -1,0 +1,30 @@
+
+
+const ARMOR_DAMAGE_REDUCTION_PERCENT = 0.50;
+
+const UNIT_SPECS = {
+  'swordsman': {description: 'Fast, Melee Attack', name: 'Swordsman', tags: ['Melee', 'Basic'], hp: 100, speed: 1.0, attackDamage: 13.5, attackRange: 40, attackCooldown: 720, color: {team1: '#60a5fa', team2: '#f87171'}}, 
+  'fortress': {description: 'Takes hits, then unleashes a knockback bash', name: 'Fortress', tags: ['Tank', 'Melee'], hp: 600, speed: 0.25, attackDamage: 12, attackRange: 45, attackCooldown: 2200, color: {team1: '#60a5fa', team2: '#f87171'}, size: 26},
+  'guardian': {description: 'Tough, hits and deflects', name: 'Guardian', tags: ['Tank', 'Melee'], hp: 200, speed: 0.4, attackDamage: 10, attackRange: 35, attackCooldown: 1200, color: {team1: '#60a5fa', team2: '#f87171'}, deflectChance: 0.5}, 
+  'spearman': {description: 'Melee, long reach', name: 'Spearman', tags: ['Melee'], hp: 90, speed: 0.9, attackDamage: 10, attackRange: 80, attackCooldown: 450, color: {team1: '#60a5fa', team2: '#f87171'}}, 
+  'musketeer': {description: 'Slow, Ranged Shot', name: 'Musketeer', tags: ['Ranged', 'Basic'], hp: 50, speed: 0.5, attackDamage: 18, attackRange: 600, attackCooldown: 2450, color: {team1: '#60a5fa', team2: '#f87171'}}, 
+  'sniper': {description: 'Deadly long range, points laser', name: 'Sniper', tags: ['Ranged', 'Assassin'], hp: 40, speed: 0.4, attackDamage: 100, attackRange: 1000, attackCooldown: 5000, color: {team1: '#60a5fa', team2: '#f87171'}}, 
+  'archer': {description: 'Shoots sharp arrows', name: 'Archer', tags: ['Ranged', 'Basic'], hp: 60, speed: 0.7, attackDamage: 8, attackRange: 420, attackCooldown: 1000, color: {team1: '#60a5fa', team2: '#f87171'}}, 
+  'flamecaller': {description: 'Ranged, AOE damage', name: 'Flamecaller', tags: ['Ranged', 'Magic'], hp: 60, speed: 0.6, attackDamage: 25, attackRange: 350, attackCooldown: 2200, color: {team1: '#60a5fa', team2: '#f87171'}, aoeRadius: 80, aoeDamage: 25}, 
+  'wizard': {description: 'Ranged, chain electric', name: 'Wizard', tags: ['Ranged', 'Magic'], hp: 70, speed: 0.7, attackDamage: 2, attackRange: 300, attackCooldown: 400, color: {team1: '#60a5fa', team2: '#f87171'}, chainTargets: 5, chainRange: 150}, 
+  'cryomancer': {description: 'Slows and freezes enemies', name: 'Cryomancer', tags: ['Ranged', 'Support', 'Magic'], hp: 80, speed: 0.6, attackDamage: 15, attackRange: 300, attackCooldown: 800, color: {team1: '#60a5fa', team2: '#f87171'}, specialTriggerCount: 2, waveDamage: 3, freezeStacksApplied: 1, freezeTriggerCount: 4, freezeDuration: 2500, chillDuration: 5000}, 
+  'assassin': {description: 'Targets weak backliners, stealths on kill', name: 'Assassin', tags: ['Melee', 'Unique'], hp: 70, speed: 1.5, attackDamage: 35, attackRange: 35, attackCooldown: 800, color: {team1: '#60a5fa', team2: '#f87171'}},
+  'ghoul': {description: 'Bites enemies, revives faster on death', name: 'Ghoul', tags: ['Melee', 'Unique'], hp: 100, speed: 1.2, attackDamage: 8, attackRange: 40, attackCooldown: 600, color: {team1: '#60a5fa', team2: '#f87171'}, reviveMaxHp: 150, reviveHpMultiplier: 0.5, reviveSpeedMultiplier: 2.5, reviveDamageMultiplier: 1.5, reviveCooldownMultiplier: 0.6, reviveDelay: 3000},
+  'abyssal_summoner': {description: 'Sacrifices 50% Max HP to spawn an Evil Snake', name: 'Abyssal Summoner', tags: ['Magic', 'Unique'], hp: 300, speed: 0.2, attackDamage: 0, attackRange: 0, attackCooldown: 3000, color: {team1: '#60a5fa', team2: '#f87171'}, maxSnakes: 1, snakeHp: 100, snakeDamage: 5, snakeSpeed: 1.6, snakeAttackRange: 35}, 
+  'priest': {description: 'Heals & armors allies', name: 'Priest', tags: ['Support', 'Magic'], hp: 70, speed: 0.7, attackDamage: 0, attackRange: 0, attackCooldown: 4000, color: {team1: '#60a5fa', team2: '#f87171'}, healAmount: 45, healRadius: 300, lightHealTriggerCount: 4, lightHealArmorBonus: 25, lightHealArmorDuration: 5000}, 
+  'bard': {description: 'Boosts nearby allies', name: 'Bard', tags: ['Support'], hp: 80, speed: 0.8, attackDamage: 0, attackRange: 0, attackCooldown: 2000, color: {team1: '#60a5fa', team2: '#f87171'}, buffRadius: 250, damageBoost: 0.20, attackSpeedBoost: 0.50, buffDuration: 2200}, 
+  'druid': {description: 'Links to heal allies', name: 'Druid', tags: ['Support', 'Magic'], hp: 90, speed: 0.7, attackDamage: 0, attackRange: 300, attackCooldown: 1000, color: {team1: '#60a5fa', team2: '#f87171'}, healAmount: 10, multiHealTriggerCount: 4, multiHealTargets: 3, multiHealDuration: 4000, multiHealAmount: 5}, 
+  'alchemist': {description: 'Throws debilitating potions', name: 'Alchemist', tags: ['Ranged', 'Support'], hp: 85, speed: 0.7, attackDamage: 5, attackRange: 320, attackCooldown: 2200, color: {team1: '#60a5fa', team2: '#f87171'}, poisonDuration: 5000, dps: 5, poisonAoeRadius: 40, specialTriggerCount: 2, antiHealTargets: 3, healReductionAmount: 0.99, healReductionDuration: 8000}, 
+  'sledgehammer': {description: 'Crits armored units', name: 'Sledgehammer', tags: ['Melee', 'Tank'], hp: 160, speed: 0.5, attackDamage: 30, attackRange: 45, attackCooldown: 2800, color: {team1: '#60a5fa', team2: '#f87171'}, critMultiplier: 3.0, critTargets: ['guardian', 'rockgolem', 'fortress']}, 
+  'duelist': {description: 'Fast, with burst attacks', name: 'Duelist', tags: ['Melee'], hp: 90, speed: 1.1, attackDamage: 12, attackRange: 40, attackCooldown: 680, color: {team1: '#60a5fa', team2: '#f87171'}, burstTriggerCount: 3, burstSlashCount: 3, burstSlashCooldown: 120}, 
+  'rockgolem': {description: 'Tanky, AOE stun', name: 'Rock Golem', tags: ['Tank', 'Melee'], hp: 360, speed: 0.3, attackDamage: 8, attackRange: 50, attackCooldown: 4500, color: {team1: '#60a5fa', team2: '#f87171'}, aoeRadius: 100, aoeDamage: 10, stunDuration: 850, size: 28}, 
+  'troll': {description: 'Huge, ignores defense', name: 'Troll', tags: ['Melee', 'Tank'], hp: 250, speed: 0.35, attackDamage: 55, attackRange: 60, attackCooldown: 3500, color: {team1: '#60a5fa', team2: '#f87171'}, size: 35, alwaysCrit: true, smashTriggerCount: 3, smashAoeRadius: 120, smashStunDuration: 1500, smashKnockback: 150, smashSlowDuration: 3000, smashSlowAmount: 0.5}
+};
+
+export { UNIT_SPECS };
+export { ARMOR_DAMAGE_REDUCTION_PERCENT };
