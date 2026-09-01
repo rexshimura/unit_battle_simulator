@@ -2,11 +2,12 @@ import { gameState, uiElements, initUIElements } from './state.js';
 import { UNIT_SPECS } from './config.js';
 import { getDistance } from './utils.js';
 import { Unit } from './entities/Unit.js';
-import { resizeCanvas } from './utils.js';
+import { resizeCanvas, AudioManager } from './utils.js';
 import { initInteractionEventListeners, initStatsEventListeners, initHotkeys, updateInspectTooltip, selectUnit } from './ui.js';
 import { setup, gameLoop, updateUnitCounts, endBattle, resetBattlefield } from './game.js';
 
 initUIElements();
+AudioManager.init();
 
 document.querySelectorAll('.unit-preview-canvas').forEach(canvas => {
   const unitType = canvas.dataset.unitType;
@@ -262,7 +263,7 @@ uiElements.roleSorter.addEventListener('click', e => {
     });
     const uniqueSeparator = document.getElementById('unique-separator');
     if (uniqueSeparator) {
-       uniqueSeparator.classList.toggle('hidden', !['all', 'Magic', 'Melee'].includes(selectedRole));
+       uniqueSeparator.classList.toggle('hidden', !['all', 'Magic', 'Melee', 'Tank'].includes(selectedRole));
     }
   }
 });

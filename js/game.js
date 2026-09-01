@@ -49,6 +49,18 @@ function draw() {
         uiElements.ctx.setLineDash([]);
         uiElements.ctx.globalAlpha = 1.0;
       }
+      
+      if (unit.type === 'assassin') {
+        uiElements.ctx.beginPath();
+        uiElements.ctx.arc(unit.x, unit.y, 200, 0, Math.PI * 2);
+        uiElements.ctx.globalAlpha = 0.15;
+        uiElements.ctx.strokeStyle = '#475569';
+        uiElements.ctx.lineWidth = 2;
+        uiElements.ctx.setLineDash([4, 8]);
+        uiElements.ctx.stroke();
+        uiElements.ctx.setLineDash([]);
+        uiElements.ctx.globalAlpha = 1.0;
+      }
     });
   }
   gameState.projectiles.forEach(p => p.draw());
