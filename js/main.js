@@ -1,3 +1,11 @@
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+    for(let registration of registrations) {
+      registration.unregister();
+    }
+  });
+}
 import { gameState, uiElements, initUIElements } from './state.js';
 import { UNIT_SPECS } from './config.js';
 import { getDistance } from './utils.js';
@@ -50,6 +58,7 @@ document.querySelectorAll('.unit-btn').forEach(btn => {
   const unitType = btn.dataset.unitType;
   btn.addEventListener('click', () => selectUnit(unitType));
   btn.addEventListener('mouseenter', () => {
+    AudioManager.play('game_hover');
     const stats = UNIT_SPECS[unitType];
     if (!stats) return;
     const tagsHTML = stats.tags.map(tag => `<span class="bg-gray-600 text-violet-300 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">${tag}</span>`).join('');
@@ -85,6 +94,7 @@ document.addEventListener('mousemove', e => {
 
 document.querySelectorAll('[data-tooltip-title]').forEach(el => {
   el.addEventListener('mouseenter', e => {
+    AudioManager.play('game_hover');
     const title = el.dataset.tooltipTitle;
     const desc = el.dataset.tooltipDesc;
     uiElements.tooltip.innerHTML = `
@@ -116,6 +126,7 @@ uiElements.canvas.addEventListener('click', e => {
       }
     });
     if (unitToRemove) {
+      AudioManager.play('game_remove_unit');
       gameState.units = gameState.units.filter(u => u !== unitToRemove);
       gameState.allUnitsThisRound = gameState.allUnitsThisRound.filter(u => u.id !== unitToRemove.id);
       updateUnitCounts();
@@ -154,10 +165,12 @@ uiElements.canvas.addEventListener('click', e => {
   const relY = y / uiElements.canvas.height;
   let newUnit;
   if (x < uiElements.canvas.width / 3) {
+    AudioManager.play('game_place_unit');
     newUnit = new Unit(x, y, 1, gameState.selectedUnit, relX, relY);
     gameState.units.push(newUnit);
     gameState.allUnitsThisRound.push(newUnit);
   } else if (x > uiElements.canvas.width - uiElements.canvas.width / 3) {
+    AudioManager.play('game_place_unit');
     newUnit = new Unit(x, y, 2, gameState.selectedUnit, relX, relY);
     gameState.units.push(newUnit);
     gameState.allUnitsThisRound.push(newUnit);
@@ -194,6 +207,7 @@ uiElements.canvas.addEventListener('mouseleave', () => {
 
 uiElements.startBattleBtn.addEventListener('click', () => {
   if (gameState.isBattleStarted) {
+    AudioManager.play('game_click');
     endBattle("Battle Stopped");
     setup();
     return;
@@ -211,6 +225,7 @@ uiElements.startBattleBtn.addEventListener('click', () => {
     gameState.isPaused = false;
     uiElements.pauseBtn.innerHTML = uiElements.pauseIconSVG;
   }
+  AudioManager.play('game_start');
   gameState.isBattleStarted = true;
   gameState.units.forEach(u => {
     if (u.type === 'sniper') {
@@ -231,6 +246,7 @@ uiElements.startBattleBtn.addEventListener('click', () => {
 
 uiElements.pauseBtn.addEventListener('click', () => {
   if (!gameState.isBattleStarted) return;
+  AudioManager.play('game_click');
   gameState.isPaused = !gameState.isPaused;
   uiElements.pauseBtn.innerHTML = gameState.isPaused ? uiElements.playIconSVG : uiElements.pauseIconSVG;
 });
@@ -238,13 +254,17 @@ uiElements.pauseBtn.addEventListener('click', () => {
 uiElements.speedControls.addEventListener('click', e => {
   const speedBtn = e.target.closest('.speed-btn');
   if (speedBtn) {
+    AudioManager.play('game_click');
     gameState.gameSpeed = parseFloat(speedBtn.dataset.speed);
     document.querySelectorAll('.speed-btn').forEach(btn => btn.classList.remove('selected'));
     speedBtn.classList.add('selected');
   }
 });
 
-uiElements.resetBtn.addEventListener('click', resetBattlefield);
+uiElements.resetBtn.addEventListener('click', () => {
+  AudioManager.play('game_click');
+  resetBattlefield();
+});
 
 uiElements.roleSorter.addEventListener('click', e => {
   const roleBtn = e.target.closest('.role-btn');
@@ -263,7 +283,7 @@ uiElements.roleSorter.addEventListener('click', e => {
     });
     const uniqueSeparator = document.getElementById('unique-separator');
     if (uniqueSeparator) {
-       uniqueSeparator.classList.toggle('hidden', !['all', 'Magic', 'Melee', 'Tank'].includes(selectedRole));
+       uniqueSeparator.classList.toggle('hidden', !['all', 'Sorcerers', 'Breachers', 'Interceptors', 'Controllers', 'Infiltrators'].includes(selectedRole));
     }
   }
 });

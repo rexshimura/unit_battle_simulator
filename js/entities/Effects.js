@@ -443,16 +443,23 @@ class ShiverWaveAnimation {
 }
 
 class ChainLightning {
-  constructor(caster, initialTarget, allUnits) {
+  constructor(caster, initialTarget, allUnits, isStrong = false) {
     this.caster = caster;
     this.duration = 30;
     this.maxDuration = 30;
     this.team = caster.team;
+    this.isStrong = isStrong;
     const specs = UNIT_SPECS.wizard;
     this.targets = [initialTarget];
     let lastTarget = initialTarget;
     const potentialTargets = allUnits.filter(u => u.team !== this.team && u.hp > 0 && !this.targets.includes(u));
-    for (let i = 0; i < specs.chainTargets - 1; i++) {
+    
+    let targetsToChain = specs.chainTargets - 1;
+    if (this.isStrong) {
+      targetsToChain += 3; // Chain more targets!
+    }
+
+    for (let i = 0; i < targetsToChain; i++) {
       let nextTarget = null;
       let minDistance = specs.chainRange;
       for (const p of potentialTargets) {
@@ -470,8 +477,15 @@ class ChainLightning {
         break;
       }
     }
+    
     this.targets.forEach(target => {
-      target.takeDamage(specs.attackDamage, this.caster);
+      let dmg = specs.attackDamage;
+      if (this.isStrong) dmg *= 1.5;
+      target.takeDamage(dmg, this.caster);
+      if (this.isStrong) {
+        target.stunnedUntil = Date.now() + 1000;
+        target.stunType = 'stun';
+      }
     });
   }
   update() {

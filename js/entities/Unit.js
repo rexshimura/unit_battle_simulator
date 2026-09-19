@@ -1,7 +1,7 @@
 import { gameState, uiElements } from '../state.js';
 import { UNIT_SPECS, ARMOR_DAMAGE_REDUCTION_PERCENT } from '../config.js';
 import { getDistance, drawLightningBolt, AudioManager } from '../utils.js';
-import { Projectile, IceShard, HealingOrb, Arrow, Fireball, PoisonPotion, AntiHealDart } from './Projectiles.js';
+import { Projectile, Nail, SentryBullet, IceShard, HealingOrb, Arrow, Fireball, PoisonPotion, AntiHealDart, EagleProjectile, PenetratingBeam } from './Projectiles.js';
 import { PoisonSplashAnimation, SlashAnimation, ThrustAnimation, AoeExplosion, AoeHeal, MultiHealAura, GroundSmashAnimation, TrollSmashAnimation, ShiverWaveAnimation, ChainLightning, AuraBuffAnimation, FloatingText, Particle, ShieldBashAnimation } from './Effects.js';
 
 class Unit {
@@ -61,6 +61,9 @@ class Unit {
     this.isReviving = false;
     this.reviveTime = 0;
     this.isCharging = false;
+    this.isSmashingWindup = false;
+    this.smashWindupProgress = 0;
+    this.smashWindupDuration = 162;
     this.chargeDuration = 0;
     this.chargeAngle = 0;
     this.isShadow = false;
@@ -84,6 +87,28 @@ class Unit {
     }
   }
   draw() {
+    if (this.type === 'rockgolem' && this.isSmashingWindup) {
+        const specs = UNIT_SPECS.rockgolem;
+        const progress = this.smashWindupProgress / this.smashWindupDuration;
+        const maxRadius = specs.aoeRadius * 2.5;
+        const currentRadius = maxRadius * progress;
+        
+        uiElements.ctx.save();
+        uiElements.ctx.strokeStyle = 'rgba(234, 179, 8, 0.5)';
+        uiElements.ctx.fillStyle = 'rgba(234, 179, 8, 0.1)';
+        uiElements.ctx.lineWidth = 2;
+        uiElements.ctx.beginPath();
+        uiElements.ctx.arc(this.x, this.y, currentRadius, 0, Math.PI * 2);
+        uiElements.ctx.fill();
+        uiElements.ctx.stroke();
+        
+        uiElements.ctx.strokeStyle = 'rgba(234, 179, 8, 0.2)';
+        uiElements.ctx.beginPath();
+        uiElements.ctx.arc(this.x, this.y, maxRadius, 0, Math.PI * 2);
+        uiElements.ctx.stroke();
+        uiElements.ctx.restore();
+    }
+
     uiElements.ctx.save();
     if (this.isShadow) {
         uiElements.ctx.globalAlpha = 0.4;
@@ -173,6 +198,14 @@ class Unit {
       uiElements.ctx.beginPath();
       uiElements.ctx.rect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
       uiElements.ctx.fill();
+    } else if (this.type === 'dummy') {
+      uiElements.ctx.beginPath();
+      uiElements.ctx.rect(this.x - this.width / 2 + 5, this.y - this.height / 2, this.width - 10, this.height);
+      uiElements.ctx.fill();
+      uiElements.ctx.fillStyle = '#f59e0b';
+      uiElements.ctx.beginPath();
+      uiElements.ctx.arc(this.x, this.y, this.width / 2.5, 0, Math.PI * 2);
+      uiElements.ctx.fill();
     } else {
       uiElements.ctx.beginPath();
       uiElements.ctx.arc(this.x, this.y, this.width / 2, 0, Math.PI * 2);
@@ -187,8 +220,27 @@ class Unit {
     uiElements.ctx.strokeStyle = uiElements.ctx.fillStyle;
     uiElements.ctx.stroke();
     
+    if (this.type === 'dummy') {
+      if (!this.damageHistory) this.damageHistory = [];
+      const now = Date.now();
+      this.damageHistory = this.damageHistory.filter(d => now - d.time < 1000);
+      const dps = this.damageHistory.reduce((sum, d) => sum + d.amount, 0);
+      
+      uiElements.ctx.fillStyle = '#facc15';
+      uiElements.ctx.font = 'bold 14px Arial';
+      uiElements.ctx.textAlign = 'center';
+      uiElements.ctx.fillText(`DPS: ${Math.round(dps)}`, this.x, this.y - this.height - 25);
+      
+      uiElements.ctx.fillStyle = '#ef4444';
+      uiElements.ctx.font = 'bold 12px Arial';
+      const totalStr = Math.round(this.totalDamageReceived || 0).toString();
+      uiElements.ctx.fillText(`Total: ${totalStr}`, this.x, this.y + this.height + 15);
+    }
 
     this.drawHealthBar();
+    if (this.ownedSentries) {
+       this.ownedSentries.forEach(s => s.draw());
+    }
     uiElements.ctx.restore(); // Restore globalAlpha and filter from shadow mode
   }
   drawHealthBar() {
@@ -263,7 +315,7 @@ class Unit {
         }
     }
     
-    if ((this.type === 'rockgolem' || this.type === 'duelist' || this.type === 'druid' || this.type === 'priest' || this.type === 'troll' || this.type === 'cryomancer' || this.type === 'alchemist' || this.type === 'fortress' || this.type === 'flamecaller') && gameState.isBattleStarted) {
+    if ((this.type === 'rockgolem' || this.type === 'duelist' || this.type === 'druid' || this.type === 'priest' || this.type === 'troll' || this.type === 'cryomancer' || this.type === 'alchemist' || this.type === 'fortress' || this.type === 'flamecaller' || this.type === 'wizard' || this.type === 'hunter') && gameState.isBattleStarted) {
       uiElements.ctx.fillStyle = 'rgba(75, 85, 99, 0.5)';
       uiElements.ctx.fillRect(healthBarX, specialBarY, barWidth, specialBarHeight);
       let specs, counter, maxCount, barColor, activeColor, activeDuration, activeEndTime;
@@ -305,6 +357,17 @@ class Unit {
           maxCount = 3;
           barColor = '#fb923c';
           break;
+        case 'wizard':
+          counter = this.basicAttackCounter || 0;
+          maxCount = 4;
+          barColor = '#c084fc';
+          break;
+        case 'hunter':
+          specs = UNIT_SPECS.hunter;
+          counter = this.basicAttackCounter || 0;
+          maxCount = specs.eagleTriggerCount;
+          barColor = '#8B4513'; // Brown for eagle
+          break;
         case 'cryomancer':
           specs = UNIT_SPECS.cryomancer;
           counter = this.basicAttackCounter;
@@ -326,10 +389,6 @@ class Unit {
       if (this.isMultiHealActive) {
         const progress = (activeEndTime - Date.now()) / activeDuration;
         uiElements.ctx.fillStyle = activeColor;
-        uiElements.ctx.fillRect(healthBarX, specialBarY, barWidth * progress, specialBarHeight);
-      } else if (this.type === 'rockgolem' && this.isCharging) {
-        const progress = Math.max(0, this.chargeDuration / 45);
-        uiElements.ctx.fillStyle = '#fde047'; // Bright yellow
         uiElements.ctx.fillRect(healthBarX, specialBarY, barWidth * progress, specialBarHeight);
       } else if (counter > 0) {
         const segmentWidth = barWidth / maxCount;
@@ -408,6 +467,9 @@ class Unit {
     if (this.target) {
       angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
     }
+    if (this.type === 'accelerator' && this.gunAngle !== undefined) {
+      angle = this.gunAngle;
+    }
 
     if (this.type === 'abyssal_summoner') {
       const tetherRange = 250;
@@ -420,31 +482,105 @@ class Unit {
       uiElements.ctx.stroke();
       uiElements.ctx.restore();
     }
-    if (this.type === 'musketeer' || this.type === 'sniper') {
-      const nozzleLength = this.type === 'sniper' ? 18 : 12;
-      const nozzleWidth = 5;
-      const startX = this.x + Math.cos(angle) * (this.width / 2);
-      const startY = this.y + Math.sin(angle) * (this.width / 2);
-      const endX = this.x + Math.cos(angle) * (this.width / 2 + nozzleLength);
-      const endY = this.y + Math.sin(angle) * (this.width / 2 + nozzleLength);
+    if (this.type === 'musketeer' || this.type === 'sniper' || this.type === 'hunter' || this.type === 'minigunner' || this.type === 'accelerator' || this.type === 'engineer') {
+      uiElements.ctx.save();
+      uiElements.ctx.translate(this.x, this.y);
+      uiElements.ctx.rotate(angle);
       
-      // Draw weapon barrel
-      uiElements.ctx.strokeStyle = '#9ca3af';
-      uiElements.ctx.lineWidth = nozzleWidth;
-      uiElements.ctx.beginPath();
-      uiElements.ctx.moveTo(startX, startY);
-      uiElements.ctx.lineTo(endX, endY);
-      uiElements.ctx.stroke();
-
-      // Laser pointer for sniper
-      if (this.type === 'sniper' && this.target && this.target.hp > 0) {
-        uiElements.ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)'; // Red transparent laser
-        uiElements.ctx.lineWidth = 1;
-        uiElements.ctx.beginPath();
-        uiElements.ctx.moveTo(endX, endY);
-        uiElements.ctx.lineTo(this.target.x, this.target.y);
-        uiElements.ctx.stroke();
+      const gunBaseX = this.width / 2;
+      
+      if (this.type === 'musketeer') {
+         uiElements.ctx.strokeStyle = '#9ca3af';
+         uiElements.ctx.lineWidth = 5;
+         uiElements.ctx.beginPath();
+         uiElements.ctx.moveTo(gunBaseX, 0);
+         uiElements.ctx.lineTo(gunBaseX + 12, 0);
+         uiElements.ctx.stroke();
+         uiElements.ctx.fillStyle = '#8b4513';
+         uiElements.ctx.fillRect(gunBaseX - 4, -2, 8, 4);
+      } else if (this.type === 'sniper') {
+         uiElements.ctx.strokeStyle = '#374151';
+         uiElements.ctx.lineWidth = 4;
+         uiElements.ctx.beginPath();
+         uiElements.ctx.moveTo(gunBaseX, 0);
+         uiElements.ctx.lineTo(gunBaseX + 22, 0);
+         uiElements.ctx.stroke();
+         uiElements.ctx.fillStyle = '#111827';
+         uiElements.ctx.fillRect(gunBaseX + 4, -5, 8, 3);
+         if (this.target) {
+            uiElements.ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+            uiElements.ctx.lineWidth = 1;
+            uiElements.ctx.beginPath();
+            uiElements.ctx.moveTo(gunBaseX + 22, 0);
+            uiElements.ctx.lineTo(gunBaseX + 1000, 0);
+            uiElements.ctx.stroke();
+         }
+      } else if (this.type === 'hunter') {
+         uiElements.ctx.strokeStyle = '#4b5563';
+         uiElements.ctx.lineWidth = 3;
+         uiElements.ctx.beginPath();
+         uiElements.ctx.moveTo(gunBaseX, 0);
+         uiElements.ctx.lineTo(gunBaseX + 16, 0);
+         uiElements.ctx.stroke();
+         uiElements.ctx.fillStyle = '#8b4513';
+         uiElements.ctx.fillRect(gunBaseX - 2, -2, 6, 4);
+         if (!this.eagleOut) {
+            uiElements.ctx.fillStyle = '#8B4513';
+            uiElements.ctx.beginPath();
+            uiElements.ctx.arc(0, -this.height / 2 - 2, 4, 0, Math.PI*2);
+            uiElements.ctx.fill();
+            uiElements.ctx.fillStyle = '#fef08a';
+            uiElements.ctx.beginPath();
+            uiElements.ctx.moveTo(4, -this.height / 2 - 2);
+            uiElements.ctx.lineTo(7, -this.height / 2 - 4);
+            uiElements.ctx.lineTo(4, -this.height / 2 - 6);
+            uiElements.ctx.fill();
+         }
+      } else if (this.type === 'minigunner') {
+         uiElements.ctx.fillStyle = '#374151';
+         uiElements.ctx.fillRect(gunBaseX - 2, -6, 10, 12);
+         uiElements.ctx.strokeStyle = '#1f2937';
+         uiElements.ctx.lineWidth = 2;
+         for (let i = -4; i <= 4; i += 4) {
+            uiElements.ctx.beginPath();
+            uiElements.ctx.moveTo(gunBaseX + 8, i);
+            uiElements.ctx.lineTo(gunBaseX + 18, i);
+            uiElements.ctx.stroke();
+         }
+      } else if (this.type === 'accelerator') {
+         uiElements.ctx.fillStyle = '#6b7280';
+         uiElements.ctx.fillRect(gunBaseX, -4, 18, 8);
+         uiElements.ctx.fillStyle = '#0ea5e9';
+         uiElements.ctx.fillRect(gunBaseX + 4, -2, 10, 4);
+         uiElements.ctx.strokeStyle = '#38bdf8';
+         uiElements.ctx.lineWidth = 2;
+         uiElements.ctx.beginPath();
+         uiElements.ctx.arc(gunBaseX + 14, 0, 6, -Math.PI/2, Math.PI/2);
+         uiElements.ctx.stroke();
+         const isOnCooldown = (Date.now() - this.lastAttackTime < this.attackCooldown / gameState.gameSpeed) && !this.isAiming && !this.isContinuous;
+         if (this.target && !isOnCooldown) {
+            if (this.isAiming) {
+                const aimProgress = (Date.now() - this.aimStartTime) / (800 / gameState.gameSpeed);
+                const opacity = Math.max(0, Math.min(1, aimProgress));
+                uiElements.ctx.strokeStyle = `rgba(56, 189, 248, ${opacity})`;
+                uiElements.ctx.lineWidth = 1;
+                uiElements.ctx.beginPath();
+                uiElements.ctx.moveTo(gunBaseX + 18, 0);
+                uiElements.ctx.lineTo(gunBaseX + 1000, 0);
+                uiElements.ctx.stroke();
+            }
+         }
+      } else if (this.type === 'engineer') {
+         uiElements.ctx.fillStyle = '#f59e0b';
+         uiElements.ctx.fillRect(gunBaseX, -3, 14, 6);
+         uiElements.ctx.fillStyle = '#6b7280';
+         uiElements.ctx.fillRect(gunBaseX + 14, -1, 4, 2);
+         uiElements.ctx.fillStyle = '#8b4513';
+         uiElements.ctx.fillRect(-8, 5, 12, 3);
+         uiElements.ctx.fillStyle = '#9ca3af';
+         uiElements.ctx.fillRect(-10, 3, 4, 7);
       }
+      uiElements.ctx.restore();
     } else if (this.type === 'archer') {
       uiElements.ctx.save();
       uiElements.ctx.translate(this.x, this.y);
@@ -520,38 +656,7 @@ class Unit {
       uiElements.ctx.closePath();
       uiElements.ctx.fill();
       uiElements.ctx.restore();
-    } else if (this.type === 'fortress') {
-      const shieldWidth = 12;
-      uiElements.ctx.save();
-      uiElements.ctx.translate(this.x, this.y);
-      uiElements.ctx.rotate(angle);
-      
-      let thrustOffset = 0;
-      if (this.isSlashing) {
-        const progress = this.slashAnimProgress / this.slashAnimDuration;
-        // thrust forward and back
-        thrustOffset = Math.sin(progress * Math.PI) * 12;
-      }
-      
-      uiElements.ctx.translate(thrustOffset, 0);
-
-      // Draw a massive curved shield
-      uiElements.ctx.strokeStyle = '#334155'; // darker slate
-      uiElements.ctx.lineWidth = shieldWidth;
-      uiElements.ctx.lineCap = 'round';
-      
-      uiElements.ctx.beginPath();
-      uiElements.ctx.arc(0, 0, this.width / 2 + 6, -Math.PI / 2.2, Math.PI / 2.2, false);
-      uiElements.ctx.stroke();
-
-      // Add a metallic highlight
-      uiElements.ctx.strokeStyle = '#94a3b8';
-      uiElements.ctx.lineWidth = 4;
-      uiElements.ctx.beginPath();
-      uiElements.ctx.arc(0, 0, this.width / 2 + 6, -Math.PI / 2.2, Math.PI / 2.2, false);
-      uiElements.ctx.stroke();
-      
-      uiElements.ctx.restore(); } else if (this.type === 'guardian') {
+    } else if (this.type === 'guardian') {
       const shieldWidth = 10;
       const shieldHeight = 30;
       uiElements.ctx.save();
@@ -583,6 +688,65 @@ class Unit {
       uiElements.ctx.fillRect(hiltPosition, -swordWidth / 2, swordLength, swordWidth);
       uiElements.ctx.fillStyle = '#9ca3af';
       uiElements.ctx.fillRect(hiltPosition, -swordWidth, swordWidth, swordWidth * 2);
+      uiElements.ctx.restore();
+    } else if (this.type === 'fortress') {
+      const shieldWidth = 14;
+      const shieldHeight = 40;
+      let shieldOffset = 2;
+      if (this.isSlashing) {
+         const progress = this.slashAnimProgress / this.slashAnimDuration;
+         shieldOffset += Math.sin(progress * Math.PI) * 15;
+      }
+      uiElements.ctx.save();
+      uiElements.ctx.translate(this.x, this.y);
+      uiElements.ctx.rotate(angle);
+      uiElements.ctx.fillStyle = '#475569';
+      uiElements.ctx.fillRect(this.width / 2 + shieldOffset, -shieldHeight / 2, shieldWidth, shieldHeight);
+      uiElements.ctx.lineWidth = 2;
+      uiElements.ctx.strokeStyle = '#1e293b';
+      uiElements.ctx.strokeRect(this.width / 2 + shieldOffset, -shieldHeight / 2, shieldWidth, shieldHeight);
+      uiElements.ctx.fillStyle = '#cbd5e1';
+      uiElements.ctx.fillRect(this.width / 2 + shieldOffset, -shieldHeight / 2 + 8, shieldWidth, 4);
+      uiElements.ctx.fillRect(this.width / 2 + shieldOffset, shieldHeight / 2 - 12, shieldWidth, 4);
+      uiElements.ctx.restore();
+    } else if (this.type === 'assassin') {
+      uiElements.ctx.save();
+      uiElements.ctx.translate(this.x, this.y);
+      uiElements.ctx.rotate(angle);
+      let swordAngle = 0;
+      if (this.isSlashing) {
+         const progress = this.slashAnimProgress / this.slashAnimDuration;
+         swordAngle = (1 - progress) * Math.PI;
+      }
+      uiElements.ctx.rotate(swordAngle);
+      uiElements.ctx.fillStyle = '#111827';
+      uiElements.ctx.fillRect(this.width / 2, -12, 10, 3);
+      uiElements.ctx.fillRect(this.width / 2, 9, 10, 3);
+      uiElements.ctx.fillStyle = '#64748b';
+      uiElements.ctx.beginPath();
+      uiElements.ctx.moveTo(this.width / 2 + 10, -13);
+      uiElements.ctx.lineTo(this.width / 2 + 22, -10.5);
+      uiElements.ctx.lineTo(this.width / 2 + 10, -8);
+      uiElements.ctx.fill();
+      uiElements.ctx.beginPath();
+      uiElements.ctx.moveTo(this.width / 2 + 10, 8);
+      uiElements.ctx.lineTo(this.width / 2 + 22, 10.5);
+      uiElements.ctx.lineTo(this.width / 2 + 10, 13);
+      uiElements.ctx.fill();
+      uiElements.ctx.restore();
+    } else if (this.type === 'ghoul') {
+      uiElements.ctx.save();
+      uiElements.ctx.translate(this.x, this.y);
+      uiElements.ctx.rotate(angle);
+      let clawOffset = 0;
+      if (this.isSlashing) clawOffset = 8;
+      uiElements.ctx.fillStyle = this.isRevived ? '#dc2626' : '#4ade80';
+      uiElements.ctx.fillRect(this.width / 2 + clawOffset, -10, 8, 2);
+      uiElements.ctx.fillRect(this.width / 2 + clawOffset, -7, 10, 2);
+      uiElements.ctx.fillRect(this.width / 2 + clawOffset, -4, 8, 2);
+      uiElements.ctx.fillRect(this.width / 2 + clawOffset, 4, 8, 2);
+      uiElements.ctx.fillRect(this.width / 2 + clawOffset, 7, 10, 2);
+      uiElements.ctx.fillRect(this.width / 2 + clawOffset, 10, 8, 2);
       uiElements.ctx.restore();
     } else if (this.type === 'priest') {
       const crossVLength = 24,
@@ -808,74 +972,6 @@ class Unit {
         uiElements.ctx.fillRect(hiltPosition, -swordWidth, swordWidth, swordWidth * 2);
         uiElements.ctx.restore();
       }
-    } else if (this.type === 'assassin') {
-      const daggerLength = 16;
-      const daggerWidth = 4;
-      const offsetDistance = 8;
-      uiElements.ctx.save();
-      uiElements.ctx.translate(this.x, this.y);
-      uiElements.ctx.rotate(angle);
-      
-      let thrustOffset = 0;
-      if (this.isSlashing) {
-          const progress = 1 - (this.slashAnimProgress / this.slashAnimDuration);
-          thrustOffset = Math.sin(progress * Math.PI) * 12;
-      }
-      
-      uiElements.ctx.fillStyle = '#64748b'; // Slate dagger
-      uiElements.ctx.fillRect(this.width/2 - 5 + thrustOffset, offsetDistance - daggerWidth/2, daggerLength, daggerWidth);
-      uiElements.ctx.restore();
-} else if (this.type === 'ghoul') {
-      uiElements.ctx.save();
-      uiElements.ctx.translate(this.x, this.y);
-      uiElements.ctx.rotate(angle);
-      // Draw stitches on the body
-      uiElements.ctx.strokeStyle = '#000000';
-      uiElements.ctx.lineWidth = 1.5;
-      uiElements.ctx.beginPath();
-      // Main cut
-      uiElements.ctx.moveTo(-5, -5);
-      uiElements.ctx.lineTo(5, 5);
-      // Stitches across
-      uiElements.ctx.moveTo(-2, -6);
-      uiElements.ctx.lineTo(0, -2);
-      uiElements.ctx.moveTo(2, -2);
-      uiElements.ctx.lineTo(4, 2);
-      uiElements.ctx.moveTo(6, 2);
-      uiElements.ctx.lineTo(8, 6);
-      uiElements.ctx.stroke();
-      // If revived, glowing eyes
-      if (this.isRevived) {
-          uiElements.ctx.fillStyle = '#ef4444'; // glowing red eyes
-          uiElements.ctx.shadowColor = '#ef4444';
-          uiElements.ctx.shadowBlur = 5;
-          uiElements.ctx.beginPath();
-          uiElements.ctx.arc(4, -3, 2, 0, Math.PI*2);
-          uiElements.ctx.arc(4, 3, 2, 0, Math.PI*2);
-          uiElements.ctx.fill();
-      }
-      uiElements.ctx.restore();
-    } else if (this.type === 'assassin') {
-      const daggerLength = 14;
-      const daggerWidth = 3;
-      const offsetDistance = 10;
-      uiElements.ctx.save();
-      uiElements.ctx.translate(this.x, this.y);
-      uiElements.ctx.rotate(angle);
-      
-      let thrustOffset = 0;
-      if (this.isSlashing) {
-          const progress = this.slashAnimProgress / this.slashAnimDuration;
-          thrustOffset = Math.sin(progress * Math.PI) * 12;
-      }
-      
-      uiElements.ctx.fillStyle = '#64748b'; // Slate daggers
-      // Left dagger
-      uiElements.ctx.fillRect(this.width/2 - 5 + thrustOffset, -offsetDistance - daggerWidth/2, daggerLength, daggerWidth);
-      // Right dagger
-      uiElements.ctx.fillRect(this.width/2 - 5 + thrustOffset, offsetDistance - daggerWidth/2, daggerLength, daggerWidth);
-      
-      uiElements.ctx.restore();
     } else if (this.type === 'rockgolem') {
       for (let i = -1; i <= 1; i += 2) {
         let armAngle = angle + i * Math.PI / 4;
@@ -909,36 +1005,31 @@ class Unit {
       this.target = null;
       return;
     }
-    let bestTarget = null;
-    if (this.type === 'assassin') {
-      let bestScore = -Infinity;
-      enemies.forEach(e => {
-        if (e.isReviving || e.isShadow) return;
-        
-        let score = -e.hp; // Prefer lower HP
-        
-        const tags = UNIT_SPECS[e.type].tags;
-        if (tags.includes('Support')) score += 500;
-        else if (tags.includes('Magic')) score += 400;
-        else if (tags.includes('Ranged')) score += 300;
-        
-        if (score > bestScore) {
-          bestScore = score;
-          bestTarget = e;
-        }
-      });
-    } else {
-      let minDistance = Infinity;
-      enemies.forEach(e => {
-        if (e.isReviving || e.isShadow) return;
-        const d = getDistance(this, e);
-        if (d < minDistance) {
-          minDistance = d;
-          bestTarget = e;
-        }
-      });
+    const validEnemies = enemies.filter(e => !(e.type === 'assassin' && (e.isShadow || e.isInitialStealth)));
+    if (validEnemies.length === 0) {
+      this.target = null;
+      return;
     }
-    this.target = bestTarget;
+    let closestEnemy = null;
+    let minDistance = Infinity;
+    if (this.type === 'assassin') {
+        validEnemies.forEach(e => {
+            const score = e.maxHp + getDistance(this, e) * 0.1;
+            if (score < minDistance) {
+                minDistance = score;
+                closestEnemy = e;
+            }
+        });
+    } else {
+        validEnemies.forEach(e => {
+          const d = getDistance(this, e);
+          if (d < minDistance) {
+            minDistance = d;
+            closestEnemy = e;
+          }
+        });
+    }
+    this.target = closestEnemy;
   }
   findAllyTarget(friendlies) {
     const alliesToHeal = friendlies.filter(f => f.hp < f.maxHp && f !== this);
@@ -968,37 +1059,24 @@ class Unit {
     this.y += steerY * 0.5 * gameState.gameSpeed;
   }
   update(friendlies, enemies) {
-    if (this.target && (this.target.isReviving || this.target.isShadow)) this.target = null;
-    
-    if (this.isShadow && Date.now() > this.shadowTime) {
-      this.isShadow = false;
-    }
-    
-    if (this.type === 'assassin' && this.isInitialStealth) {
-        if (!this.isShadow && this.battleFrames > 30) {
-            this.isShadow = true;
-            this.shadowTime = Infinity;
-            gameState.animations.push(new FloatingText("STEALTH", this.x, this.y - 30, "#475569"));
-        }
-        this.battleFrames += 1 * gameState.gameSpeed;
-    }
-    
     if (this.isReviving) {
-      if (Date.now() >= this.reviveTime) {
+      if (Date.now() > this.reviveTime) {
         this.isReviving = false;
         this.isRevived = true;
         const specs = UNIT_SPECS.ghoul;
         this.maxHp = specs.reviveMaxHp;
-        this.hp = this.maxHp * specs.reviveHpMultiplier;
+        this.hp = this.maxHp;
         this.speed *= specs.reviveSpeedMultiplier;
         this.attackDamage *= specs.reviveDamageMultiplier;
         this.attackCooldown *= specs.reviveCooldownMultiplier;
-        for (let i = 0; i < 20; i++) gameState.particles.push(new Particle(this.x, this.y, this.team, true, 'poison'));
+        this.color = '#7f1d1d';
         gameState.animations.push(new FloatingText("REVIVED!", this.x, this.y - 30, "#ef4444"));
       }
       return;
     }
-    
+    if (this.type === 'assassin' && this.isShadow && Date.now() > this.shadowTime) {
+        this.isShadow = false;
+    }
     if (this.isBeingKnockedBack) {
       this.x += (this.knockbackTargetX - this.x) * 0.1 * gameState.gameSpeed;
       this.y += (this.knockbackTargetY - this.y) * 0.1 * gameState.gameSpeed;
@@ -1048,71 +1126,21 @@ class Unit {
         gameState.particles.push(new Particle(this.x, this.y, this.team === 1 ? 2 : 1, false, 'poison'));
       }
     }
-    if (Date.now() < this.stunnedUntil || this.isBeingKnockedBack) return;
-    
-    if (this.type === 'rockgolem' && this.isCharging) {
-        const chargeSpeed = 5 * gameState.gameSpeed;
-        this.x += Math.cos(this.chargeAngle) * chargeSpeed;
-        this.y += Math.sin(this.chargeAngle) * chargeSpeed;
-        
-        enemies.forEach(e => {
-            if (e.hp <= 0) return;
-            const dist = getDistance(this, e);
-            if (dist < this.width/2 + e.width/2 + 20) {
-                const angleToEnemy = Math.atan2(e.y - this.y, e.x - this.x);
-                let diff = Math.abs(angleToEnemy - this.chargeAngle);
-                
-                while (diff > Math.PI) diff -= Math.PI * 2;
-                while (diff < -Math.PI) diff += Math.PI * 2;
-                
-                if (Math.abs(diff) < Math.PI / 2.5) { // In front! Drag them!
-                   e.x += Math.cos(this.chargeAngle) * chargeSpeed;
-                   e.y += Math.sin(this.chargeAngle) * chargeSpeed;
-                   
-                   // Keep them within bounds
-                   e.x = Math.max(e.width/2, Math.min(e.x, uiElements.canvas.width - e.width/2));
-                   e.y = Math.max(e.width/2, Math.min(e.y, uiElements.canvas.height - e.width/2));
-                   
-                   if (!e.chargeHitBy || e.chargeHitBy !== this) {
-                       e.takeDamage(this.attackDamage * 4, this);
-                       e.chargeHitBy = this;
-                       e.stunnedUntil = Date.now() + 1500;
-                       e.stunType = 'stun';
-                       gameState.animations.push(new FloatingText("CRUSHED!", e.x, e.y - 30, "#eab308"));
-                   }
-                } else { // On the side! Push away!
-                   if (!e.isBeingKnockedBack) {
-                       e.isBeingKnockedBack = true;
-                       e.knockbackTargetX = e.x + Math.cos(angleToEnemy) * 150;
-                       e.knockbackTargetY = e.y + Math.sin(angleToEnemy) * 150;
-                   }
-                }
-            }
-        });
-
-        this.chargeDuration -= 1 * gameState.gameSpeed;
-        if (this.chargeDuration <= 0) {
-            this.isCharging = false;
-            enemies.forEach(e => { if (e.chargeHitBy === this) e.chargeHitBy = null; });
+    if (this.ownedSentries) {
+       if (this.sentryOrbitOffset === undefined) this.sentryOrbitOffset = 0;
+       this.sentryOrbitOffset += 0.03 * gameState.gameSpeed;
+       this.ownedSentries.forEach(s => s.update(friendlies, enemies));
+    }
+    if (Date.now() < this.stunnedUntil || this.isBeingKnockedBack) {
+        if (this.type === 'accelerator') {
+            this.isAiming = false;
+            this.isContinuous = false;
         }
-        
-        if (Math.random() < 0.5) {
-            gameState.particles.push(new Particle(this.x + (Math.random()-0.5)*this.width, this.y + (Math.random()-0.5)*this.width, this.team, true, 'rock'));
-            gameState.particles.push(new Particle(this.x + (Math.random()-0.5)*this.width, this.y + (Math.random()-0.5)*this.width, this.team, true, 'smoke'));
-        }
-        
-        const radius = this.width / 2;
-        this.x = Math.max(radius, Math.min(this.x, uiElements.canvas.width - radius));
-        this.y = Math.max(radius, Math.min(this.y, uiElements.canvas.height - radius));
-        
-        // Stop charging if we hit a wall
-        if (this.x === radius || this.x === uiElements.canvas.width - radius || this.y === radius || this.y === uiElements.canvas.height - radius) {
-            this.isCharging = false;
-            enemies.forEach(e => { if (e.chargeHitBy === this) e.chargeHitBy = null; });
+        if (this.type === 'rockgolem') {
+            this.isSmashingWindup = false;
         }
         return;
     }
-    
     if (this.isCasting) {
       this.castAnimProgress -= 1 * gameState.gameSpeed;
       if (this.castAnimProgress <= 0) this.isCasting = false;
@@ -1139,14 +1167,31 @@ class Unit {
       this.swingAnimProgress -= 1 * gameState.gameSpeed;
       if (this.swingAnimProgress <= 0) this.isSwinging = false;
     }
+    if (this.type === 'rockgolem' && this.isSmashingWindup) {
+      this.smashWindupProgress += 1 * gameState.gameSpeed;
+      if (this.smashWindupProgress >= this.smashWindupDuration) {
+          this.isSmashingWindup = false;
+          const specs = UNIT_SPECS.rockgolem;
+          AudioManager.play('rock_smash');
+          gameState.animations.push(new FloatingText("SMASH!", this.x, this.y - 40, "#eab308"));
+          for(let i=0; i<15; i++) gameState.particles.push(new Particle(this.x, this.y, this.team, true, 'rock'));
+          gameState.animations.push(new TrollSmashAnimation(this, specs.aoeRadius * 2.5, specs.aoeDamage * 1.5, specs.stunDuration * 1.5, 60, gameState.units));
+          this.lastAttackTime = Date.now();
+      }
+      return;
+    }
+    if (this.type === 'accelerator') {
+       const isOnCooldown = (Date.now() - this.lastAttackTime < this.attackCooldown / gameState.gameSpeed) && !this.isAiming && !this.isContinuous;
+       if (isOnCooldown && Math.random() < 0.3) {
+          const angle = this.target ? Math.atan2(this.target.y - this.y, this.target.x - this.x) : (this.team === 1 ? 0 : Math.PI);
+          const nozzleX = this.x + Math.cos(angle) * (this.width / 2 + 18);
+          const nozzleY = this.y + Math.sin(angle) * (this.width / 2 + 18);
+          gameState.particles.push(new Particle(nozzleX, nozzleY, this.team, false, 'smoke'));
+       }
+    }
     if (this.isMultiHealActive && Date.now() > this.multiHealEndTime) this.isMultiHealActive = false;
+
     let currentSpeed = this.speed;
-    if (this.type === 'troll' && this.hp <= this.maxHp * 0.5) {
-      currentSpeed *= 2.5; // Rage mode, 2.5x faster!
-    }
-    if (this.type === 'assassin' && this.isShadow) {
-      currentSpeed *= 3.0; // 3x movement speed in shadow mode!
-    }
     if (this.buffs.slow && Date.now() < this.buffs.slow.expires) {
       currentSpeed *= 1 - this.buffs.slow.amount;
     }
@@ -1180,94 +1225,58 @@ class Unit {
           const angle = Math.atan2(avgY - this.y, targetX - this.x);
           this.x += Math.cos(angle) * currentSpeed * gameState.gameSpeed;
           this.y += Math.sin(angle) * currentSpeed * gameState.gameSpeed;
-          
-          // Slide along wall if stuck
-          if (this.x <= this.width / 2 || this.x >= uiElements.canvas.width - this.width / 2) {
-              this.y += (this.y > uiElements.canvas.height / 2 ? -1 : 1) * currentSpeed * gameState.gameSpeed;
-          }
-        }
-      } else {
-        this.findTarget(enemies);
-        if (this.target) {
-          const angle = Math.atan2(this.y - this.target.y, this.x - this.target.x);
-          this.x += Math.cos(angle) * currentSpeed * gameState.gameSpeed;
-          this.y += Math.sin(angle) * currentSpeed * gameState.gameSpeed;
-          
-          // Slide along wall if stuck
-          if (this.x <= this.width / 2 || this.x >= uiElements.canvas.width - this.width / 2) {
-              this.y += (this.y > uiElements.canvas.height / 2 ? -1 : 1) * currentSpeed * gameState.gameSpeed;
-          }
         }
       }
-      const radius = this.width / 2;
-      this.x = Math.max(radius, Math.min(this.x, uiElements.canvas.width - radius));
-      this.y = Math.max(radius, Math.min(this.y, uiElements.canvas.height - radius));
       this.attack(enemies);
       return;
     }
     this.applySeparation(friendlies);
+    if (this.type === 'assassin') {
+        if (!this.spawnTime) this.spawnTime = Date.now();
+        if (this.isInitialStealth) {
+            if (Date.now() - this.spawnTime < 600) {
+                this.x += (this.team === 1 ? currentSpeed : -currentSpeed) * gameState.gameSpeed;
+                return; 
+            } else {
+                this.isInitialStealth = false;
+                this.isShadow = true;
+                this.shadowTime = Infinity;
+                gameState.animations.push(new FloatingText("SHADOW", this.x, this.y - 30, "#475569"));
+            }
+        }
+    }
     this.findTarget(enemies);
     if (this.target) {
-      if (getDistance(this, this.target) > this.attackRange) {
-        if (this.type === 'assassin' && this.isShadow && getDistance(this, this.target) <= 200) {
-            const oldX = this.x;
-            const oldY = this.y;
-            const backOffset = this.target.team === 1 ? -25 : 25;
-            this.x = this.target.x + backOffset;
-            this.y = this.target.y;
-            
-            for (let i = 0; i <= 15; i++) {
-                const px = oldX + (this.x - oldX) * (i / 15);
-                const py = oldY + (this.y - oldY) * (i / 15);
-                let p = new Particle(px, py, this.team, true, 'poison');
-                p.life = 15 + Math.random() * 10;
-                gameState.particles.push(p);
-            }
-            for (let i = 0; i < 15; i++) gameState.particles.push(new Particle(this.x, this.y, this.team, true, 'poison'));
-            
-            this.isShadow = false;
-            this.shadowTime = 0;
-            this.isFlurrying = true;
-            this.flurryTarget = this.target;
-            this.attack(enemies);
-        } else {
-            let targetX = this.target.x;
-            let targetY = this.target.y;
-            
-            if (this.type === 'assassin' && this.isShadow) {
-                // Target the BACK of the enemy
-                const backOffset = this.target.team === 1 ? -40 : 40;
-                targetX += backOffset;
-            }
-
-            let angle = Math.atan2(targetY - this.y, targetX - this.x);
-            
-            if (this.type === 'assassin' && this.isShadow) {
-                if (this.currentMoveAngle === 0) {
-                    // Initialize facing perpendicular to add a curving effect
-                    this.currentMoveAngle = angle + (Math.PI / 1.5) * (this.y > uiElements.canvas.height / 2 ? -1 : 1);
-                }
-                // Smoothly turn towards the target angle
-                let angleDiff = angle - this.currentMoveAngle;
-                while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-                while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-                
-                const turnRate = 0.04 * gameState.gameSpeed;
-                if (Math.abs(angleDiff) < turnRate) {
-                    this.currentMoveAngle = angle;
-                } else {
-                    this.currentMoveAngle += Math.sign(angleDiff) * turnRate;
-                }
-                angle = this.currentMoveAngle;
-            } else {
-                this.currentMoveAngle = 0; // Reset
-            }
-
+      if (this.type === 'assassin' && this.isShadow) {
+          const behindOffsetX = this.target.team === 1 ? -25 : 25;
+          const targetDestX = this.target.x + behindOffsetX;
+          const targetDestY = this.target.y;
+          const distToTarget = getDistance(this, {x: targetDestX, y: targetDestY});
+          
+          if (distToTarget > this.attackRange) {
+              let moveTargetX = targetDestX;
+              let moveTargetY = targetDestY;
+              
+              if (Math.abs(targetDestX - this.x) > 150) {
+                 moveTargetY = this.y < uiElements.canvas.height / 2 ? 50 : uiElements.canvas.height - 50;
+              }
+              
+              const baseAngle = Math.atan2(moveTargetY - this.y, moveTargetX - this.x);
+              const erraticAngle = baseAngle + Math.sin(Date.now() / 150) * 0.8;
+              this.x += Math.cos(erraticAngle) * currentSpeed * 2.5 * gameState.gameSpeed;
+              this.y += Math.sin(erraticAngle) * currentSpeed * 2.5 * gameState.gameSpeed;
+          } else {
+              this.isShadow = false;
+              this.attack(enemies);
+          }
+      } else {
+          if (getDistance(this, this.target) > this.attackRange) {
+            const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
             this.x += Math.cos(angle) * currentSpeed * gameState.gameSpeed;
             this.y += Math.sin(angle) * currentSpeed * gameState.gameSpeed;
-        }
-      } else {
-        this.attack(enemies);
+          } else {
+            this.attack(enemies);
+          }
       }
     } else {
       this.x += (this.team === 1 ? currentSpeed : -currentSpeed) * gameState.gameSpeed;
@@ -1283,13 +1292,6 @@ class Unit {
     if (this.buffs.bard && Date.now() < this.buffs.bard.expires) {
       currentCooldown /= 1 + this.buffs.bard.attackSpeedBoost;
     }
-    if (this.type === 'assassin' && this.isFlurrying) {
-        if (this.target === this.flurryTarget && this.target.hp > 0) {
-            currentCooldown = 150; // Flurry speed!
-        } else {
-            this.isFlurrying = false;
-        }
-    }
     const now = Date.now();
     if (this.type === 'duelist') {
       const specs = UNIT_SPECS.duelist;
@@ -1299,8 +1301,8 @@ class Unit {
           this.burstsLeft--;
           this.activeSword *= -1;
           if (this.target && getDistance(this, this.target) <= this.attackRange + 5) {
+            AudioManager.play('slash');
             this.target.takeDamage(this.attackDamage, this);
-            AudioManager.play('slice');
             gameState.animations.push(new SlashAnimation(this));
             this.isSlashing = true;
             this.slashAnimProgress = this.slashAnimDuration;
@@ -1321,12 +1323,123 @@ class Unit {
         } else {
           this.activeSword *= -1;
           if (this.target && getDistance(this, this.target) <= this.attackRange + 5) {
+            AudioManager.play('slash');
             this.target.takeDamage(this.attackDamage, this);
-            AudioManager.play('slice');
             gameState.animations.push(new SlashAnimation(this));
             this.isSlashing = true;
             this.slashAnimProgress = this.slashAnimDuration;
           }
+        }
+      }
+      return;
+    }
+    if (this.type === 'assassin') {
+      if (this.isFlurrying) {
+         if (now - this.lastFlurrySlashTime > 80 / gameState.gameSpeed) { // Very fast slash (every 80ms)
+             this.lastFlurrySlashTime = now;
+             this.flurriesLeft--;
+             if (this.target && getDistance(this, this.target) <= this.attackRange + 15) {
+                 AudioManager.play('slash');
+                 this.target.takeDamage(this.attackDamage * 0.4, this); // Fast multi-hits
+                 gameState.animations.push(new SlashAnimation(this, '71, 85, 105')); 
+                 this.isSlashing = true;
+                 this.slashAnimProgress = 10;
+             }
+             if (this.flurriesLeft <= 0) {
+                 this.isFlurrying = false;
+                 this.lastAttackTime = now;
+             }
+         }
+      } else if (now - this.lastAttackTime > currentCooldown / gameState.gameSpeed) {
+         if (this.target && getDistance(this, this.target) <= this.attackRange + 15) {
+             this.isFlurrying = true;
+             this.flurriesLeft = 8; // 8 extremely fast slashes
+             this.lastFlurrySlashTime = now - 80 / gameState.gameSpeed; 
+         }
+      }
+      return;
+    }
+      if (this.type === 'accelerator') {
+      const specs = UNIT_SPECS.accelerator;
+
+      let targetAngle = this.team === 1 ? 0 : Math.PI;
+      if (this.target) targetAngle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+      if (this.gunAngle === undefined) this.gunAngle = targetAngle;
+      
+      if (this.isContinuous) {
+         let diff = targetAngle - this.gunAngle;
+         while (diff < -Math.PI) diff += Math.PI * 2;
+         while (diff > Math.PI) diff -= Math.PI * 2;
+         const rotationSpeed = 0.008 * gameState.gameSpeed; 
+         if (Math.abs(diff) < rotationSpeed) this.gunAngle = targetAngle;
+         else this.gunAngle += Math.sign(diff) * rotationSpeed;
+      } else {
+         this.gunAngle = targetAngle; 
+      }
+      
+      const aimTarget = {
+          x: this.x + Math.cos(this.gunAngle) * 100,
+          y: this.y + Math.sin(this.gunAngle) * 100
+      };
+
+      if (this.isAiming) {
+          if (now - this.aimStartTime > 800 / gameState.gameSpeed) {
+              this.isAiming = false;
+              this.isContinuous = true;
+              this.continuousStartTime = now;
+              this.lastContinuousTickTime = 0;
+          }
+          return;
+      } else if (this.isContinuous) {
+         const elapsed = now - this.continuousStartTime;
+         const progress = Math.min(1, elapsed / (4000 / gameState.gameSpeed));
+         const tickDelay = 400 - (350 * progress); // Ramps from 400ms to 50ms tick rate
+
+         if (now - this.lastContinuousTickTime > tickDelay / gameState.gameSpeed) {
+             this.lastContinuousTickTime = now;
+             if (this.target) {
+                 AudioManager.play('beam');
+                 const tickBeam = new PenetratingBeam(this, aimTarget, specs.attackDamage, this.team);
+                 tickBeam.radius = 12;
+                 gameState.projectiles.push(tickBeam);
+                 
+                 const nozzleX = this.x + Math.cos(this.gunAngle) * (this.width / 2 + 18);
+                 const nozzleY = this.y + Math.sin(this.gunAngle) * (this.width / 2 + 18);
+                 gameState.particles.push(new Particle(nozzleX, nozzleY, this.team, false, 'smoke'));
+             }
+         }
+         return;
+      }
+    }
+    if (this.type === 'cryomancer') {
+      const specs = UNIT_SPECS.cryomancer;
+      if (this.isBursting) {
+        if (now - this.lastBurstSlashTime > 60 / gameState.gameSpeed) { // shoot fast (60ms between shots)
+          this.lastBurstSlashTime = now;
+          this.burstsLeft--;
+          if (this.target) {
+            AudioManager.play('ice_shards');
+            const spreadAngles = [-0.4, -0.2, 0, 0.2, 0.4];
+            // burstsLeft goes from 4 down to 0
+            const angle = spreadAngles[4 - this.burstsLeft]; 
+            gameState.projectiles.push(new IceShard(this, this.target, angle));
+          }
+          if (this.burstsLeft <= 0) {
+            this.isBursting = false;
+            this.lastAttackTime = now;
+          }
+        }
+      } else if (now - this.lastAttackTime > currentCooldown / gameState.gameSpeed) {
+        this.basicAttackCounter++;
+        if (this.basicAttackCounter >= specs.specialTriggerCount) {
+          this.basicAttackCounter = 0;
+          this.lastAttackTime = now;
+          AudioManager.play('frostwave');
+          gameState.animations.push(new ShiverWaveAnimation(this, gameState.units, specs.waveDamage, specs.freezeStacksApplied));
+        } else {
+          this.isBursting = true;
+          this.burstsLeft = 5;
+          this.lastBurstSlashTime = now - 60 / gameState.gameSpeed; // trigger first shot instantly
         }
       }
       return;
@@ -1358,6 +1471,7 @@ class Unit {
           if (cost > 0) {
             this.hp -= cost;
             this.snakesSummoned++;
+            AudioManager.play('snake_release');
             gameState.animations.push(new FloatingText(label, this.x, this.y - 10, '#ef4444'));
 
             const baseAngle = this.team === 1 ? 0 : Math.PI;
@@ -1373,9 +1487,17 @@ class Unit {
       }
       if (this.type === 'wizard') {
         if (this.target) {
+          if (this.basicAttackCounter === undefined) this.basicAttackCounter = 0;
+          this.basicAttackCounter++;
+          let isStrong = false;
+          if (this.basicAttackCounter > 4) {
+             this.basicAttackCounter = 0;
+             isStrong = true;
+          }
           this.isCasting = true;
           this.castAnimProgress = 30;
-          gameState.animations.push(new ChainLightning(this, this.target, gameState.units));
+          AudioManager.play('zap');
+          gameState.animations.push(new ChainLightning(this, this.target, gameState.units, isStrong));
         }
         return;
       }
@@ -1386,9 +1508,11 @@ class Unit {
           this.healAttackCounter = 0;
           this.isMultiHealActive = true;
           this.multiHealEndTime = now + specs.multiHealDuration;
+          AudioManager.play('druid_aoeheal');
           gameState.animations.push(new MultiHealAura(this, gameState.units));
         } else {
           if (this.target) {
+            AudioManager.play('druid_heal');
             gameState.projectiles.push(new HealingOrb(this, this.target));
             this.healAttackCounter++;
           }
@@ -1406,30 +1530,15 @@ class Unit {
         this.healAttackCounter++;
         if (this.healAttackCounter >= specs.lightHealTriggerCount) {
           this.healAttackCounter = 0;
+          AudioManager.play('aoe_applyshield');
           gameState.animations.push(new AoeHeal(this.x, this.y, specs.healRadius, specs.healAmount, this.team, gameState.units, this, specs.lightHealArmorBonus, specs.lightHealArmorDuration, true));
         } else {
+          AudioManager.play('aoe_heal');
           gameState.animations.push(new AoeHeal(this.x, this.y, specs.healRadius, specs.healAmount, this.team, gameState.units, this, 0, 0, false));
         }
         return;
       }
-      if (this.type === 'cryomancer') {
-        const specs = UNIT_SPECS.cryomancer;
-        this.basicAttackCounter++;
-        if (this.basicAttackCounter >= specs.specialTriggerCount) {
-          this.basicAttackCounter = 0;
-          AudioManager.play('frostwave');
-          gameState.animations.push(new ShiverWaveAnimation(this, gameState.units, specs.waveDamage, specs.freezeStacksApplied));
-        } else {
-          if (this.target) {
-            AudioManager.play('ice_shards');
-            const spreadAngles = [-0.4, -0.2, 0, 0.2, 0.4];
-            for (let i = 0; i < 5; i++) {
-               gameState.projectiles.push(new IceShard(this, this.target, spreadAngles[i]));
-            }
-          }
-        }
-        return;
-      }
+
       if (this.type === 'alchemist') {
         const specs = UNIT_SPECS.alchemist;
         this.isThrowing = true;
@@ -1437,14 +1546,60 @@ class Unit {
         this.basicAttackCounter++;
         if (this.basicAttackCounter > specs.specialTriggerCount) {
           this.basicAttackCounter = 0;
+          AudioManager.play('poison_dart');
           const enemies = alliesOrEnemies.sort((a, b) => getDistance(this, a) - getDistance(this, b));
           for (let i = 0; i < Math.min(specs.antiHealTargets, enemies.length); i++) {
             gameState.projectiles.push(new AntiHealDart(this, enemies[i]));
           }
         } else {
           if (this.target) {
+            AudioManager.play('potion_throw');
             gameState.projectiles.push(new PoisonPotion(this, this.target));
           }
+        }
+        return;
+      }
+      if (this.type === 'engineer') {
+        const specs = UNIT_SPECS.engineer;
+        
+        if (this.nailsShot === undefined) this.nailsShot = 0;
+        if (this.isBuildingSentry === undefined) this.isBuildingSentry = false;
+        
+        if (this.isBuildingSentry) {
+          if (now >= this.buildEndTime) {
+             this.isBuildingSentry = false;
+             this.nailsShot = 0;
+             
+             if (this.ownedSentries === undefined) this.ownedSentries = [];
+             
+             if (this.ownedSentries.length < specs.maxSentries) {
+                 const sentry = new EngineerSentry(this.x, this.y, this.team, this);
+                 // We assign them an index for evenly spaced orbit
+                 sentry.orbitIndex = this.ownedSentries.length;
+                 this.ownedSentries.push(sentry);
+                 gameState.animations.push(new FloatingText("BUILT", this.x, this.y - 15, "#fbbf24"));
+             } else {
+                 gameState.animations.push(new FloatingText("LIMIT MAX", this.x, this.y - 15, "#ef4444"));
+             }
+             this.lastAttackTime = now;
+          } else {
+             // Still building, reset cooldown to check next frame
+             this.lastAttackTime -= currentCooldown / gameState.gameSpeed;
+          }
+          return;
+        }
+        
+        if (this.target && getDistance(this, this.target) <= this.attackRange) {
+           AudioManager.play('shot_nail');
+           gameState.projectiles.push(new Nail(this, this.target, this.attackDamage, this.team));
+           this.nailsShot++;
+           
+           if (this.nailsShot >= specs.shotsToBuild) {
+               this.isBuildingSentry = true;
+               this.buildEndTime = now + (specs.buildDuration / gameState.gameSpeed);
+               AudioManager.play('create_sentry');
+               gameState.animations.push(new FloatingText("BUILDING...", this.x, this.y - 15, "#fbbf24"));
+           }
         }
         return;
       }
@@ -1455,12 +1610,12 @@ class Unit {
           
           if (this.basicAttackCounter >= 3) {
              this.basicAttackCounter = 0;
-             this.isCharging = true;
-             this.chargeDuration = 45; // Plow forward for 45 frames
-             this.chargeAngle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
-             gameState.animations.push(new FloatingText("CHARGE!", this.x, this.y - 40, "#eab308"));
-             for(let i=0; i<15; i++) gameState.particles.push(new Particle(this.x, this.y, this.team, true, 'rock'));
+             this.isSmashingWindup = true;
+             this.smashWindupProgress = 0;
+             this.smashWindupDuration = 162; // 2.7 seconds windup
+             gameState.animations.push(new FloatingText("CHARGING...", this.x, this.y - 40, "#eab308"));
           } else {
+             AudioManager.play('stomp');
              this.target.takeDamage(this.attackDamage, this);
              const specs = UNIT_SPECS.rockgolem;
              gameState.animations.push(new GroundSmashAnimation(this, specs.aoeRadius, specs.aoeDamage, specs.stunDuration, gameState.units));
@@ -1469,6 +1624,8 @@ class Unit {
         return;
       } else if (this.type === 'bard') {
         const specs = UNIT_SPECS.bard;
+        const harpVariants = ['harp', 'harp2', 'harp3'];
+        AudioManager.play(harpVariants[Math.floor(Math.random() * harpVariants.length)]);
         gameState.animations.push(new AuraBuffAnimation(this, specs.buffRadius, specs.damageBoost, specs.attackSpeedBoost, specs.buffDuration, gameState.units));
         return;
       } else if (this.type === 'troll') {
@@ -1501,13 +1658,43 @@ class Unit {
       uiElements.ctx.stroke();
       uiElements.ctx.restore();
     }
-    if (this.type === 'musketeer' || this.type === 'sniper') {
+    if (this.type === 'hunter') {
+        const specs = UNIT_SPECS.hunter;
+        AudioManager.play('rifle');
+        gameState.projectiles.push(new Projectile(this, this.target, this.attackDamage, this.team));
+        for (let i = 0; i < 6; i++) {
+          gameState.particles.push(new Particle(this.x, this.y, this.team, false, 'smoke'));
+        }
+        
+        if (this.basicAttackCounter === undefined) this.basicAttackCounter = 0;
+        this.basicAttackCounter++;
+        
+        if (this.basicAttackCounter >= specs.eagleTriggerCount) {
+           this.basicAttackCounter = 0;
+           this.eagleOut = true;
+           AudioManager.play('eagle_release');
+           gameState.projectiles.push(new EagleProjectile(this, this.target, specs.eagleDamage));
+        }
+    } else if (this.type === 'musketeer' || this.type === 'sniper') {
         if (this.type === 'musketeer') AudioManager.play('bullet');
         else if (this.type === 'sniper') AudioManager.play('snipe');
         gameState.projectiles.push(new Projectile(this, this.target, this.attackDamage, this.team));
         for (let i = 0; i < 8; i++) {
           gameState.particles.push(new Particle(this.x, this.y, this.team, false, 'smoke'));
         }
+      } else if (this.type === 'minigunner') {
+        AudioManager.play('bullet');
+        const proj = new Projectile(this, this.target, this.attackDamage, this.team);
+        proj.radius = 2; // smaller bullet
+        proj.speed = 18; // faster bullet
+        gameState.projectiles.push(proj);
+        // less smoke for minigun to not lag
+        for (let i = 0; i < 2; i++) {
+          gameState.particles.push(new Particle(this.x, this.y, this.team, false, 'smoke'));
+        }
+      } else if (this.type === 'accelerator') {
+          this.isAiming = true;
+          this.aimStartTime = now;
       } else if (this.type === 'archer') {
         AudioManager.play('arrow');
         gameState.projectiles.push(new Arrow(this, this.target));
@@ -1517,10 +1704,12 @@ class Unit {
         if (this.basicAttackCounter >= 3) {
           this.basicAttackCounter = 0;
           // Shoot 3 small homing fireballs
+          AudioManager.play('small_fireball');
           gameState.projectiles.push(new Fireball(this, this.target, true, -0.3));
           gameState.projectiles.push(new Fireball(this, this.target, true, 0));
           gameState.projectiles.push(new Fireball(this, this.target, true, 0.3));
         } else {
+          AudioManager.play('fireball');
           gameState.projectiles.push(new Fireball(this, this.target));
         }
       
@@ -1529,6 +1718,7 @@ class Unit {
       return;
 } else if (this.type === 'sledgehammer') {
         if (this.target && getDistance(this, this.target) <= this.attackRange + 5) {
+          AudioManager.play('hammer');
           this.target.takeDamage(this.attackDamage, this);
           for (let i = 0; i < 5; i++) {
             gameState.particles.push(new Particle(this.target.x, this.target.y, this.team, true, 'rock'));
@@ -1536,16 +1726,6 @@ class Unit {
           if (!this.isSwinging) {
             this.isSwinging = true;
             this.swingAnimProgress = this.swingAnimDuration;
-          }
-        }
-} else if (this.type === 'assassin') {
-        if (this.target && getDistance(this, this.target) <= this.attackRange + 5) {
-          this.isInitialStealth = false;
-          this.target.takeDamage(this.attackDamage, this);
-          gameState.animations.push(new SlashAnimation(this, '71, 85, 105')); // Dark slash
-          if (!this.isSlashing) {
-            this.isSlashing = true;
-            this.slashAnimProgress = this.slashAnimDuration;
           }
         }
 } else if (this.type === 'ghoul') {
@@ -1560,7 +1740,7 @@ class Unit {
         }
 } else if (this.type === 'swordsman' || this.type === 'guardian') {
         if (this.target && getDistance(this, this.target) <= this.attackRange + 5) {
-          if (this.type === 'swordsman') AudioManager.play('slash');
+          AudioManager.play('slash');
           this.target.takeDamage(this.attackDamage, this);
           gameState.animations.push(new SlashAnimation(this));
           if (!this.isSlashing) {
@@ -1621,8 +1801,15 @@ class Unit {
             gameState.animations.push(new FloatingText(`-${Math.round(modifiedDamage)}`, this.x, this.y - 10, '#ef4444'));
         }
     }
+    if (this.type === 'dummy') {
+        if (!this.damageHistory) this.damageHistory = [];
+        this.damageHistory.push({amount: modifiedDamage, time: Date.now()});
+        this.totalDamageReceived = (this.totalDamageReceived || 0) + modifiedDamage;
+    }
+    
     const actualDamage = Math.min(this.hp, damageToHp);
     this.hp -= damageToHp;
+    if (this.type === 'dummy') this.hp = this.maxHp;
     
     // Fortress shield bash logic (after receiving 5 hits/instances of damage)
     if (this.type === 'fortress' && this.hp > 0 && damageToHp > 0) {
@@ -1658,8 +1845,8 @@ class Unit {
       attacker.kills++;
       if (attacker.type === 'assassin') {
         attacker.isShadow = true;
-        attacker.shadowTime = Date.now() + 2000; // 2 seconds stealth
-        gameState.animations.push(new FloatingText("STEALTH", attacker.x, attacker.y - 30, "#475569"));
+        attacker.shadowTime = Infinity;
+        gameState.animations.push(new FloatingText("SHADOW", attacker.x, attacker.y - 30, "#475569"));
       }
     }
   }
@@ -1703,6 +1890,7 @@ class ShadowSnake extends Unit {
           const now = Date.now();
           if (now - this.lastAttackTime > this.attackCooldown / gameState.gameSpeed) {
             this.lastAttackTime = now;
+            AudioManager.play('bite');
             this.target.takeDamage(this.attackDamage, this);
             gameState.animations.push(new SlashAnimation(this));
           }
@@ -1713,6 +1901,12 @@ class ShadowSnake extends Unit {
           const curveAngle = baseAngle + Math.sin(this.wiggleOffset) * 0.4;
           this.x += Math.cos(curveAngle) * this.speed * gameState.gameSpeed;
           this.y += Math.sin(curveAngle) * this.speed * gameState.gameSpeed;
+          // Throttled crawling SFX — plays roughly every 1.5s while slithering
+          const now = Date.now();
+          if (!this.lastCrawlSfxTime || now - this.lastCrawlSfxTime > 1500) {
+            this.lastCrawlSfxTime = now;
+            AudioManager.play('snake_crawling');
+          }
         }
       }
     }
@@ -1794,6 +1988,88 @@ class ShadowSnake extends Unit {
     
     uiElements.ctx.restore();
     super.drawHealthBar();
+  }
+}
+
+class EngineerSentry extends Unit {
+  constructor(x, y, team, owner) {
+    super(x, y, team, 'engineer', x / uiElements.canvas.width, y / uiElements.canvas.height);
+    const specs = UNIT_SPECS.engineer;
+    this.type = 'sentry';
+    this.hp = specs.sentryHp;
+    this.maxHp = specs.sentryHp;
+    this.speed = 0; // Does not move
+    this.attackDamage = specs.sentryDamage;
+    this.attackRange = specs.sentryRange;
+    this.attackCooldown = specs.sentryCooldown;
+    this.owner = owner;
+    this.width = 16;
+    this.height = 16;
+    this.color = team === 1 ? '#60a5fa' : '#f87171';
+    this.lastAttackTime = 0;
+  }
+  update(friendlies, enemies) {
+    if (this.hp <= 0) return;
+    if (!this.owner || this.owner.hp <= 0) {
+      this.hp = 0; // Die if engineer dies
+      return;
+    }
+    
+    // Orbit logic
+    if (this.baseOrbitAngle === undefined) {
+       const specs = UNIT_SPECS.engineer;
+       const max = specs.maxSentries || 4;
+       this.baseOrbitAngle = (this.orbitIndex * (Math.PI * 2 / max));
+    }
+    if (this.owner.sentryOrbitOffset === undefined) this.owner.sentryOrbitOffset = 0;
+    // Only increment once per frame, let the first sentry do it or let the engineer do it.
+    // It's safer to have the engineer do it in its update.
+    
+    const currentAngle = this.baseOrbitAngle + this.owner.sentryOrbitOffset;
+    const targetX = this.owner.x + Math.cos(currentAngle) * 45;
+    const targetY = this.owner.y + Math.sin(currentAngle) * 45;
+    
+    this.x += (targetX - this.x) * 0.2 * gameState.gameSpeed;
+    this.y += (targetY - this.y) * 0.2 * gameState.gameSpeed;
+    
+    // Attack cooldown logic
+    if (this.lastAttackTime === undefined) this.lastAttackTime = 0;
+    
+    if (enemies.length > 0) {
+      const sortedEnemies = [...enemies].sort((a, b) => getDistance(this, a) - getDistance(this, b));
+      this.target = sortedEnemies[0];
+      
+      if (this.target) {
+        const dist = getDistance(this, this.target);
+        if (dist <= this.attackRange) {
+          const now = Date.now();
+          if (now - this.lastAttackTime > this.attackCooldown / gameState.gameSpeed) {
+            this.lastAttackTime = now;
+            AudioManager.play('sentry_shot');
+            gameState.projectiles.push(new SentryBullet(this, this.target, this.attackDamage, this.team));
+          }
+        }
+      }
+    }
+  }
+  draw() {
+    uiElements.ctx.save();
+    uiElements.ctx.translate(this.x, this.y);
+    // Draw the sentry base
+    uiElements.ctx.fillStyle = '#4b5563'; // dark gray
+    uiElements.ctx.beginPath();
+    uiElements.ctx.arc(0, 0, this.width/2, 0, Math.PI * 2);
+    uiElements.ctx.fill();
+    
+    // Draw the barrel aiming at target
+    if (this.target && this.target.hp > 0) {
+        const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+        uiElements.ctx.rotate(angle);
+    }
+    uiElements.ctx.fillStyle = '#9ca3af'; // light gray
+    uiElements.ctx.fillRect(0, -2, 12, 4); // barrel
+    
+    uiElements.ctx.restore();
   }
 }
 

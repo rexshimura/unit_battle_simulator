@@ -1,6 +1,6 @@
 import { gameState, uiElements } from './state.js';
 import { UNIT_SPECS } from './config.js';
-import { getDistance } from './utils.js';
+import { getDistance, AudioManager } from './utils.js';
 import { Unit } from './entities/Unit.js';
 import { updateStatsPanel } from './ui.js';
 
@@ -212,6 +212,7 @@ function updateUnitCounts() {
 }
 
 function endBattle(message) {
+  AudioManager.stopAll();
   gameState.isBattleStarted = false;
   uiElements.statusMessage.textContent = message;
   uiElements.statusMessage.style.opacity = 1;

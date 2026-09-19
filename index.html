@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="manifest" href="manifest.json">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -78,26 +79,44 @@
                     </div>
                 </div>
                 
-                <div id="role-sorter" class="flex justify-between gap-1 mb-4 border-b border-gray-600 pb-2">
-                     <button data-role="all" class="role-btn p-1.5 rounded-full flex-shrink-0 selected" data-tooltip-title="All Units" data-tooltip-desc="Show all available units.">
+                <div id="role-sorter" class="flex flex-wrap justify-center gap-1.5 mb-4 border-b border-gray-600 pb-2">
+                    <!-- Original 6 Icons using IMGs -->
+                    <button data-role="all" class="role-btn p-1.5 rounded-full flex-shrink-0 selected" data-tooltip-title="All Units" data-tooltip-desc="Show all available units.">
                         <img src="icon/icon_all.svg" alt="All" class="w-5 h-5 pointer-events-none">
                     </button>
-                    <button data-role="Melee" class="role-btn p-1.5 rounded-full flex-shrink-0" data-tooltip-title="Melee Units" data-tooltip-desc="Filter for units that fight up close.">
-                        <img src="icon/icon_melee.svg" alt="Melee" class="w-5 h-5 pointer-events-none">
+                    <button data-role="Breachers" class="role-btn p-1.5 rounded-full flex-shrink-0" data-tooltip-title="Breachers" data-tooltip-desc="Assault / Offense units.">
+                        <img src="icon/icon_melee.svg" alt="Breachers" class="w-5 h-5 pointer-events-none">
                     </button>
-                    <button data-role="Ranged" class="role-btn p-1.5 rounded-full flex-shrink-0" data-tooltip-title="Ranged Units" data-tooltip-desc="Filter for units that attack from a distance.">
-                        <img src="icon/icon_range.svg" alt="Ranged" class="w-5 h-5 pointer-events-none">
+                    <button data-role="Interceptors" class="role-btn p-1.5 rounded-full flex-shrink-0" data-tooltip-title="Interceptors" data-tooltip-desc="Defenders and Tanks.">
+                        <img src="icon/icon_tank.svg" alt="Interceptors" class="w-5 h-5 pointer-events-none">
                     </button>
-                    <button data-role="Tank" class="role-btn p-1.5 rounded-full flex-shrink-0" data-tooltip-title="Tank Units" data-tooltip-desc="Filter for durable units that absorb damage.">
-                        <img src="icon/icon_tank.svg" alt="Tank" class="w-5 h-5 pointer-events-none">
+                    <button data-role="Rangers" class="role-btn p-1.5 rounded-full flex-shrink-0" data-tooltip-title="Rangers" data-tooltip-desc="Marksmen and Ranged units.">
+                        <img src="icon/icon_range.svg" alt="Rangers" class="w-5 h-5 pointer-events-none">
                     </button>
-                    <button data-role="Magic" class="role-btn p-1.5 rounded-full flex-shrink-0" data-tooltip-title="Magic Units" data-tooltip-desc="Filter for spellcasting units.">
-                        <img src="icon/icon_magic.svg" alt="Magic" class="w-5 h-5 pointer-events-none">
+                    <button data-role="Sorcerers" class="role-btn p-1.5 rounded-full flex-shrink-0" data-tooltip-title="Sorcerers" data-tooltip-desc="Magic and Spells.">
+                        <img src="icon/icon_magic.svg" alt="Sorcerers" class="w-5 h-5 pointer-events-none">
                     </button>
-                    <button data-role="Support" class="role-btn p-1.5 rounded-full flex-shrink-0" data-tooltip-title="Support Units" data-tooltip-desc="Filter for units that heal or support allies.">
-                        <img src="icon/icon_support.svg" alt="Support" class="w-5 h-5 pointer-events-none">
+                    <button data-role="Sustainers" class="role-btn p-1.5 rounded-full flex-shrink-0" data-tooltip-title="Sustainers" data-tooltip-desc="Healing units.">
+                        <img src="icon/icon_support.svg" alt="Sustainers" class="w-5 h-5 pointer-events-none">
                     </button>
-
+                    
+                    <!-- New 5 Icons using matching Solid SVGs -->
+                    <button data-role="Tinkerers" class="role-btn p-1.5 rounded-full flex-shrink-0" data-tooltip-title="Tinkerers" data-tooltip-desc="Engineers and Tacticians.">
+                        <svg class="w-5 h-5 pointer-events-none text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path></svg>
+                    </button>
+                    <button data-role="Amplifiers" class="role-btn p-1.5 rounded-full flex-shrink-0" data-tooltip-title="Amplifiers" data-tooltip-desc="Units that buff allies.">
+                        <svg class="w-5 h-5 pointer-events-none text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 6.414V15a1 1 0 11-2 0V6.414L4.707 10.707a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                    </button>
+                    <button data-role="Infiltrators" class="role-btn p-1.5 rounded-full flex-shrink-0" data-tooltip-title="Infiltrators" data-tooltip-desc="Agile Flankers.">
+                        <svg class="w-5 h-5 pointer-events-none text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path></svg>
+                    </button>
+                    <button data-role="Controllers" class="role-btn p-1.5 rounded-full flex-shrink-0" data-tooltip-title="Controllers" data-tooltip-desc="Utility, Traps, and CC.">
+                        <svg class="w-5 h-5 pointer-events-none text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 3a1 1 0 012 0v5.5a.5.5 0 001 0V4a1 1 0 112 0v4.5a.5.5 0 001 0V6a1 1 0 112 0v5a7 7 0 11-14 0V9a1 1 0 012 0v2.5a.5.5 0 001 0V4a1 1 0 012 0v4.5a.5.5 0 001 0V3z" clip-rule="evenodd"></path></svg>
+                    </button>
+                    <button data-role="Dummies" class="role-btn p-1.5 rounded-full flex-shrink-0" data-tooltip-title="Dummies" data-tooltip-desc="Target Practice.">
+                        <svg class="w-5 h-5 pointer-events-none text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-14.92V6h-2V3.08a6.002 6.002 0 00-4.92 4.92H6v2H3.08a6.002 6.002 0 004.92 4.92V14h2v2.92a6.002 6.002 0 004.92-4.92H14v-2h2.92a6.002 6.002 0 00-4.92-4.92V6h-2v-2.92z" clip-rule="evenodd"></path></svg>
+                    </button>
+                    
                 </div>
                 <div class="space-y-3 unit-list flex-grow min-h-0 overflow-y-auto pr-2">
                     <button data-unit-type="swordsman" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600 flex items-center gap-3">
@@ -134,6 +153,30 @@
                         <canvas width="40" height="40" class="unit-preview-canvas" data-unit-type="sniper"></canvas>
                         <div>
                             <p class="text-sm font-bold text-gray-200">Sniper</p>
+                        </div>
+                    </button>
+                    <button data-unit-type="hunter" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600 flex items-center gap-3">
+                        <canvas width="40" height="40" class="unit-preview-canvas" data-unit-type="hunter"></canvas>
+                        <div>
+                            <p class="text-sm font-bold text-gray-200">Hunter</p>
+                        </div>
+                    </button>
+                    <button data-unit-type="minigunner" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600 flex items-center gap-3">
+                        <canvas width="40" height="40" class="unit-preview-canvas" data-unit-type="minigunner"></canvas>
+                        <div>
+                            <p class="text-sm font-bold text-gray-200">Minigunner</p>
+                        </div>
+                    </button>
+                    <button data-unit-type="accelerator" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600 flex items-center gap-3">
+                        <canvas width="40" height="40" class="unit-preview-canvas" data-unit-type="accelerator"></canvas>
+                        <div>
+                            <p class="text-sm font-bold text-gray-200">Accelerator</p>
+                        </div>
+                    </button>
+                    <button data-unit-type="engineer" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600 flex items-center gap-3">
+                        <canvas width="40" height="40" class="unit-preview-canvas" data-unit-type="engineer"></canvas>
+                        <div>
+                            <p class="text-sm font-bold text-gray-200">Engineer</p>
                         </div>
                     </button>
                     <button data-unit-type="archer" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600 flex items-center gap-3">
@@ -203,7 +246,12 @@
                             <p class="text-sm font-bold text-gray-200">Troll</p>
                         </div>
                     </button>
-
+                    <button data-unit-type="dummy" class="unit-btn w-full text-left p-3 rounded-lg bg-gray-700 hover:bg-gray-600 flex items-center gap-3">
+                        <canvas width="40" height="40" class="unit-preview-canvas" data-unit-type="dummy"></canvas>
+                        <div>
+                            <p class="text-sm font-bold text-gray-200">Target Dummy</p>
+                        </div>
+                    </button>
                     <div id="unique-separator" class="col-span-full flex items-center gap-2 py-2 mt-2 w-full hidden">
                         <div class="h-px bg-gray-600 flex-grow"></div>
                         <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Unique</span>
@@ -270,5 +318,7 @@
     </div>
     
     <script type="module" src="js/main.js"></script>
+
+    <!-- Service Worker registration removed for local development -->
 </body>
 </html>

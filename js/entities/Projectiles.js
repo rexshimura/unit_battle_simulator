@@ -1,6 +1,6 @@
 import { gameState, uiElements } from '../state.js';
 import { UNIT_SPECS } from '../config.js';
-import { getDistance } from '../utils.js';
+import { getDistance, AudioManager } from '../utils.js';
 import { PoisonSplashAnimation, AoeExplosion, Particle, FloatingText } from './Effects.js';
 
 class Projectile {
@@ -52,6 +52,32 @@ class Projectile {
     uiElements.ctx.beginPath();
     uiElements.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
     uiElements.ctx.fill();
+  }
+}
+
+class Nail extends Projectile {
+  constructor(shooter, target, damage, team) {
+    super(shooter, target, damage, team);
+    this.speed = 15;
+    this.radius = 2;
+    this.color = '#9ca3af'; // gray
+  }
+  draw() {
+    uiElements.ctx.save();
+    uiElements.ctx.translate(this.x, this.y);
+    uiElements.ctx.rotate(this.angle);
+    uiElements.ctx.fillStyle = this.color;
+    uiElements.ctx.fillRect(-4, -1, 8, 2);
+    uiElements.ctx.restore();
+  }
+}
+
+class SentryBullet extends Projectile {
+  constructor(shooter, target, damage, team) {
+    super(shooter, target, damage, team);
+    this.speed = 10;
+    this.radius = 3;
+    this.color = '#fbbf24'; // yellow
   }
 }
 
@@ -219,14 +245,22 @@ class Fireball extends Projectile {
   update(enemies) {
     if (this.isSmall && this.target && this.target.hp > 0 && Date.now() - this.creationTime > 250) {
       const targetAngle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
-      const turnSpeed = 0.08 * gameState.gameSpeed;
-      let diff = targetAngle - this.angle;
-      while (diff < -Math.PI) diff += Math.PI * 2;
-      while (diff > Math.PI) diff -= Math.PI * 2;
-      if (Math.abs(diff) < turnSpeed) {
+      const dist = getDistance(this, this.target);
+      // Snap directly when close — prevents the orbit bug where a fixed turn speed
+      // can't curve fast enough and the fireball just circles the target
+      if (dist < 80) {
         this.angle = targetAngle;
       } else {
-        this.angle += Math.sign(diff) * turnSpeed;
+        // Adaptive turn speed: tighter curve the closer we get
+        const turnSpeed = Math.max(0.12, (1 / dist) * 600) * gameState.gameSpeed;
+        let diff = targetAngle - this.angle;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        if (Math.abs(diff) < turnSpeed) {
+          this.angle = targetAngle;
+        } else {
+          this.angle += Math.sign(diff) * turnSpeed;
+        }
       }
     }
     this.x += Math.cos(this.angle) * this.speed * gameState.gameSpeed;
@@ -238,6 +272,7 @@ class Fireball extends Projectile {
       const specs = UNIT_SPECS.flamecaller;
       const aoeRadius = this.isSmall ? specs.aoeRadius * 0.6 : specs.aoeRadius;
       const aoeDamage = this.isSmall ? specs.aoeDamage * 0.6 : specs.aoeDamage;
+      AudioManager.play('fireball_hit');
       gameState.animations.push(new AoeExplosion(this.target.x, this.target.y, aoeRadius, aoeDamage, this.team, gameState.units, this.shooter));
       return false;
     }
@@ -246,6 +281,7 @@ class Fireball extends Projectile {
         const specs = UNIT_SPECS.flamecaller;
         const aoeRadius = this.isSmall ? specs.aoeRadius * 0.6 : specs.aoeRadius;
         const aoeDamage = this.isSmall ? specs.aoeDamage * 0.6 : specs.aoeDamage;
+        AudioManager.play('fireball_hit');
         gameState.animations.push(new AoeExplosion(this.x, this.y, aoeRadius, aoeDamage, this.team, gameState.units, this.shooter));
         return false;
       }
@@ -349,9 +385,155 @@ class AntiHealDart extends Projectile {
 }
 
 export { Projectile };
+export { Nail };
+export { SentryBullet };
 export { IceShard };
 export { HealingOrb };
 export { Arrow };
 export { Fireball };
 export { PoisonPotion };
 export { AntiHealDart };
+
+export class EagleProjectile {
+  constructor(caster, target, damage) {
+    this.caster = caster;
+    this.target = target;
+    this.damage = damage;
+    this.x = caster.x;
+    this.y = caster.y - 15; // start slightly above shoulder
+    this.team = caster.team;
+    this.speed = UNIT_SPECS.hunter.eagleSpeed || 6.0; // so it reaches targets cleanly with curve
+    this.state = 'going'; 
+    // Start shooting upwards slightly so it curves down
+    this.angle = Math.atan2(target.y - this.y, target.x - this.x) - (Math.PI / 4) * (Math.random() < 0.5 ? 1 : -1);
+  }
+  update() {
+    let destX, destY;
+    if (this.state === 'going') {
+      if (this.target && this.target.hp > 0) {
+        destX = this.target.x;
+        destY = this.target.y;
+      } else {
+        // Target died, return early
+        this.state = 'returning';
+        destX = this.caster.x;
+        destY = this.caster.y;
+      }
+    } else {
+      destX = this.caster.x;
+      destY = this.caster.y - 15; // aim for the shoulder
+    }
+    
+    let desiredAngle = Math.atan2(destY - this.y, destX - this.x);
+    let diff = desiredAngle - this.angle;
+    
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    
+    let dist = Math.hypot(destX - this.x, destY - this.y);
+    
+    // Sharpen the curve aggressively as it gets closer so it never orbits
+    let turnRate = 0.08;
+    if (dist < 150) turnRate = 0.15;
+    if (dist < 80) turnRate = 0.4;
+    
+    this.angle += diff * turnRate * gameState.gameSpeed;
+    
+    this.x += Math.cos(this.angle) * this.speed * gameState.gameSpeed;
+    this.y += Math.sin(this.angle) * this.speed * gameState.gameSpeed;
+    
+    // Eagle feather/wind trail
+    if (Math.random() < 0.2) {
+      let p = new Particle(this.x, this.y, this.team, false, 'smoke');
+      p.life = 10;
+      gameState.particles.push(p);
+    }
+    
+    let hitDist = this.state === 'going' && this.target ? (this.target.width / 2 + 10) : 20;
+    if (dist < hitDist) {
+      if (this.state === 'going') {
+        this.target.takeDamage(this.damage, this.caster);
+        AudioManager.play('eagle_bite');
+        this.state = 'returning';
+        // Add a bit of arc when flying back!
+        this.angle = Math.atan2(this.caster.y - this.y, this.caster.x - this.x) + (Math.PI / 3) * (Math.random() < 0.5 ? 1 : -1);
+      } else {
+        // Returned to caster, despawn
+        this.caster.eagleOut = false;
+        return false;
+      }
+    }
+    return true;
+  }
+  draw() {
+    uiElements.ctx.save();
+    uiElements.ctx.translate(this.x, this.y);
+    uiElements.ctx.rotate(this.angle); // use actual movement angle
+    
+    // Draw an eagle-like shape (scaled up by 1.6x for visibility)
+    uiElements.ctx.fillStyle = '#8B4513'; 
+    uiElements.ctx.beginPath();
+    uiElements.ctx.moveTo(16, 0); // Beak
+    uiElements.ctx.lineTo(-10, 13); // Right Wing
+    uiElements.ctx.lineTo(-5, 0); // Tail
+    uiElements.ctx.lineTo(-10, -13); // Left Wing
+    uiElements.ctx.closePath();
+    uiElements.ctx.fill();
+    
+    // Head accent
+    uiElements.ctx.fillStyle = '#FFFFFF';
+    uiElements.ctx.beginPath();
+    uiElements.ctx.arc(6, 0, 4.5, 0, Math.PI * 2);
+    uiElements.ctx.fill();
+    
+    uiElements.ctx.restore();
+  }
+}
+
+export class PenetratingBeam {
+  constructor(shooter, target, damage, team) {
+    this.shooter = shooter;
+    this.damage = damage;
+    this.team = team;
+    this.x = shooter.x;
+    this.y = shooter.y;
+    this.angle = Math.atan2(target.y - shooter.y, target.x - shooter.x);
+    this.speed = 25; 
+    this.radius = 6;
+    this.hitTargets = new Set();
+  }
+
+  update(enemies) {
+    this.x += Math.cos(this.angle) * this.speed * gameState.gameSpeed;
+    this.y += Math.sin(this.angle) * this.speed * gameState.gameSpeed;
+
+    gameState.units.forEach(unit => {
+      // Inline distance calculation to avoid import issues
+      if (unit.team !== this.team && unit.hp > 0 && !this.hitTargets.has(unit)) {
+        const dx = this.x - unit.x;
+        const dy = this.y - unit.y;
+        if (Math.sqrt(dx * dx + dy * dy) <= unit.width / 2 + this.radius) {
+          unit.takeDamage(this.damage, this.shooter);
+          this.hitTargets.add(unit);
+          // Play hit effect via gameState if possible, but simpler to skip particle import issues
+        }
+      }
+    });
+
+    if (this.x < 0 || this.x > uiElements.canvas.width || this.y < 0 || this.y > uiElements.canvas.height) {
+      return false;
+    }
+    return true;
+  }
+
+  draw() {
+    uiElements.ctx.save();
+    uiElements.ctx.translate(this.x, this.y);
+    uiElements.ctx.rotate(this.angle);
+    uiElements.ctx.fillStyle = '#6b7280'; // Gray outer
+    uiElements.ctx.fillRect(-10, -3, 20, 6);
+    uiElements.ctx.fillStyle = '#ffffff'; // White core
+    uiElements.ctx.fillRect(-8, -1, 16, 2);
+    uiElements.ctx.restore();
+  }
+}
