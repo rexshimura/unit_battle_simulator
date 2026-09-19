@@ -1,8 +1,9 @@
+
 import { gameState, uiElements } from '../state.js';
 import { UNIT_SPECS, ARMOR_DAMAGE_REDUCTION_PERCENT } from '../config.js';
 import { getDistance, drawLightningBolt, AudioManager } from '../utils.js';
-import { Projectile, Nail, SentryBullet, IceShard, HealingOrb, Arrow, Fireball, PoisonPotion, AntiHealDart, EagleProjectile, PenetratingBeam } from './Projectiles.js';
-import { PoisonSplashAnimation, SlashAnimation, ThrustAnimation, AoeExplosion, AoeHeal, MultiHealAura, GroundSmashAnimation, TrollSmashAnimation, ShiverWaveAnimation, ChainLightning, AuraBuffAnimation, FloatingText, Particle, ShieldBashAnimation } from './Effects.js';
+import { Projectile, Nail, SentryBullet, IceShard, HealingOrb, Arrow, Fireball, PoisonPotion, AntiHealDart, EagleProjectile, PenetratingBeam, ChainProjectile } from './Projectiles.js';
+import { PoisonSplashAnimation, ChainPushAnimation, SlashAnimation, ThrustAnimation, AoeExplosion, AoeHeal, MultiHealAura, GroundSmashAnimation, TrollSmashAnimation, ShiverWaveAnimation, ChainLightning, AuraBuffAnimation, FloatingText, Particle, ShieldBashAnimation } from './Effects.js';
 
 class Unit {
   constructor(x, y, team, type, relX, relY) {
@@ -137,6 +138,12 @@ class Unit {
     }
 
     uiElements.ctx.save();
+    
+    const isRestricted = this.stunType === 'restrict' && Date.now() < this.stunnedUntil;
+    if (isRestricted) {
+        uiElements.ctx.translate(Math.random() * 4 - 2, Math.random() * 4 - 2);
+    }
+    
     if (this.isRevived) {
       uiElements.ctx.filter = 'brightness(0.6)'; // darker when revived
     }
@@ -169,7 +176,7 @@ class Unit {
       uiElements.ctx.fill();
       uiElements.ctx.restore();
     }
-    uiElements.ctx.fillStyle = this.color;
+    uiElements.ctx.fillStyle = isRestricted ? '#0f172a' : this.color;
     if (this.type === 'abyssal_summoner') {
       const glowSize = Math.sin(this.glowAnimProgress) * 5 + 20;
       uiElements.ctx.globalCompositeOperation = 'lighter';
@@ -183,7 +190,7 @@ class Unit {
       if (this.stunType === 'freeze' && Date.now() < this.stunnedUntil) {
         uiElements.ctx.filter = 'saturate(0.3) brightness(1.5)';
       }
-      uiElements.ctx.fillStyle = this.color;
+      uiElements.ctx.fillStyle = isRestricted ? '#0f172a' : this.color; // very dark/black
     }
     if (this.buffs.druidHeal) {
       const glowSize = 18;
@@ -236,6 +243,7 @@ class Unit {
       const totalStr = Math.round(this.totalDamageReceived || 0).toString();
       uiElements.ctx.fillText(`Total: ${totalStr}`, this.x, this.y + this.height + 15);
     }
+
 
     this.drawHealthBar();
     if (this.ownedSentries) {
@@ -315,7 +323,7 @@ class Unit {
         }
     }
     
-    if ((this.type === 'rockgolem' || this.type === 'duelist' || this.type === 'druid' || this.type === 'priest' || this.type === 'troll' || this.type === 'cryomancer' || this.type === 'alchemist' || this.type === 'fortress' || this.type === 'flamecaller' || this.type === 'wizard' || this.type === 'hunter') && gameState.isBattleStarted) {
+    if ((this.type === 'rockgolem' || this.type === 'duelist' || this.type === 'druid' || this.type === 'priest' || this.type === 'troll' || this.type === 'cryomancer' || this.type === 'alchemist' || this.type === 'force_wall' || this.type === 'fortress' || this.type === 'flamecaller' || this.type === 'wizard' || this.type === 'hunter') && gameState.isBattleStarted) {
       uiElements.ctx.fillStyle = 'rgba(75, 85, 99, 0.5)';
       uiElements.ctx.fillRect(healthBarX, specialBarY, barWidth, specialBarHeight);
       let specs, counter, maxCount, barColor, activeColor, activeDuration, activeEndTime;
@@ -341,7 +349,16 @@ class Unit {
           maxCount = specs.lightHealTriggerCount;
           barColor = '#fef08a';
           break;
-                case 'fortress':
+                case 'force_wall':
+          counter = this.hitsTaken || 0;
+          maxCount = 4;
+          barColor = this.isReflecting ? '#f472b6' : '#38bdf8';
+          if (this.isReflecting) {
+             counter = 1;
+             maxCount = 1;
+          }
+          break;
+        case 'fortress':
           counter = this.hitsTaken || 0;
           maxCount = 5;
           barColor = '#94a3b8'; // Slate metallic color
@@ -445,12 +462,25 @@ class Unit {
       uiElements.ctx.textBaseline = 'bottom';
       uiElements.ctx.fillText(`❄️${this.coldStacks}`, this.x - iconSpacing, healthBarY - 15);
     }
+    let totalRestrictHits = 0;
+    if (this.restrictorHitCount) {
+        for (let id in this.restrictorHitCount) {
+            totalRestrictHits += this.restrictorHitCount[id];
+        }
+    }
+    if (totalRestrictHits > 0 && Date.now() >= this.stunnedUntil) {
+      uiElements.ctx.fillStyle = '#a855f7';
+      uiElements.ctx.font = 'bold 14px "Roboto Mono"';
+      uiElements.ctx.textAlign = 'center';
+      uiElements.ctx.textBaseline = 'bottom';
+      uiElements.ctx.fillText(`🔗${totalRestrictHits}`, this.x + iconSpacing * 2, healthBarY - 15);
+    }
     if (Date.now() < this.stunnedUntil) {
       uiElements.ctx.fillStyle = 'white';
       uiElements.ctx.font = 'bold 12px "Roboto Mono"';
       uiElements.ctx.textAlign = 'center';
       uiElements.ctx.textBaseline = 'bottom';
-      uiElements.ctx.fillText(this.stunType === 'freeze' ? 'FROZEN' : 'STUN', this.x, healthBarY - 2);
+      uiElements.ctx.fillText(this.stunType === 'freeze' ? 'FROZEN' : (this.stunType === 'restrict' ? 'LOCKED' : 'STUN'), this.x, healthBarY - 2);
       const angle = Date.now() / 200 % (Math.PI * 2);
       uiElements.ctx.fillStyle = '#facc15';
       uiElements.ctx.font = 'bold 14px "Roboto Mono"';
@@ -460,9 +490,39 @@ class Unit {
         const starY = this.y - 25 + Math.sin(starAngle) * 4;
         uiElements.ctx.fillText('★', starX, starY);
       }
+    let nextY = healthBarY + healthBarHeight + 3;
+    if (this.type === 'restrictor') {
+        let lockCount = 4;
+        if (this.target && this.target.restrictorHitCount) {
+            const hits = this.target.restrictorHitCount[this.id] || 0;
+            lockCount = 4 - Math.floor(hits / 2);
+            if (lockCount < 1) lockCount = 1;
+        }
+        uiElements.ctx.fillStyle = '#a855f7';
+        uiElements.ctx.font = 'bold 9px Arial';
+        uiElements.ctx.textAlign = 'center';
+        uiElements.ctx.fillText(`LOCK IN: ${lockCount}`, this.x, nextY + 7);
+        nextY += 10;
+        
+        const PUSH_COOLDOWN = 5000;
+        if (this.lastPushTime && Date.now() - this.lastPushTime < PUSH_COOLDOWN) {
+            const cdProgress = 1 - ((Date.now() - this.lastPushTime) / PUSH_COOLDOWN);
+            uiElements.ctx.fillStyle = 'rgba(75, 85, 99, 0.5)';
+            uiElements.ctx.fillRect(this.x - 15, nextY, 30, 3);
+            uiElements.ctx.fillStyle = '#a855f7';
+            uiElements.ctx.fillRect(this.x - 15, nextY, 30 * cdProgress, 3);
+        } else {
+            uiElements.ctx.fillStyle = '#a855f7';
+            uiElements.ctx.font = 'bold 8px Arial';
+            uiElements.ctx.textAlign = 'center';
+            uiElements.ctx.fillText("PUSH READY", this.x, nextY + 6);
+        }
+    }
+
     }
   }
   drawEquipment() {
+
     let angle = this.team === 1 ? 0 : Math.PI;
     if (this.target) {
       angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
@@ -471,6 +531,28 @@ class Unit {
       angle = this.gunAngle;
     }
 
+    if (this.type === 'restrictor') {
+      uiElements.ctx.save();
+      uiElements.ctx.translate(this.x, this.y);
+      uiElements.ctx.rotate(angle);
+      uiElements.ctx.strokeStyle = '#94a3b8';
+      uiElements.ctx.lineWidth = 2;
+      
+      // Right hand coil
+      for (let i = 0; i < 3; i++) {
+         uiElements.ctx.beginPath();
+         uiElements.ctx.ellipse(this.width / 2 + 2, -10 + i * 2, 4, 2, 0, 0, Math.PI*2);
+         uiElements.ctx.stroke();
+      }
+      
+      // Left hand coil
+      for (let i = 0; i < 3; i++) {
+         uiElements.ctx.beginPath();
+         uiElements.ctx.ellipse(this.width / 2 + 2, 10 + i * 2, 4, 2, 0, 0, Math.PI*2);
+         uiElements.ctx.stroke();
+      }
+      uiElements.ctx.restore();
+    }
     if (this.type === 'abyssal_summoner') {
       const tetherRange = 250;
       uiElements.ctx.save();
@@ -689,6 +771,36 @@ class Unit {
       uiElements.ctx.fillStyle = '#9ca3af';
       uiElements.ctx.fillRect(hiltPosition, -swordWidth, swordWidth, swordWidth * 2);
       uiElements.ctx.restore();
+    } else if (this.type === 'force_wall') {
+      const shieldWidth = 10;
+      const shieldHeight = 60; // Wide shield
+      let shieldOffset = 8;
+      if (this.isSlashing) {
+         const progress = this.slashAnimProgress / this.slashAnimDuration;
+         shieldOffset += Math.sin(progress * Math.PI) * 15;
+      }
+      uiElements.ctx.save();
+      uiElements.ctx.translate(this.x, this.y);
+      uiElements.ctx.rotate(angle);
+      // Holographic glow effect
+      uiElements.ctx.shadowBlur = 12;
+      uiElements.ctx.shadowColor = this.isReflecting ? 'rgba(244, 114, 182, 0.9)' : 'rgba(56, 189, 248, 0.9)';
+      
+      const shieldRadius = this.width / 2 + shieldOffset;
+      uiElements.ctx.beginPath();
+      // Draw arc from -60 to 60 degrees (wide curve)
+      uiElements.ctx.arc(0, 0, shieldRadius, -Math.PI / 3, Math.PI / 3);
+      
+      // Thick semi-transparent core
+      uiElements.ctx.lineWidth = 8;
+      uiElements.ctx.strokeStyle = this.isReflecting ? 'rgba(236, 72, 153, 0.6)' : 'rgba(56, 189, 248, 0.5)';
+      uiElements.ctx.stroke();
+      
+      // Bright solid inner edge
+      uiElements.ctx.lineWidth = 2;
+      uiElements.ctx.strokeStyle = this.isReflecting ? 'rgba(252, 165, 211, 1)' : 'rgba(186, 230, 253, 1)';
+      uiElements.ctx.stroke();
+      uiElements.ctx.restore();
     } else if (this.type === 'fortress') {
       const shieldWidth = 14;
       const shieldHeight = 40;
@@ -734,7 +846,7 @@ class Unit {
       uiElements.ctx.lineTo(this.width / 2 + 10, 13);
       uiElements.ctx.fill();
       uiElements.ctx.restore();
-    } else if (this.type === 'ghoul') {
+} else if (this.type === 'ghoul') {
       uiElements.ctx.save();
       uiElements.ctx.translate(this.x, this.y);
       uiElements.ctx.rotate(angle);
@@ -1059,6 +1171,28 @@ class Unit {
     this.y += steerY * 0.5 * gameState.gameSpeed;
   }
   update(friendlies, enemies) {
+    if (this.type === 'restrictor') {
+       const PUSH_COOLDOWN = 5000;
+       const PUSH_RANGE = 70;
+       if (!this.lastPushTime || Date.now() - this.lastPushTime > PUSH_COOLDOWN) {
+          for (const enemy of enemies) {
+             if (enemy.hp > 0 && enemy.team !== this.team) {
+                if (getDistance(this, enemy) < PUSH_RANGE) {
+                   const angle = Math.atan2(enemy.y - this.y, enemy.x - this.x);
+                   enemy.isBeingKnockedBack = true;
+                   enemy.knockbackTargetX = enemy.x + Math.cos(angle) * 120;
+                   enemy.knockbackTargetY = enemy.y + Math.sin(angle) * 120;
+                   enemy.takeDamage(5, this);
+                   this.lastPushTime = Date.now();
+                   AudioManager.play('chain_release');
+                   gameState.animations.push(new ChainPushAnimation(this, enemy));
+                   break;
+                }
+             }
+          }
+       }
+    }
+
     if (this.isReviving) {
       if (Date.now() > this.reviveTime) {
         this.isReviving = false;
@@ -1190,6 +1324,13 @@ class Unit {
        }
     }
     if (this.isMultiHealActive && Date.now() > this.multiHealEndTime) this.isMultiHealActive = false;
+
+    if (this.type === 'force_wall' && this.isReflecting) {
+        if (Date.now() > this.reflectEndTime) {
+            this.isReflecting = false;
+        }
+    }
+
 
     let currentSpeed = this.speed;
     if (this.buffs.slow && Date.now() < this.buffs.slow.expires) {
@@ -1716,6 +1857,23 @@ class Unit {
     } else if (this.type === 'fortress') {
       // Fortress does not attack normally, it only bashes on hit
       return;
+} else if (this.type === 'restrictor') {
+        if (this.target && getDistance(this, this.target) <= this.attackRange + 5) {
+          AudioManager.play('throw');
+          this.isThrowing = true;
+          this.throwAnimDuration = 300;
+          this.throwAnimProgress = this.throwAnimDuration; // Using existing throw sound
+          
+          // First chain (right)
+          gameState.projectiles.push(new ChainProjectile(this, this.target, this.attackDamage, this.team, 1));
+          
+          // Second chain delayed (left)
+          setTimeout(() => {
+              if (this.hp > 0 && this.target && this.target.hp > 0) {
+                  gameState.projectiles.push(new ChainProjectile(this, this.target, this.attackDamage, this.team, -1));
+              }
+          }, 200);
+        }
 } else if (this.type === 'sledgehammer') {
         if (this.target && getDistance(this, this.target) <= this.attackRange + 5) {
           AudioManager.play('hammer');
@@ -1726,6 +1884,16 @@ class Unit {
           if (!this.isSwinging) {
             this.isSwinging = true;
             this.swingAnimProgress = this.swingAnimDuration;
+          }
+        }
+} else if (this.type === 'force_wall') {
+        if (this.target && getDistance(this, this.target) <= this.attackRange + 5) {
+          AudioManager.play('push');
+          this.target.takeDamage(this.attackDamage, this);
+          gameState.animations.push(new ShieldBashAnimation(this.x, this.y, 40, this.attackDamage, 30, this.team, gameState.units, this));
+          if (!this.isSlashing) {
+            this.isSlashing = true;
+            this.slashAnimProgress = this.slashAnimDuration;
           }
         }
 } else if (this.type === 'ghoul') {
@@ -1811,6 +1979,18 @@ class Unit {
     this.hp -= damageToHp;
     if (this.type === 'dummy') this.hp = this.maxHp;
     
+
+    if (this.type === 'force_wall' && this.hp > 0 && damageToHp > 0) {
+        if (!this.isReflecting) {
+            this.hitsTaken = (this.hitsTaken || 0) + 1;
+            if (this.hitsTaken >= 4) {
+                this.hitsTaken = 0;
+                this.isReflecting = true;
+                this.reflectEndTime = Date.now() + 5000;
+                gameState.animations.push(new FloatingText("REFLECT!", this.x, this.y - 40, "#f472b6"));
+            }
+        }
+    }
     // Fortress shield bash logic (after receiving 5 hits/instances of damage)
     if (this.type === 'fortress' && this.hp > 0 && damageToHp > 0) {
       this.hitsTaken = (this.hitsTaken || 0) + 1;

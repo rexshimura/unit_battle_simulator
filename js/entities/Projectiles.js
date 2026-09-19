@@ -18,9 +18,27 @@ class Projectile {
     this.y = shooter.y + Math.sin(this.angle) * nozzleTipDist;
   }
   update(enemies) {
-    const enemyGuardians = gameState.units.filter(u => u.team !== this.team && u.type === 'guardian');
+    const enemyGuardians = gameState.units.filter(u => u.team !== this.team && (u.type === 'guardian' || u.type === 'force_wall'));
     for (const guardian of enemyGuardians) {
-      const specs = UNIT_SPECS.guardian;
+      if (guardian.type === 'force_wall') {
+         if (guardian.isReflecting && getDistance(this, guardian) < guardian.width / 2 + 10) {
+             this.team = guardian.team;
+             this.target = null; 
+             this.shooter = guardian;
+             this.angle += Math.PI + (Math.random() - 0.5) * Math.PI; // deflected back with wide spread
+             const shieldDist = guardian.width / 2 + 8;
+             let faceAngle = guardian.team === 1 ? 0 : Math.PI;
+             if (guardian.target) faceAngle = Math.atan2(guardian.target.y - guardian.y, guardian.target.x - guardian.x);
+             this.x = guardian.x + Math.cos(faceAngle) * shieldDist;
+             this.y = guardian.y + Math.sin(faceAngle) * shieldDist;
+             return true;
+         } else if (!guardian.isReflecting && getDistance(this, guardian) < guardian.width / 2 + 10) {
+             guardian.takeDamage(this.damage, this.shooter);
+             return false;
+         }
+      } else {
+        const specs = UNIT_SPECS.guardian;
+      
       if (getDistance(this, guardian) < guardian.width / 2 + 5) {
         guardian.deflect();
         if (Math.random() < specs.deflectChance) {
@@ -33,6 +51,7 @@ class Projectile {
           return false;
         }
       }
+      }
     }
     if (this.target && this.target.hp > 0) {
       this.angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
@@ -41,6 +60,7 @@ class Projectile {
     this.y += Math.sin(this.angle) * this.speed * gameState.gameSpeed;
     for (const enemy of enemies) {
       if (getDistance(this, enemy) < enemy.width / 2 + this.radius) {
+        if (this.hitTargets && this.hitTargets.has(enemy)) continue;
         enemy.takeDamage(this.damage, this.shooter);
         return false;
       }
@@ -95,9 +115,27 @@ class IceShard extends Projectile {
     }
     
     // Guardian deflect logic
-    const enemyGuardians = gameState.units.filter(u => u.team !== this.team && u.type === 'guardian');
+    const enemyGuardians = gameState.units.filter(u => u.team !== this.team && (u.type === 'guardian' || u.type === 'force_wall'));
     for (const guardian of enemyGuardians) {
-      const specs = UNIT_SPECS.guardian;
+      if (guardian.type === 'force_wall') {
+         if (guardian.isReflecting && getDistance(this, guardian) < guardian.width / 2 + 10) {
+             this.team = guardian.team;
+             this.target = null; 
+             this.shooter = guardian;
+             this.angle += Math.PI + (Math.random() - 0.5) * Math.PI; // deflected back with wide spread
+             const shieldDist = guardian.width / 2 + 8;
+             let faceAngle = guardian.team === 1 ? 0 : Math.PI;
+             if (guardian.target) faceAngle = Math.atan2(guardian.target.y - guardian.y, guardian.target.x - guardian.x);
+             this.x = guardian.x + Math.cos(faceAngle) * shieldDist;
+             this.y = guardian.y + Math.sin(faceAngle) * shieldDist;
+             return true;
+         } else if (!guardian.isReflecting && getDistance(this, guardian) < guardian.width / 2 + 10) {
+             guardian.takeDamage(this.damage, this.shooter);
+             return false;
+         }
+      } else {
+        const specs = UNIT_SPECS.guardian;
+      
       if (getDistance(this, guardian) < guardian.width / 2 + 5) {
         guardian.deflect();
         if (Math.random() < specs.deflectChance) {
@@ -109,6 +147,7 @@ class IceShard extends Projectile {
           guardian.takeDamage(this.damage * 0.5, this.shooter);
           return false;
         }
+      }
       }
     }
 
@@ -131,6 +170,7 @@ class IceShard extends Projectile {
     
     for (const enemy of enemies) {
       if (getDistance(this, enemy) < enemy.width / 2 + this.radius) {
+        if (this.hitTargets && this.hitTargets.has(enemy)) continue;
         enemy.takeDamage(this.damage, this.shooter);
         const specs = UNIT_SPECS.cryomancer;
         enemy.buffs.slow = {
@@ -507,18 +547,37 @@ export class PenetratingBeam {
     this.x += Math.cos(this.angle) * this.speed * gameState.gameSpeed;
     this.y += Math.sin(this.angle) * this.speed * gameState.gameSpeed;
 
+    
+    let hitWall = false;
+    let reflected = false;
     gameState.units.forEach(unit => {
-      // Inline distance calculation to avoid import issues
       if (unit.team !== this.team && unit.hp > 0 && !this.hitTargets.has(unit)) {
         const dx = this.x - unit.x;
         const dy = this.y - unit.y;
         if (Math.sqrt(dx * dx + dy * dy) <= unit.width / 2 + this.radius) {
-          unit.takeDamage(this.damage, this.shooter);
-          this.hitTargets.add(unit);
-          // Play hit effect via gameState if possible, but simpler to skip particle import issues
+          if (unit.type === 'force_wall' && unit.isReflecting) {
+             this.team = unit.team;
+             this.angle += Math.PI + (Math.random() - 0.5) * Math.PI; // deflected back with wide spread
+             this.shooter = unit;
+             this.hitTargets.clear();
+             reflected = true;
+             const shieldDist = unit.width / 2 + 8;
+             let faceAngle = unit.team === 1 ? 0 : Math.PI;
+             if (unit.target) faceAngle = Math.atan2(unit.target.y - unit.y, unit.target.x - unit.x);
+             this.x = unit.x + Math.cos(faceAngle) * shieldDist;
+             this.y = unit.y + Math.sin(faceAngle) * shieldDist;
+          } else {
+             unit.takeDamage(this.damage, this.shooter);
+             this.hitTargets.add(unit);
+             if (unit.type === 'force_wall') {
+                 hitWall = true;
+             }
+          }
         }
       }
     });
+
+    if (hitWall && !reflected) return false; // stop beam if it hit a wall and wasn't reflected
 
     if (this.x < 0 || this.x > uiElements.canvas.width || this.y < 0 || this.y > uiElements.canvas.height) {
       return false;
@@ -534,6 +593,182 @@ export class PenetratingBeam {
     uiElements.ctx.fillRect(-10, -3, 20, 6);
     uiElements.ctx.fillStyle = '#ffffff'; // White core
     uiElements.ctx.fillRect(-8, -1, 16, 2);
+    uiElements.ctx.restore();
+  }
+}
+
+export class ChainProjectile extends Projectile {
+  constructor(shooter, target, damage, team, side = 1) {
+    super(shooter, target, damage, team);
+    this.speed = 16;
+    this.radius = 4;
+    this.side = side;
+  }
+  
+  update(enemies) {
+    if (this.returning && this.shooter && this.shooter.hp > 0) {
+       this.angle = Math.atan2(this.shooter.y - this.y, this.shooter.x - this.x);
+       this.x += Math.cos(this.angle) * this.speed * gameState.gameSpeed * 1.5;
+       this.y += Math.sin(this.angle) * this.speed * gameState.gameSpeed * 1.5;
+       if (getDistance(this, this.shooter) < this.shooter.width/2 + this.radius + 15) {
+           return false; // Despawn when it reaches shooter
+       }
+       return true;
+    }
+    
+    // Bounds check to force return if it misses
+    if (!this.returning && (this.x < -50 || this.x > uiElements.canvas.width + 50 || this.y < -50 || this.y > uiElements.canvas.height + 50)) {
+        if (this.shooter && this.shooter.hp > 0) {
+            this.returning = true;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // Deflection logic (copied from base)
+    const enemyGuardians = gameState.units.filter(u => u.team !== this.team && (u.type === 'guardian' || u.type === 'force_wall'));
+    for (const guardian of enemyGuardians) {
+      if (guardian.type === 'force_wall') {
+         if (guardian.isReflecting && getDistance(this, guardian) < guardian.width / 2 + 10) {
+             this.team = guardian.team;
+             this.target = null; 
+             this.shooter = guardian;
+             this.angle += Math.PI + (Math.random() - 0.5) * Math.PI;
+             const shieldDist = guardian.width / 2 + 8;
+             let faceAngle = guardian.team === 1 ? 0 : Math.PI;
+             if (guardian.target) faceAngle = Math.atan2(guardian.target.y - guardian.y, guardian.target.x - guardian.x);
+             this.x = guardian.x + Math.cos(faceAngle) * shieldDist;
+             this.y = guardian.y + Math.sin(faceAngle) * shieldDist;
+             return true;
+         } else if (!guardian.isReflecting && getDistance(this, guardian) < guardian.width / 2 + 10) {
+             guardian.takeDamage(this.damage, this.shooter);
+             return false;
+         }
+      } else {
+        const specs = UNIT_SPECS.guardian;
+        if (getDistance(this, guardian) < guardian.width / 2 + 5) {
+          guardian.deflect();
+          if (Math.random() < specs.deflectChance) {
+            this.team = guardian.team;
+            this.target = this.shooter;
+            this.shooter = guardian;
+            return true;
+          } else {
+            guardian.takeDamage(this.damage * 0.5, this.shooter);
+            return false;
+          }
+        }
+      }
+    }
+    
+    if (this.target && this.target.hp > 0) {
+      this.angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+    }
+    this.x += Math.cos(this.angle) * this.speed * gameState.gameSpeed;
+    this.y += Math.sin(this.angle) * this.speed * gameState.gameSpeed;
+    
+    for (const enemy of enemies) {
+      if (getDistance(this, enemy) < enemy.width / 2 + this.radius) {
+        if (this.hitTargets && this.hitTargets.has(enemy)) continue;
+        
+        let actualDamage = this.damage;
+        let isLocked = false;
+        if (this.shooter && this.shooter.type === 'restrictor') {
+            isLocked = enemy.stunType === 'restrict' && Date.now() < enemy.stunnedUntil;
+            if (isLocked) {
+                actualDamage *= 2;
+                gameState.animations.push(new FloatingText("CRIT!", enemy.x, enemy.y - 20, "#ef4444"));
+            }
+        }
+        
+        enemy.takeDamage(actualDamage, this.shooter);
+        
+        // Custom restrictor logic
+        if (this.shooter && this.shooter.type === 'restrictor') {
+            if (!isLocked) {
+                if (!enemy.restrictorHitCount) enemy.restrictorHitCount = {};
+                enemy.restrictorHitCount[this.shooter.id] = (enemy.restrictorHitCount[this.shooter.id] || 0) + 1;
+                
+                // 8 hits = 4 full attacks
+                if (enemy.restrictorHitCount[this.shooter.id] >= 8) {
+                    enemy.restrictorHitCount[this.shooter.id] = 0;
+                    enemy.stunnedUntil = Date.now() + 10000; // 10 seconds!
+                    enemy.stunType = 'restrict';
+                    gameState.animations.push(new FloatingText("LOCKED!", enemy.x, enemy.y - 30, "#a855f7"));
+                    AudioManager.play('chain_lock');
+                } else {
+                    if (Math.random() > 0.5) AudioManager.play('chain_hit_1');
+                    else AudioManager.play('chain_hit_2');
+                }
+            } else {
+                if (Math.random() > 0.5) AudioManager.play('chain_hit_1');
+                else AudioManager.play('chain_hit_2');
+            }
+        }
+        
+        // Return to shooter instead of disappearing
+        if (this.shooter && this.shooter.hp > 0 && !this.returning) {
+            this.returning = true;
+            this.hitTargets = this.hitTargets || new Set();
+            this.hitTargets.add(enemy);
+            return true; 
+        } else {
+            return false;
+        }
+      }
+    }
+    return this.x > -this.radius && this.x < uiElements.canvas.width + this.radius && this.y > -this.radius && this.y < uiElements.canvas.height + this.radius;
+  }
+  
+  draw() {
+    if (this.shooter && this.shooter.hp > 0) {
+      let faceAngle = this.shooter.team === 1 ? 0 : Math.PI;
+      if (this.shooter.target) {
+          faceAngle = Math.atan2(this.shooter.target.y - this.shooter.y, this.shooter.target.x - this.shooter.x);
+      }
+      
+      // Calculate hand offset
+      const handDist = this.shooter.width / 2 + 2;
+      const handOffsetDist = 10;
+      const handX = this.shooter.x + Math.cos(faceAngle) * handDist + Math.cos(faceAngle - Math.PI / 2 * this.side) * handOffsetDist;
+      const handY = this.shooter.y + Math.sin(faceAngle) * handDist + Math.sin(faceAngle - Math.PI / 2 * this.side) * handOffsetDist;
+      
+      uiElements.ctx.save();
+      uiElements.ctx.strokeStyle = '#94a3b8'; 
+      uiElements.ctx.lineWidth = 3;
+      uiElements.ctx.setLineDash([10, 6]); // smooth broken line
+
+      uiElements.ctx.beginPath();
+      uiElements.ctx.moveTo(handX, handY);
+      
+      const midX = (handX + this.x) / 2;
+      const midY = (handY + this.y) / 2;
+      const dx = this.x - handX;
+      const dy = this.y - handY;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      
+      // alternate curve direction based on side
+      const curveOffset = dist * -0.1 * this.side;
+      const perpX = -dy / (dist || 1) * curveOffset;
+      const perpY = dx / (dist || 1) * curveOffset;
+      
+      uiElements.ctx.quadraticCurveTo(midX + perpX, midY + perpY, this.x, this.y);
+      uiElements.ctx.stroke();
+      uiElements.ctx.restore();
+    }
+    
+    // Draw sharp point at the end of the chain
+    uiElements.ctx.save();
+    uiElements.ctx.translate(this.x, this.y);
+    uiElements.ctx.rotate(this.angle);
+    uiElements.ctx.fillStyle = '#94a3b8';
+    uiElements.ctx.beginPath();
+    uiElements.ctx.moveTo(8, 0); // sharp tip
+    uiElements.ctx.lineTo(-4, 5);
+    uiElements.ctx.lineTo(-4, -5);
+    uiElements.ctx.closePath();
+    uiElements.ctx.fill();
     uiElements.ctx.restore();
   }
 }

@@ -799,3 +799,27 @@ class ShieldBashAnimation {
 }
 
 export { ShieldBashAnimation };
+
+export class ChainPushAnimation {
+  constructor(attacker, target) {
+    this.attacker = attacker;
+    this.target = target;
+    this.creationTime = Date.now();
+    this.duration = 200;
+  }
+  update() {
+    return Date.now() - this.creationTime < this.duration;
+  }
+  draw() {
+    const progress = (Date.now() - this.creationTime) / this.duration;
+    uiElements.ctx.save();
+    uiElements.ctx.strokeStyle = `rgba(148, 163, 184, ${1 - progress})`;
+    uiElements.ctx.lineWidth = 5 * (1 - progress);
+    uiElements.ctx.setLineDash([10, 5]);
+    uiElements.ctx.beginPath();
+    uiElements.ctx.moveTo(this.attacker.x, this.attacker.y);
+    uiElements.ctx.lineTo(this.target.x, this.target.y);
+    uiElements.ctx.stroke();
+    uiElements.ctx.restore();
+  }
+}
