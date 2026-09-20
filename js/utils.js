@@ -89,6 +89,9 @@ const AudioManager = {
         this.sounds.shot_nail = new Audio('js/sfx/shot-nail.mp3');
         this.sounds.create_sentry = new Audio('js/sfx/create-sentry.mp3');
         this.sounds.sentry_shot = new Audio('js/sfx/sentry-shot.mp3');
+        this.sounds.force_wall_deflect = new Audio('js/sfx/force-wall-deflect.mp3');
+        this.sounds.force_wall_hit = new Audio('js/sfx/force-wall-hit.mp3');
+        this.sounds.force_wall_deflect_activation = new Audio('js/sfx/force-wall-deflect-activation.mp3');
     },
     stopAll: function() {
         // Pause and reset every registered sound — cleans up lingering SFX on game end

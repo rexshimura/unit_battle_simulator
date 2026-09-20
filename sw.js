@@ -26,6 +26,9 @@ const ASSETS_TO_CACHE = [
   './js/sfx/eagle-release.mp3',
   './js/sfx/eagle-bite.mp3',
   './js/sfx/rifle.mp3',
+  './js/sfx/force-wall-deflect.mp3',
+  './js/sfx/force-wall-hit.mp3',
+  './js/sfx/force-wall-deflect-activation.mp3',
   'https://cdn.tailwindcss.com'
 ];
 

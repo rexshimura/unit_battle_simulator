@@ -8,14 +8,14 @@ const ARMOR_DAMAGE_REDUCTION_PERCENT = 0.50;
 // =========================================================================
 const UNIT_ROLES = {
     Breachers: ['swordsman', 'spearman', 'ghoul', 'sledgehammer', 'troll', 'duelist'],
-    Interceptors: ['fortress', 'guardian', 'rockgolem', 'force_wall'],
+    Interceptors: ['fortress', 'guardian', 'rockgolem', 'force_wall', 'absorber'],
     Rangers: ['musketeer', 'sniper', 'archer', 'hunter', 'minigunner', 'accelerator', 'engineer'],
     Tinkerers: ['alchemist', 'accelerator', 'engineer'],
-    Sorcerers: ['flamecaller', 'wizard', 'cryomancer'],
+    Sorcerers: ['flamecaller', 'wizard', 'cryomancer', 'necromancer'],
     Sustainers: ['priest', 'druid'],
     Amplifiers: ['bard'],
     Infiltrators: ['assassin', 'duelist'],
-    Controllers: ['abyssal_summoner', 'restrictor'],
+    Controllers: ['abyssal_summoner', 'restrictor', 'absorber', 'necromancer'],
     Dummies: ['dummy'],
 };
 
@@ -46,8 +46,10 @@ const UNIT_SPECS = {
   'troll': {description: 'Huge, ignores defense', name: 'Troll', hp: 250, speed: 0.35, attackDamage: 55, attackRange: 60, attackCooldown: 3500, color: {team1: '#60a5fa', team2: '#f87171'}, size: 35, alwaysCrit: true, smashTriggerCount: 3, smashAoeRadius: 120, smashStunDuration: 1500, smashKnockback: 150, smashSlowDuration: 3000, smashSlowAmount: 0.5},
   'engineer': {description: 'Shoots nails, builds sentries', name: 'Engineer', hp: 90, speed: 0.6, attackDamage: 10, attackRange: 450, attackCooldown: 2000, color: {team1: '#60a5fa', team2: '#f87171'}, maxSentries: 6, shotsToBuild: 2, buildDuration: 2500, sentryHp: 70, sentryDamage: 2, sentryRange: 600, sentryCooldown: 450},
   'sentry': {description: 'Stationary automated turret', name: 'Sentry', hp: 150, speed: 0.3, attackDamage: 2, attackRange: 600, attackCooldown: 700, color: {team1: '#60a5fa', team2: '#f87171'}},
-  'force_wall': {description: 'Counters pierce bullets. Reflects projectiles after 4 hits.', name: 'Forcefield', hp: 350, speed: 0.2, attackDamage: 10, attackRange: 40, attackCooldown: 2500, color: {team1: '#60a5fa', team2: '#f87171'}, size: 20},
-  'restrictor': {description: 'Throws chains. Every 4th attack locks enemy for 10 seconds.', name: 'Restrictor', hp: 120, speed: 0.6, attackDamage: 4, attackRange: 600, attackCooldown: 1400, color: {team1: '#60a5fa', team2: '#f87171'}, size: 20},
+  'force_wall': {description: 'Counters pierce bullets. Reflects projectiles after 4 hits.', name: 'Forcefield', hp: 350, speed: 1.5, attackDamage: 10, attackRange: 40, attackCooldown: 2500, color: {team1: '#60a5fa', team2: '#f87171'}, size: 20},
+  'restrictor': {description: 'Throws chains. Every 4th attack locks enemy for 10 seconds.', name: 'Restrictor', hp: 120, speed: 0.6, attackDamage: 4, attackRange: 600, attackCooldown: 350, color: {team1: '#60a5fa', team2: '#f87171'}, size: 20},
+  'absorber': {description: 'After 10 hits, absorbs projectiles for 5s. Stomp range depends on absorbed damage.', name: 'Absorber', hp: 250, speed: 0.5, attackDamage: 5, attackRange: 40, attackCooldown: 1500, color: {team1: '#a855f7', team2: '#d946ef'}, size: 22},
+  'necromancer': {description: 'Shoots green fireballs. Revives fallen allies over 3s.', name: 'Necromancer', hp: 90, speed: 0.6, attackDamage: 15, attackRange: 450, attackCooldown: 4000, color: {team1: '#60a5fa', team2: '#f87171'}, reviveRange: 500, reviveCastTime: 3000, reviveCooldown: 3000},
   'dummy': {description: 'Takes damage and shows DPS', name: 'Target Dummy', hp: 999999, speed: 0, attackDamage: 0, attackRange: 0, attackCooldown: 1000, color: {team1: '#a1a1aa', team2: '#a1a1aa'}}
 };
 

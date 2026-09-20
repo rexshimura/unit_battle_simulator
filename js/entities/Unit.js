@@ -2,7 +2,7 @@
 import { gameState, uiElements } from '../state.js';
 import { UNIT_SPECS, ARMOR_DAMAGE_REDUCTION_PERCENT } from '../config.js';
 import { getDistance, drawLightningBolt, AudioManager } from '../utils.js';
-import { Projectile, Nail, SentryBullet, IceShard, HealingOrb, Arrow, Fireball, PoisonPotion, AntiHealDart, EagleProjectile, PenetratingBeam, ChainProjectile } from './Projectiles.js';
+import { Projectile, Nail, SentryBullet, IceShard, HealingOrb, Arrow, Fireball, PoisonPotion, AntiHealDart, EagleProjectile, PenetratingBeam, ChainProjectile, AbsorbOrb, NecromancerFireball } from './Projectiles.js';
 import { PoisonSplashAnimation, ChainPushAnimation, SlashAnimation, ThrustAnimation, AoeExplosion, AoeHeal, MultiHealAura, GroundSmashAnimation, TrollSmashAnimation, ShiverWaveAnimation, ChainLightning, AuraBuffAnimation, FloatingText, Particle, ShieldBashAnimation } from './Effects.js';
 
 class Unit {
@@ -108,6 +108,94 @@ class Unit {
         uiElements.ctx.arc(this.x, this.y, maxRadius, 0, Math.PI * 2);
         uiElements.ctx.stroke();
         uiElements.ctx.restore();
+    }
+
+    if (this.type === 'absorber' && this.isAbsorbing) {
+        const timeRemaining = this.absorbEndTime - Date.now();
+        const progress = 1 - (timeRemaining / 8000);
+        if (progress > 0 && progress <= 1) {
+            const maxRadius = Math.min(300, 50 + (this.storedDamage || 0));
+            const currentRadius = maxRadius * progress;
+            const rgbColor = this.team === 1 ? '96, 165, 250' : '248, 113, 113';
+            const hexColor = this.team === 1 ? '#60a5fa' : '#f87171';
+            
+            uiElements.ctx.save();
+            uiElements.ctx.strokeStyle = `rgba(${rgbColor}, 0.5)`;
+            uiElements.ctx.fillStyle = `rgba(${rgbColor}, 0.1)`;
+            uiElements.ctx.lineWidth = 2;
+            uiElements.ctx.beginPath();
+            uiElements.ctx.arc(this.x, this.y, currentRadius, 0, Math.PI * 2);
+            uiElements.ctx.fill();
+            uiElements.ctx.stroke();
+            
+            uiElements.ctx.strokeStyle = `rgba(${rgbColor}, 0.4)`;
+            uiElements.ctx.setLineDash([5, 5]);
+            uiElements.ctx.beginPath();
+            uiElements.ctx.arc(this.x, this.y, maxRadius, 0, Math.PI * 2);
+            uiElements.ctx.stroke();
+            uiElements.ctx.restore();
+            
+            uiElements.ctx.save();
+            uiElements.ctx.fillStyle = hexColor;
+            uiElements.ctx.font = 'bold 12px Arial';
+            uiElements.ctx.textAlign = 'center';
+            const releaseDamage = (this.storedDamage || 0) * 0.4;
+            uiElements.ctx.fillText(`DMG: ${Math.round(releaseDamage)}`, this.x, this.y - maxRadius - 10);
+            uiElements.ctx.restore();
+        }
+    }
+    if (this.type === 'necromancer' && this.isRevivingAlly && this.reviveTarget) {
+      uiElements.ctx.save();
+      uiElements.ctx.strokeStyle = '#22c55e'; // Green line
+      uiElements.ctx.lineWidth = 3;
+      
+      const dx = this.reviveTarget.x - this.x;
+      const dy = this.reviveTarget.y - this.y;
+      const dist = Math.hypot(dx, dy);
+      const angle = Math.atan2(dy, dx);
+      
+      uiElements.ctx.beginPath();
+      uiElements.ctx.moveTo(this.x, this.y);
+      
+      const time = Date.now();
+      const amplitude = 12; // wave width
+      const frequency = 0.08; // number of waves
+      const speed = 0.015; // wiggle speed
+      
+      for (let i = 0; i <= dist; i += 4) {
+         // Taper at the ends so it attaches cleanly to both units
+         const taper = Math.sin((i / dist) * Math.PI); 
+         const offset = Math.sin(i * frequency - time * speed) * amplitude * taper;
+         
+         const px = this.x + Math.cos(angle) * i - Math.sin(angle) * offset;
+         const py = this.y + Math.sin(angle) * i + Math.cos(angle) * offset;
+         uiElements.ctx.lineTo(px, py);
+      }
+      uiElements.ctx.lineTo(this.reviveTarget.x, this.reviveTarget.y);
+      
+      uiElements.ctx.stroke();
+      
+      // Add a slight glow to it
+      uiElements.ctx.shadowBlur = 8;
+      uiElements.ctx.shadowColor = '#22c55e';
+      uiElements.ctx.stroke();
+      
+      // Draw ghost of the revive target
+      uiElements.ctx.globalAlpha = 0.4 + 0.2 * Math.sin(time / 150);
+      uiElements.ctx.shadowBlur = 15;
+      uiElements.ctx.shadowColor = '#22c55e';
+      
+      uiElements.ctx.beginPath();
+      uiElements.ctx.arc(this.reviveTarget.x, this.reviveTarget.y, this.reviveTarget.width / 2, 0, Math.PI * 2);
+      uiElements.ctx.fillStyle = this.team === 1 ? '#2dd4bf' : '#bef264';
+      uiElements.ctx.fill();
+      uiElements.ctx.lineWidth = 2;
+      uiElements.ctx.strokeStyle = '#22c55e';
+      uiElements.ctx.stroke();
+      
+      this.reviveTarget.drawEquipment();
+      
+      uiElements.ctx.restore();
     }
 
     uiElements.ctx.save();
@@ -323,7 +411,7 @@ class Unit {
         }
     }
     
-    if ((this.type === 'rockgolem' || this.type === 'duelist' || this.type === 'druid' || this.type === 'priest' || this.type === 'troll' || this.type === 'cryomancer' || this.type === 'alchemist' || this.type === 'force_wall' || this.type === 'fortress' || this.type === 'flamecaller' || this.type === 'wizard' || this.type === 'hunter') && gameState.isBattleStarted) {
+    if ((this.type === 'rockgolem' || this.type === 'duelist' || this.type === 'druid' || this.type === 'priest' || this.type === 'troll' || this.type === 'cryomancer' || this.type === 'alchemist' || this.type === 'force_wall' || this.type === 'fortress' || this.type === 'flamecaller' || this.type === 'wizard' || this.type === 'hunter' || this.type === 'absorber') && gameState.isBattleStarted) {
       uiElements.ctx.fillStyle = 'rgba(75, 85, 99, 0.5)';
       uiElements.ctx.fillRect(healthBarX, specialBarY, barWidth, specialBarHeight);
       let specs, counter, maxCount, barColor, activeColor, activeDuration, activeEndTime;
@@ -349,7 +437,16 @@ class Unit {
           maxCount = specs.lightHealTriggerCount;
           barColor = '#fef08a';
           break;
-                case 'force_wall':
+        case 'absorber':
+          counter = this.hitsTaken || 0;
+          maxCount = 10;
+          barColor = this.isAbsorbing ? '#d946ef' : '#a855f7';
+          if (this.isAbsorbing) {
+             counter = 1;
+             maxCount = 1;
+          }
+          break;
+        case 'force_wall':
           counter = this.hitsTaken || 0;
           maxCount = 4;
           barColor = this.isReflecting ? '#f472b6' : '#38bdf8';
@@ -801,6 +898,79 @@ class Unit {
       uiElements.ctx.strokeStyle = this.isReflecting ? 'rgba(252, 165, 211, 1)' : 'rgba(186, 230, 253, 1)';
       uiElements.ctx.stroke();
       uiElements.ctx.restore();
+    } else if (this.type === 'absorber') {
+      uiElements.ctx.save();
+      uiElements.ctx.translate(this.x, this.y);
+      uiElements.ctx.rotate(angle);
+      if (this.isAbsorbing) {
+         uiElements.ctx.shadowBlur = 15;
+         uiElements.ctx.shadowColor = 'rgba(217, 70, 239, 0.9)'; // bright purple/pink
+         
+         uiElements.ctx.beginPath();
+         uiElements.ctx.arc(0, 0, this.width / 2 + 10, 0, Math.PI * 2);
+         uiElements.ctx.lineWidth = 4;
+         uiElements.ctx.strokeStyle = 'rgba(217, 70, 239, 0.8)';
+         uiElements.ctx.stroke();
+         uiElements.ctx.fillStyle = 'rgba(168, 85, 247, 0.3)';
+         uiElements.ctx.fill();
+      }
+      
+      // Draw the core crystal
+      uiElements.ctx.beginPath();
+      uiElements.ctx.moveTo(12, 0);
+      uiElements.ctx.lineTo(0, 12);
+      uiElements.ctx.lineTo(-12, 0);
+      uiElements.ctx.lineTo(0, -12);
+      uiElements.ctx.closePath();
+      uiElements.ctx.fillStyle = this.team === 1 ? '#60a5fa' : '#f87171';
+      uiElements.ctx.fill();
+      uiElements.ctx.lineWidth = 2;
+      uiElements.ctx.strokeStyle = '#fff';
+      uiElements.ctx.stroke();
+
+      uiElements.ctx.restore();
+      
+      if (this.isAbsorbing) {
+          uiElements.ctx.save();
+          uiElements.ctx.translate(this.x, this.y);
+          
+          // Draw timer
+          const timeLeft = Math.max(0, (this.absorbEndTime - Date.now()) / 1000).toFixed(1);
+          
+          uiElements.ctx.fillStyle = '#fff';
+          uiElements.ctx.font = '12px Arial';
+          uiElements.ctx.textAlign = 'center';
+          uiElements.ctx.fillText(`${timeLeft}s`, 0, -this.width / 2 - 15);
+          
+          uiElements.ctx.restore();
+      }
+    } else if (this.type === 'necromancer') {
+      uiElements.ctx.save();
+      uiElements.ctx.translate(this.x, this.y);
+      uiElements.ctx.rotate(angle);
+      
+      // Draw a spellbook
+      uiElements.ctx.fillStyle = '#451a03'; // dark brown cover
+      uiElements.ctx.fillRect(this.width / 2 + 2, -10, 12, 14);
+      
+      uiElements.ctx.fillStyle = '#fef3c7'; // parchment pages
+      uiElements.ctx.fillRect(this.width / 2 + 4, -8, 8, 10);
+      
+      // Glowing green runes
+      uiElements.ctx.fillStyle = '#22c55e';
+      uiElements.ctx.fillRect(this.width / 2 + 5, -6, 6, 1.5);
+      uiElements.ctx.fillRect(this.width / 2 + 5, -3, 5, 1.5);
+      uiElements.ctx.fillRect(this.width / 2 + 5, 0, 4, 1.5);
+      
+      if (this.isRevivingAlly) {
+         uiElements.ctx.shadowBlur = 10;
+         uiElements.ctx.shadowColor = '#22c55e';
+         uiElements.ctx.strokeStyle = '#22c55e';
+         uiElements.ctx.lineWidth = 1;
+         uiElements.ctx.strokeRect(this.width / 2 + 2, -10, 12, 14);
+      }
+      
+      uiElements.ctx.restore();
     } else if (this.type === 'fortress') {
       const shieldWidth = 14;
       const shieldHeight = 40;
@@ -1126,12 +1296,35 @@ class Unit {
     let minDistance = Infinity;
     if (this.type === 'assassin') {
         validEnemies.forEach(e => {
-            const score = e.maxHp + getDistance(this, e) * 0.1;
+            let score = e.maxHp + getDistance(this, e) * 0.1;
+            if (e.isSummon) score += 10000; // Strongly de-prioritize summons (like the evil snake)
+            
             if (score < minDistance) {
                 minDistance = score;
                 closestEnemy = e;
             }
         });
+    } else if (this.type === 'restrictor') {
+        let bestTarget = null;
+        let bestDistance = Infinity;
+        let bestTargetLocked = null;
+        let bestDistanceLocked = Infinity;
+        validEnemies.forEach(e => {
+            const d = getDistance(this, e);
+            const isLocked = e.stunType === 'restrict' && Date.now() < e.stunnedUntil;
+            if (!isLocked) {
+                if (d < bestDistance) {
+                    bestDistance = d;
+                    bestTarget = e;
+                }
+            } else {
+                if (d < bestDistanceLocked) {
+                    bestDistanceLocked = d;
+                    bestTargetLocked = e;
+                }
+            }
+        });
+        closestEnemy = bestTarget ? bestTarget : bestTargetLocked;
     } else {
         validEnemies.forEach(e => {
           const d = getDistance(this, e);
@@ -1328,6 +1521,79 @@ class Unit {
     if (this.type === 'force_wall' && this.isReflecting) {
         if (Date.now() > this.reflectEndTime) {
             this.isReflecting = false;
+        }
+    }
+    
+    if (this.type === 'absorber' && this.isAbsorbing) {
+        if (Date.now() > this.absorbEndTime) {
+            this.isAbsorbing = false;
+            
+            if (this.storedDamage > 0) {
+                AudioManager.play('rock_smash');
+                gameState.animations.push(new FloatingText("RELEASE!", this.x, this.y - 40, "#d946ef"));
+                
+                // Deal 60% less damage (which is 40% of stored damage)
+                const releaseDamage = this.storedDamage * 0.4;
+                
+                const radius = Math.min(300, 50 + this.storedDamage);
+                
+                // Stun duration 1000ms
+                gameState.animations.push(new GroundSmashAnimation(this, radius, releaseDamage, 1000, gameState.units));
+                this.storedDamage = 0;
+            }
+        }
+    }
+
+    if (this.type === 'necromancer') {
+        const specs = UNIT_SPECS.necromancer;
+        const now = Date.now();
+        
+        if (this.isRevivingAlly) {
+            if (!this.reviveTarget || now > this.reviveEndTime) {
+                if (this.reviveTarget) {
+                    this.reviveTarget.hp = this.reviveTarget.maxHp;
+                    this.reviveTarget.hasBeenRevivedByNecromancer = true;
+                    
+                    // Change color based on team: Blue + Green = Teal (#2dd4bf), Red + Green = Lime (#bef264)
+                    this.reviveTarget.color = this.team === 1 ? '#2dd4bf' : '#bef264';
+                    
+                    if (!gameState.units.includes(this.reviveTarget)) {
+                        gameState.units.push(this.reviveTarget);
+                    }
+                    
+                    AudioManager.play('druid_aoeheal'); // Re-use a mystical sound
+                    gameState.animations.push(new FloatingText("REVIVED!", this.reviveTarget.x, this.reviveTarget.y - 30, "#22c55e"));
+                    gameState.animations.push(new AuraBuffAnimation(this.reviveTarget, 50, 0, 0, 1000, [])); // Aura pulse
+                    for (let i = 0; i < 20; i++) {
+                        gameState.particles.push(new Particle(this.reviveTarget.x, this.reviveTarget.y, this.team, true, 'poison'));
+                        gameState.particles.push(new Particle(this.reviveTarget.x, this.reviveTarget.y, this.team, true, 'heal'));
+                    }
+                }
+                this.isRevivingAlly = false;
+                this.reviveTarget = null;
+                this.lastReviveTime = now;
+            }
+            return;
+        } else {
+            if (!this.lastReviveTime || now - this.lastReviveTime >= specs.reviveCooldown) {
+                const deadAllies = gameState.allUnitsThisRound.filter(u => 
+                    u.team === this.team && 
+                    u.hp <= 0 && 
+                    !u.hasBeenRevivedByNecromancer && 
+                    !u.isSummon && 
+                    u !== this &&
+                    getDistance(this, u) <= specs.reviveRange &&
+                    !gameState.units.some(other => other.type === 'necromancer' && other.isRevivingAlly && other.reviveTarget === u)
+                );
+                if (deadAllies.length > 0) {
+                    deadAllies.sort((a, b) => getDistance(this, a) - getDistance(this, b));
+                    this.reviveTarget = deadAllies[0];
+                    this.isRevivingAlly = true;
+                    this.reviveEndTime = now + specs.reviveCastTime;
+                    gameState.animations.push(new FloatingText("REVIVING...", this.x, this.y - 30, "#22c55e"));
+                    return;
+                }
+            }
         }
     }
 
@@ -1854,6 +2120,9 @@ class Unit {
           gameState.projectiles.push(new Fireball(this, this.target));
         }
       
+    } else if (this.type === 'necromancer') {
+        AudioManager.play('fireball');
+        gameState.projectiles.push(new NecromancerFireball(this, this.target));
     } else if (this.type === 'fortress') {
       // Fortress does not attack normally, it only bashes on hit
       return;
@@ -1888,7 +2157,7 @@ class Unit {
         }
 } else if (this.type === 'force_wall') {
         if (this.target && getDistance(this, this.target) <= this.attackRange + 5) {
-          AudioManager.play('push');
+          AudioManager.play('force_wall_hit');
           this.target.takeDamage(this.attackDamage, this);
           gameState.animations.push(new ShieldBashAnimation(this.x, this.y, 40, this.attackDamage, 30, this.team, gameState.units, this));
           if (!this.isSlashing) {
@@ -1931,6 +2200,23 @@ class Unit {
   }
   takeDamage(damage, attacker = null, bypassesArmor = false) {
     if (this.isReviving) return;
+
+    if (this.type === 'absorber') {
+        if (this.isAbsorbing) {
+            this.storedDamage = (this.storedDamage || 0) + damage;
+            return;
+        } else {
+            this.hitsTaken = (this.hitsTaken || 0) + 1;
+            if (this.hitsTaken >= 10) {
+                this.hitsTaken = 0;
+                this.isAbsorbing = true;
+                this.storedDamage = 0;
+                this.absorbEndTime = Date.now() + 8000;
+                gameState.animations.push(new FloatingText("ABSORBING!", this.x, this.y - 40, "#a855f7"));
+            }
+        }
+    }
+
     let modifiedDamage = damage;
     const attackerSpecs = attacker ? UNIT_SPECS[attacker.type] : null;
     if (attacker && attacker.buffs.bard && Date.now() < attacker.buffs.bard.expires) {
@@ -1987,6 +2273,7 @@ class Unit {
                 this.hitsTaken = 0;
                 this.isReflecting = true;
                 this.reflectEndTime = Date.now() + 5000;
+                AudioManager.play('force_wall_deflect_activation');
                 gameState.animations.push(new FloatingText("REFLECT!", this.x, this.y - 40, "#f472b6"));
             }
         }
@@ -2032,6 +2319,9 @@ class Unit {
   }
   deflect() {
     this.deflectAnim = 10;
+    if (this.type === 'force_wall') {
+      AudioManager.play('force_wall_deflect');
+    }
   }
 }
 
@@ -2050,6 +2340,7 @@ class ShadowSnake extends Unit {
     this.color = team === 1 ? '#1e3a8a' : '#7f1d1d'; // dark team colors
     this.wiggleOffset = Math.random() * Math.PI * 2;
     this.attackCooldown = 250; // Attack speed of the snake
+    this.isSummon = true;
   }
   update(friendlies, enemies) {
     if (!this.summoner || this.summoner.hp <= 0) {
@@ -2187,6 +2478,7 @@ class EngineerSentry extends Unit {
     this.height = 16;
     this.color = team === 1 ? '#60a5fa' : '#f87171';
     this.lastAttackTime = 0;
+    this.isSummon = true;
   }
   update(friendlies, enemies) {
     if (this.hp <= 0) return;

@@ -18,9 +18,14 @@ class Projectile {
     this.y = shooter.y + Math.sin(this.angle) * nozzleTipDist;
   }
   update(enemies) {
-    const enemyGuardians = gameState.units.filter(u => u.team !== this.team && (u.type === 'guardian' || u.type === 'force_wall'));
+    const enemyGuardians = gameState.units.filter(u => u.team !== this.team && (u.type === 'guardian' || u.type === 'force_wall' || u.type === 'absorber'));
     for (const guardian of enemyGuardians) {
-      if (guardian.type === 'force_wall') {
+      if (guardian.type === 'absorber') {
+          if (getDistance(this, guardian) < guardian.width / 2 + 15) {
+              guardian.takeDamage(this.damage, this.shooter);
+              return false;
+          }
+      } else if (guardian.type === 'force_wall') {
          if (guardian.isReflecting && getDistance(this, guardian) < guardian.width / 2 + 10) {
              this.team = guardian.team;
              this.target = null; 
@@ -115,9 +120,14 @@ class IceShard extends Projectile {
     }
     
     // Guardian deflect logic
-    const enemyGuardians = gameState.units.filter(u => u.team !== this.team && (u.type === 'guardian' || u.type === 'force_wall'));
+    const enemyGuardians = gameState.units.filter(u => u.team !== this.team && (u.type === 'guardian' || u.type === 'force_wall' || u.type === 'absorber'));
     for (const guardian of enemyGuardians) {
-      if (guardian.type === 'force_wall') {
+      if (guardian.type === 'absorber') {
+          if (getDistance(this, guardian) < guardian.width / 2 + 15) {
+              guardian.takeDamage(this.damage, this.shooter);
+              return false;
+          }
+      } else if (guardian.type === 'force_wall') {
          if (guardian.isReflecting && getDistance(this, guardian) < guardian.width / 2 + 10) {
              this.team = guardian.team;
              this.target = null; 
@@ -238,6 +248,145 @@ class HealingOrb extends Projectile {
     uiElements.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
     uiElements.ctx.fill();
     uiElements.ctx.fillStyle = `rgba(255, 255, 255, 0.9)`;
+    uiElements.ctx.beginPath();
+    uiElements.ctx.arc(this.x, this.y, this.radius * 0.5, 0, Math.PI * 2);
+    uiElements.ctx.fill();
+  }
+}
+
+class NecromancerSwarmFireball extends Projectile {
+  constructor(x, y, target, shooter, angleOffset) {
+    super({x, y, color: shooter.color, width: 0}, target, 4, shooter.team);
+    this.shooter = shooter;
+    this.speed = 8; // Start fast for the burst
+    this.radius = 4;
+    this.angle = angleOffset;
+    this.x = x;
+    this.y = y;
+    this.timer = 0;
+  }
+  update(enemies) {
+    this.timer += gameState.gameSpeed;
+    
+    // Spread outward for the first 0.9 seconds (~55 frames)
+    if (this.timer < 55) {
+        // Decelerate so they don't fly off screen, hovering in the air
+        this.speed = Math.max(0.5, this.speed * 0.92);
+    } else {
+        // Phase 2: Accelerate and seek target
+        this.speed = Math.min(10, this.speed + 0.4);
+        
+        // Find a new target if we don't have one, or if we just entered phase 2
+        if (!this.target || this.target.hp <= 0 || this.timer === 55) {
+            let closest = null;
+            let minDist = Infinity;
+            for (const e of enemies) {
+                if (e.hp > 0) {
+                    const d = getDistance(this, e);
+                    if (d < minDist) {
+                        minDist = d;
+                        closest = e;
+                    }
+                }
+            }
+            this.target = closest;
+        }
+
+        if (this.target && this.target.hp > 0) {
+            const targetAngle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+            const turnSpeed = 0.2 * gameState.gameSpeed;
+            let diff = targetAngle - this.angle;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            this.angle += Math.sign(diff) * Math.min(Math.abs(diff), turnSpeed);
+        }
+    }
+    
+    this.x += Math.cos(this.angle) * this.speed * gameState.gameSpeed;
+    this.y += Math.sin(this.angle) * this.speed * gameState.gameSpeed;
+    
+    if (Math.random() > 0.5) {
+      gameState.particles.push(new Particle(this.x, this.y, this.team, false, 'poison'));
+    }
+    
+    // Only allow collisions during phase 2
+    if (this.timer >= 55) {
+        for (const enemy of enemies) {
+          if (getDistance(this, enemy) < enemy.width / 2 + this.radius) {
+            AudioManager.play('small_fireball'); // tiny pop sound
+            enemy.takeDamage(this.damage, this.shooter);
+            return false;
+          }
+        }
+    }
+    return this.x > -100 && this.x < uiElements.canvas.width + 100 && this.y > -100 && this.y < uiElements.canvas.height + 100;
+  }
+  draw() {
+    uiElements.ctx.fillStyle = '#22c55e';
+    uiElements.ctx.beginPath();
+    uiElements.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    uiElements.ctx.fill();
+    uiElements.ctx.fillStyle = `rgba(200, 255, 200, 0.8)`;
+    uiElements.ctx.beginPath();
+    uiElements.ctx.arc(this.x, this.y, this.radius * 0.5, 0, Math.PI * 2);
+    uiElements.ctx.fill();
+  }
+}
+
+class NecromancerFireball extends Projectile {
+  constructor(shooter, target) {
+    super(shooter, target, UNIT_SPECS.necromancer.attackDamage, shooter.team);
+    this.speed = 4;
+    this.radius = 7;
+  }
+  update(enemies) {
+    if (this.target && this.target.hp > 0) {
+      const targetAngle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+      const dist = getDistance(this, this.target);
+      if (dist < 80) {
+        this.angle = targetAngle;
+      } else {
+        const turnSpeed = Math.max(0.12, (1 / dist) * 600) * gameState.gameSpeed;
+        let diff = targetAngle - this.angle;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        if (Math.abs(diff) < turnSpeed) {
+          this.angle = targetAngle;
+        } else {
+          this.angle += Math.sign(diff) * turnSpeed;
+        }
+      }
+    }
+    this.x += Math.cos(this.angle) * this.speed * gameState.gameSpeed;
+    this.y += Math.sin(this.angle) * this.speed * gameState.gameSpeed;
+    if (Math.random() > 0.5) {
+      gameState.particles.push(new Particle(this.x, this.y, this.team, false, 'poison'));
+    }
+    for (const enemy of enemies) {
+      if (getDistance(this, enemy) < enemy.width / 2 + this.radius) {
+        AudioManager.play('fireball_hit');
+        
+        enemy.takeDamage(this.damage, this.shooter);
+        
+        // Use setTimeout to push to gameState.projectiles AFTER game.js filter completes
+        setTimeout(() => {
+            for(let i = 0; i < 4; i++) {
+               const spreadAngle = (Math.PI / 2) * i + (Math.PI / 4);
+               gameState.projectiles.push(new NecromancerSwarmFireball(this.x, this.y, this.target, this.shooter, spreadAngle));
+            }
+        }, 0);
+        
+        return false; // Parent disappears
+      }
+    }
+    return this.x > -this.radius && this.x < uiElements.canvas.width + this.radius && this.y > -this.radius && this.y < uiElements.canvas.height + this.radius;
+  }
+  draw() {
+    uiElements.ctx.fillStyle = '#22c55e';
+    uiElements.ctx.beginPath();
+    uiElements.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    uiElements.ctx.fill();
+    uiElements.ctx.fillStyle = `rgba(200, 255, 200, 0.8)`;
     uiElements.ctx.beginPath();
     uiElements.ctx.arc(this.x, this.y, this.radius * 0.5, 0, Math.PI * 2);
     uiElements.ctx.fill();
@@ -569,7 +718,7 @@ export class PenetratingBeam {
           } else {
              unit.takeDamage(this.damage, this.shooter);
              this.hitTargets.add(unit);
-             if (unit.type === 'force_wall') {
+             if (unit.type === 'force_wall' || unit.type === 'absorber') {
                  hitWall = true;
              }
           }
@@ -627,9 +776,14 @@ export class ChainProjectile extends Projectile {
     }
 
     // Deflection logic (copied from base)
-    const enemyGuardians = gameState.units.filter(u => u.team !== this.team && (u.type === 'guardian' || u.type === 'force_wall'));
+    const enemyGuardians = gameState.units.filter(u => u.team !== this.team && (u.type === 'guardian' || u.type === 'force_wall' || u.type === 'absorber'));
     for (const guardian of enemyGuardians) {
-      if (guardian.type === 'force_wall') {
+      if (guardian.type === 'absorber') {
+          if (getDistance(this, guardian) < guardian.width / 2 + 15) {
+              guardian.takeDamage(this.damage, this.shooter);
+              return false;
+          }
+      } else if (guardian.type === 'force_wall') {
          if (guardian.isReflecting && getDistance(this, guardian) < guardian.width / 2 + 10) {
              this.team = guardian.team;
              this.target = null; 
@@ -772,3 +926,42 @@ export class ChainProjectile extends Projectile {
     uiElements.ctx.restore();
   }
 }
+
+export class AbsorbOrb extends Projectile {
+  constructor(shooter, target, damage, team) {
+    super(shooter, target, damage, team);
+    this.speed = 4;
+    this.radius = 15;
+  }
+  
+  draw() {
+    uiElements.ctx.save();
+    uiElements.ctx.translate(this.x, this.y);
+    
+    // Pulse animation
+    const scale = 1 + 0.2 * Math.sin(Date.now() / 100);
+    uiElements.ctx.scale(scale, scale);
+
+    // Glow
+    uiElements.ctx.shadowBlur = 15;
+    uiElements.ctx.shadowColor = 'rgba(217, 70, 239, 0.9)'; // Purple/Pink
+
+    // Core
+    uiElements.ctx.beginPath();
+    uiElements.ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+    uiElements.ctx.fillStyle = 'rgba(168, 85, 247, 1)';
+    uiElements.ctx.fill();
+
+    // Inner bright core
+    uiElements.ctx.beginPath();
+    uiElements.ctx.arc(0, 0, this.radius / 2, 0, Math.PI * 2);
+    uiElements.ctx.fillStyle = '#fff';
+    uiElements.ctx.fill();
+
+    uiElements.ctx.restore();
+  }
+}
+
+
+export { NecromancerFireball };
+
