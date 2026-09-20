@@ -88,6 +88,17 @@ class Unit {
     }
   }
   draw() {
+    let scale = 1.0;
+    if (typeof gameState !== 'undefined' && gameState.isOneVOneModeActive && 
+       (this === gameState.oneVOneBlueUnit || this === gameState.oneVOneRedUnit)) {
+        scale = 1.6;
+    }
+    if (scale !== 1.0) {
+        uiElements.ctx.save();
+        uiElements.ctx.translate(this.x, this.y);
+        uiElements.ctx.scale(scale, scale);
+        uiElements.ctx.translate(-this.x, -this.y);
+    }
     if (this.type === 'rockgolem' && this.isSmashingWindup) {
         const specs = UNIT_SPECS.rockgolem;
         const progress = this.smashWindupProgress / this.smashWindupDuration;
@@ -222,6 +233,7 @@ class Unit {
       uiElements.ctx.fill();
       
       uiElements.ctx.restore();
+      if (scale !== 1.0) uiElements.ctx.restore();
       return;
     }
 
@@ -293,7 +305,7 @@ class Unit {
       uiElements.ctx.beginPath();
       uiElements.ctx.rect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
       uiElements.ctx.fill();
-    } else if (this.type === 'dummy') {
+    } else if (this.type.includes('dummy')) {
       uiElements.ctx.beginPath();
       uiElements.ctx.rect(this.x - this.width / 2 + 5, this.y - this.height / 2, this.width - 10, this.height);
       uiElements.ctx.fill();
@@ -308,6 +320,16 @@ class Unit {
     }
     uiElements.ctx.restore();
     this.drawEquipment();
+    
+    // Draw Boss Dummy HP inside body
+    if (this.type === 'boss_dummy') {
+      uiElements.ctx.fillStyle = 'white';
+      uiElements.ctx.font = 'bold 16px Arial';
+      uiElements.ctx.textAlign = 'center';
+      uiElements.ctx.textBaseline = 'middle';
+      uiElements.ctx.fillText(Math.ceil(this.hp), this.x, this.y);
+    }
+    
     uiElements.ctx.fillStyle = this.team === 1 ? 'rgba(100, 200, 255, 0.7)' : 'rgba(255, 100, 100, 0.7)';
     uiElements.ctx.beginPath();
     uiElements.ctx.arc(this.x, this.y, this.width / 2 + 3, 0, Math.PI * 2);
@@ -315,7 +337,7 @@ class Unit {
     uiElements.ctx.strokeStyle = uiElements.ctx.fillStyle;
     uiElements.ctx.stroke();
     
-    if (this.type === 'dummy') {
+    if (this.type.includes('dummy') && this.type !== 'boss_dummy') {
       if (!this.damageHistory) this.damageHistory = [];
       const now = Date.now();
       this.damageHistory = this.damageHistory.filter(d => now - d.time < 1000);
@@ -338,8 +360,11 @@ class Unit {
        this.ownedSentries.forEach(s => s.draw());
     }
     uiElements.ctx.restore(); // Restore globalAlpha and filter from shadow mode
+    if (scale !== 1.0) uiElements.ctx.restore();
   }
   drawHealthBar() {
+    if (this.type.includes('dummy')) return; // Dummies don't need overhead health bars
+    
     const barWidth = 30;
     let barY = this.y - this.height - 15;
     if (this.buffs.armor && this.buffs.armor.expires > Date.now()) {
@@ -661,14 +686,14 @@ class Unit {
       uiElements.ctx.stroke();
       uiElements.ctx.restore();
     }
-    if (this.type === 'musketeer' || this.type === 'sniper' || this.type === 'hunter' || this.type === 'minigunner' || this.type === 'accelerator' || this.type === 'engineer') {
+    if (this.type === 'musketeer' || this.type === 'sniper' || this.type === 'hunter' || this.type === 'minigunner' || this.type === 'accelerator' || this.type === 'engineer' || this.type === 'shooting_dummy') {
       uiElements.ctx.save();
       uiElements.ctx.translate(this.x, this.y);
       uiElements.ctx.rotate(angle);
       
       const gunBaseX = this.width / 2;
       
-      if (this.type === 'musketeer') {
+      if (this.type === 'musketeer' || this.type === 'shooting_dummy') {
          uiElements.ctx.strokeStyle = '#9ca3af';
          uiElements.ctx.lineWidth = 5;
          uiElements.ctx.beginPath();
@@ -1364,6 +1389,34 @@ class Unit {
     this.y += steerY * 0.5 * gameState.gameSpeed;
   }
   update(friendlies, enemies) {
+    if (this.type === 'boss_dummy') {
+        if (this.vx || this.vy) {
+            this.x += this.vx * gameState.gameSpeed;
+            this.y += this.vy * gameState.gameSpeed;
+            this.vx *= 0.95; // smoother friction
+            this.vy *= 0.95;
+            if (Math.abs(this.vx) < 0.1) this.vx = 0;
+            if (Math.abs(this.vy) < 0.1) this.vy = 0;
+            
+            // Boundary bounce
+            if (this.y < this.width / 2) {
+                this.y = this.width / 2;
+                this.vy *= -0.8;
+            } else if (this.y > uiElements.canvas.height - this.width / 2) {
+                this.y = uiElements.canvas.height - this.width / 2;
+                this.vy *= -0.8;
+            }
+            if (this.x < this.width / 2) {
+                this.x = this.width / 2;
+                this.vx *= -0.8;
+            } else if (this.x > uiElements.canvas.width - this.width / 2) {
+                this.x = uiElements.canvas.width - this.width / 2;
+                this.vx *= -0.8;
+            }
+        }
+        return;
+    }
+    
     if (this.type === 'restrictor') {
        const PUSH_COOLDOWN = 5000;
        const PUSH_RANGE = 70;
@@ -1652,7 +1705,13 @@ class Unit {
             }
         }
     }
-    this.findTarget(enemies);
+    if (this.type !== 'shooting_dummy' || this.followTarget) {
+        this.findTarget(enemies);
+    }
+    if (this.type === 'shooting_dummy') {
+        this.attack(enemies);
+        return;
+    }
     if (this.target) {
       if (this.type === 'assassin' && this.isShadow) {
           const behindOffsetX = this.target.team === 1 ? -25 : 25;
@@ -2165,6 +2224,19 @@ class Unit {
             this.slashAnimProgress = this.slashAnimDuration;
           }
         }
+} else if (this.type === 'shooting_dummy') {
+    AudioManager.play('bullet');
+    let targetObj;
+    if (this.followTarget && this.target) {
+        targetObj = this.target;
+    } else {
+        const dir = this.team === 1 ? 1 : -1;
+        targetObj = { x: this.x + dir * 1000, y: this.y, hp: 100, width: 0, team: this.team === 1 ? 2 : 1 };
+    }
+    const proj = new Projectile(this, targetObj, this.attackDamage, this.team);
+    proj.speed = 15;
+    proj.radius = 3;
+    gameState.projectiles.push(proj);
 } else if (this.type === 'ghoul') {
         if (this.target && getDistance(this, this.target) <= this.attackRange + 5) {
           AudioManager.play('bite');
@@ -2255,7 +2327,7 @@ class Unit {
             gameState.animations.push(new FloatingText(`-${Math.round(modifiedDamage)}`, this.x, this.y - 10, '#ef4444'));
         }
     }
-    if (this.type === 'dummy') {
+    if (this.type === 'dummy' || this.type === 'boss_dummy' || this.type === 'shooting_dummy') {
         if (!this.damageHistory) this.damageHistory = [];
         this.damageHistory.push({amount: modifiedDamage, time: Date.now()});
         this.totalDamageReceived = (this.totalDamageReceived || 0) + modifiedDamage;
@@ -2263,8 +2335,14 @@ class Unit {
     
     const actualDamage = Math.min(this.hp, damageToHp);
     this.hp -= damageToHp;
-    if (this.type === 'dummy') this.hp = this.maxHp;
-    
+    if (this.type === 'dummy') this.hp = this.maxHp; // only normal dummy is immortal
+
+    // Boss Dummy knockback
+    if (this.type === 'boss_dummy' && attacker) {
+        const angle = Math.atan2(this.y - attacker.y, this.x - attacker.x);
+        this.vx = (this.vx || 0) + Math.cos(angle) * 5; // smooth bouncy impulse
+        this.vy = (this.vy || 0) + Math.sin(angle) * 5;
+    }
 
     if (this.type === 'force_wall' && this.hp > 0 && damageToHp > 0) {
         if (!this.isReflecting) {

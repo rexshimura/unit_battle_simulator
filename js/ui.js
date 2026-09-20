@@ -191,22 +191,32 @@ function updateInspectTooltip(unit, event) {
   const healthColor = healthPercentage > 50 ? 'bg-green-500' : healthPercentage > 25 ? 'bg-yellow-500' : 'bg-red-500';
   const armorPercentage = unit.armor / unit.maxHp * 100;
   let extraStatsHTML = `
-                ${stats.attackDamage > 0 ? `<span class="text-gray-400">Damage:</span> <span class="text-white">${stats.attackDamage}</span>` : ''}
+                ${unit.type !== 'dummy' && unit.type !== 'boss_dummy' && stats.attackDamage > 0 ? `<span class="text-gray-400">Damage:</span> <span class="text-white">${stats.attackDamage}</span>` : ''}
+                ${unit.type === 'shooting_dummy' ? `<span class="text-gray-400">Damage:</span> <span class="text-white">${unit.attackDamage}</span>` : ''}
                 ${stats.attackRange > 0 ? `<span class="text-gray-400">Range:</span> <span class="text-white">${stats.attackRange}</span>` : ''}
                 ${stats.speed > 0 ? `<span class="text-gray-400">Speed:</span> <span class="text-white">${stats.speed}</span>` : ''}
                 ${stats.healAmount > 0 ? `<span class="text-gray-400">Heal:</span> <span class="text-white">${stats.healAmount}</span>` : ''}
                 ${stats.stunDuration > 0 ? `<span class="text-gray-400">Stun:</span> <span class="text-white">${stats.stunDuration / 1000}s</span>` : ''}
             `;
-  inspectTooltip.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <h3 class="text-lg font-bold ${unit.team === 1 ? 'text-blue-300' : 'text-red-300'} mb-2">${stats.name}</h3>
-                     <span class="text-sm font-semibold text-gray-300">${Math.ceil(unit.hp)} + <span class="text-cyan-300">${Math.ceil(unit.armor)}</span> / ${unit.maxHp}</span>
-                </div>
-                
+            
+  let hpDisplay = `<span class="text-sm font-semibold text-gray-300">${Math.ceil(unit.hp)} + <span class="text-cyan-300">${Math.ceil(unit.armor)}</span> / ${unit.maxHp}</span>`;
+  let hpBar = `
                 <div class="stat-bar-container mb-2 h-3 relative">
                      <div class="stat-bar bg-cyan-500/50 absolute top-0 left-0" style="width: ${armorPercentage}%"></div>
                     <div class="stat-bar ${healthColor}" style="width: ${healthPercentage}%"></div>
+                </div>`;
+                
+  if (unit.type.includes('dummy') && unit.type !== 'boss_dummy') {
+      hpDisplay = `<span class="text-sm font-semibold text-gray-300">Immortal</span>`;
+      hpBar = ``; // No HP bar for immortal dummies
+  }
+
+  inspectTooltip.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <h3 class="text-lg font-bold ${unit.team === 1 ? 'text-blue-300' : 'text-red-300'} mb-2">${stats.name}</h3>
+                     ${hpDisplay}
                 </div>
+                ${hpBar}
 
                 <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mb-2">
                     ${extraStatsHTML}
@@ -238,8 +248,11 @@ function initInteractionEventListeners() {
   const eyeOffIcon = document.getElementById('eye-off-icon');
   const removeUnitBtn = document.getElementById('remove-unit-btn');
   const inspectUnitBtn = document.getElementById('inspect-unit-btn');
+  const modifyModeBtn = document.getElementById('modify-mode-btn');
+  const oneVOneBtn = document.getElementById('one-v-one-btn');
   const stopTrackingBtn = document.getElementById('stop-tracking-btn');
   const canvas = document.getElementById('gameCanvas');
+  const selectionMessage = document.getElementById('selection-message');
   const removeMessage = document.getElementById('remove-message');
   const inspectMessage = document.getElementById('inspect-message');
   toggleRangeBtn.addEventListener('click', () => {
@@ -247,6 +260,37 @@ function initInteractionEventListeners() {
     uiElements.eyeIcon.classList.toggle('hidden', !gameState.showRangePreview);
     uiElements.eyeOffIcon.classList.toggle('hidden', gameState.showRangePreview);
   });
+  
+  oneVOneBtn.addEventListener('click', () => {
+    gameState.isOneVOneModeActive = !gameState.isOneVOneModeActive;
+    oneVOneBtn.classList.toggle('active', gameState.isOneVOneModeActive);
+    oneVOneBtn.classList.toggle('bg-violet-600', gameState.isOneVOneModeActive);
+    oneVOneBtn.classList.toggle('bg-gray-700', !gameState.isOneVOneModeActive);
+    const overlay = document.getElementById('one-v-one-ui');
+    if (gameState.isOneVOneModeActive) {
+        overlay.classList.remove('hidden');
+        selectionMessage.textContent = '1v1 Mode ON: Place exactly 1 unit per side';
+        selectionMessage.style.opacity = 1;
+        setTimeout(() => selectionMessage.style.opacity = 0, 2000);
+    } else {
+        overlay.classList.add('hidden');
+        gameState.oneVOneBlueUnit = null;
+        gameState.oneVOneRedUnit = null;
+    }
+  });
+
+  modifyModeBtn.addEventListener('click', () => {
+    gameState.isModifyModeActive = !gameState.isModifyModeActive;
+    modifyModeBtn.classList.toggle('active', gameState.isModifyModeActive);
+    modifyModeBtn.classList.toggle('bg-violet-600', gameState.isModifyModeActive);
+    modifyModeBtn.classList.toggle('bg-gray-700', !gameState.isModifyModeActive);
+    if (gameState.isModifyModeActive) {
+        selectionMessage.textContent = 'Modify Mode ON: Placed units will prompt for stats';
+        selectionMessage.style.opacity = 1;
+        setTimeout(() => selectionMessage.style.opacity = 0, 2000);
+    }
+  });
+
   removeUnitBtn.addEventListener('click', () => {
     gameState.isRemoveModeActive = !gameState.isRemoveModeActive;
     removeUnitBtn.classList.toggle('active', gameState.isRemoveModeActive);
@@ -310,3 +354,96 @@ export { initHotkeys };
 export { updateInspectTooltip };
 export { initInteractionEventListeners };
 export { selectUnit };
+
+const WEAPON_NAMES = {
+    'swordsman': 'Sword', 'spearman': 'Spear', 'duelist': 'Dual Blades',
+    'fortress': 'Shield', 'guardian': 'Shield & Mace', 'rockgolem': 'Stone Fists',
+    'troll': 'Giant Club', 'musketeer': 'Musket', 'sniper': 'Sniper Rifle',
+    'archer': 'Bow', 'hunter': 'Hunting Rifle', 'minigunner': 'Minigun',
+    'accelerator': 'Laser Cannon', 'engineer': 'Nailgun', 'flamecaller': 'Fire Staff',
+    'wizard': 'Magic Wand', 'cryomancer': 'Ice Staff', 'necromancer': 'Skull Staff',
+    'priest': 'Holy Staff', 'druid': 'Nature Staff', 'alchemist': 'Potions',
+    'abyssal_summoner': 'Dark Tome', 'restrictor': 'Chains', 'absorber': 'Gauntlets',
+    'assassin': 'Daggers', 'ghoul': 'Claws', 'sledgehammer': 'Sledgehammer',
+    'dummy': 'None', 'shooting_dummy': 'Pistol', 'boss_dummy': 'None',
+    'sentry': 'Turret', 'force_wall': 'None'
+};
+
+export function updateOneVOneUI() {
+    if (!gameState.isOneVOneModeActive) return;
+
+    function updatePanel(unit, prefix) {
+        const panel = document.getElementById(`ovo-${prefix}-panel`);
+        if (!unit || !gameState.units.includes(unit)) {
+            panel.style.opacity = '0';
+            return;
+        }
+        panel.style.opacity = '1';
+        
+        const specs = UNIT_SPECS[unit.type];
+        document.getElementById(`ovo-${prefix}-name`).textContent = specs.name;
+        document.getElementById(`ovo-${prefix}-hp-text`).textContent = `${Math.ceil(unit.hp)}/${unit.maxHp}`;
+        
+        const hpPercent = Math.max(0, (unit.hp / unit.maxHp) * 100);
+        document.getElementById(`ovo-${prefix}-hp-bar`).style.width = `${hpPercent}%`;
+        
+        const skillsDiv = document.getElementById(`ovo-${prefix}-skills`);
+        let skillsHtml = '';
+        skillsHtml += `<div class="text-gray-300 mb-1 border-b border-gray-600 pb-1 flex justify-${prefix==='blue'?'start':'end'} gap-3 text-[10px] tracking-wide uppercase"><span>DMG: <span class="text-red-400 font-bold">${unit.attackDamage}</span></span> <span>WPN: <span class="text-yellow-400 font-bold">${WEAPON_NAMES[unit.type] || 'None'}</span></span></div>`;
+
+        let triggersHtml = '';
+        
+        if (unit.type === 'hunter') {
+            triggersHtml += `<div>Eagle: ${unit.basicAttackCounter || 0}/${specs.eagleTriggerCount}</div>`;
+        } else if (unit.type === 'duelist') {
+            triggersHtml += `<div>Burst Slash: ${unit.basicAttackCounter || 0}/${specs.burstTriggerCount}</div>`;
+            if (unit.isBursting) triggersHtml += `<div class="text-yellow-400">Bursting! (${unit.burstsLeft} left)</div>`;
+        } else if (unit.type === 'flamecaller') {
+            triggersHtml += `<div>Triple Fire: ${unit.basicAttackCounter || 0}/3</div>`;
+        } else if (unit.type === 'cryomancer') {
+            triggersHtml += `<div>Freeze Wave: ${unit.basicAttackCounter || 0}/${specs.specialTriggerCount}</div>`;
+        } else if (unit.type === 'fortress') {
+            triggersHtml += `<div>Shield Bash: ${unit.hitsTaken || 0}/5</div>`;
+        } else if (unit.type === 'absorber') {
+            triggersHtml += `<div>Absorb: ${unit.hitsTaken || 0}/10</div>`;
+            if (unit.isAbsorbing) triggersHtml += `<div class="text-purple-400 font-bold text-[10px]">ABSORBING!</div>`;
+        } else if (unit.type === 'restrictor') {
+            let hits = unit.target && unit.target.restrictorHitCount ? (unit.target.restrictorHitCount[unit.id] || 0) : 0;
+            let lockCount = 4 - Math.floor(hits / 2);
+            if (lockCount < 1) lockCount = 1;
+            triggersHtml += `<div>Lock In: ${lockCount}</div>`;
+            const cd = 5000;
+            const remaining = unit.lastPushTime ? Math.max(0, cd - (Date.now() - unit.lastPushTime)) : 0;
+            if (remaining > 0) triggersHtml += `<div>Push CD: ${(remaining/1000).toFixed(1)}s</div>`;
+            else triggersHtml += `<div class="text-green-400">Push Ready</div>`;
+        } else if (unit.type === 'troll') {
+            triggersHtml += `<div>Smash: ${unit.basicAttackCounter || 0}/${specs.smashTriggerCount}</div>`;
+        } else if (unit.type === 'engineer') {
+            triggersHtml += `<div>Sentry: ${unit.basicAttackCounter || 0}/${specs.shotsToBuild}</div>`;
+        } else if (unit.type === 'alchemist') {
+            triggersHtml += `<div>Anti-Heal Flask: ${unit.basicAttackCounter || 0}/${specs.specialTriggerCount}</div>`;
+        } else if (unit.type === 'force_wall') {
+            triggersHtml += `<div>Reflect: ${unit.hitsTaken || 0}/4</div>`;
+            if (unit.isReflecting) triggersHtml += `<div class="text-pink-400">Reflecting!</div>`;
+        } else if (unit.type === 'abyssal_summoner') {
+            triggersHtml += `<div>Snake Casts: ${unit.spawnedSnakes || 0}/${specs.maxSnakes}</div>`;
+        } else if (unit.type === 'assassin') {
+            if (unit.isShadow) triggersHtml += `<div class="text-gray-400">Shadow Stealthed</div>`;
+            else if (unit.isFlurrying) triggersHtml += `<div>Flurries Left: ${unit.flurriesLeft}</div>`;
+        } else if (unit.type === 'priest') {
+            triggersHtml += `<div>Light Heal: ${unit.basicAttackCounter || 0}/${specs.lightHealTriggerCount}</div>`;
+        } else if (unit.type === 'druid') {
+            triggersHtml += `<div>Multi Heal: ${unit.basicAttackCounter || 0}/${specs.multiHealTriggerCount}</div>`;
+        }
+        
+        if (triggersHtml === '') {
+            triggersHtml = '<div class="text-gray-500 italic">No triggers</div>';
+        }
+        
+        skillsHtml += triggersHtml;
+        skillsDiv.innerHTML = skillsHtml;
+    }
+    
+    updatePanel(gameState.oneVOneBlueUnit, 'blue');
+    updatePanel(gameState.oneVOneRedUnit, 'red');
+}

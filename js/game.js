@@ -2,7 +2,7 @@ import { gameState, uiElements } from './state.js';
 import { UNIT_SPECS } from './config.js';
 import { getDistance, AudioManager } from './utils.js';
 import { Unit } from './entities/Unit.js';
-import { updateStatsPanel } from './ui.js';
+import { updateStatsPanel, updateOneVOneUI } from './ui.js';
 
 function update() {
   if (!gameState.isBattleStarted) return;
@@ -138,6 +138,7 @@ function gameLoop() {
       updateStatsPanel();
       gameState.statsUpdateCounter = 0;
     }
+    updateOneVOneUI();
   }
   draw();
   if (gameState.trackedUnit) updateInspectTooltip(gameState.trackedUnit);

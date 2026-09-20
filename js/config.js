@@ -16,7 +16,7 @@ const UNIT_ROLES = {
     Amplifiers: ['bard'],
     Infiltrators: ['assassin', 'duelist'],
     Controllers: ['abyssal_summoner', 'restrictor', 'absorber', 'necromancer'],
-    Dummies: ['dummy'],
+    Dummies: ['dummy', 'shooting_dummy', 'boss_dummy'],
 };
 
 const UNIT_SPECS = {
@@ -50,7 +50,9 @@ const UNIT_SPECS = {
   'restrictor': {description: 'Throws chains. Every 4th attack locks enemy for 10 seconds.', name: 'Restrictor', hp: 120, speed: 0.6, attackDamage: 4, attackRange: 600, attackCooldown: 350, color: {team1: '#60a5fa', team2: '#f87171'}, size: 20},
   'absorber': {description: 'After 10 hits, absorbs projectiles for 5s. Stomp range depends on absorbed damage.', name: 'Absorber', hp: 250, speed: 0.5, attackDamage: 5, attackRange: 40, attackCooldown: 1500, color: {team1: '#a855f7', team2: '#d946ef'}, size: 22},
   'necromancer': {description: 'Shoots green fireballs. Revives fallen allies over 3s.', name: 'Necromancer', hp: 90, speed: 0.6, attackDamage: 15, attackRange: 450, attackCooldown: 4000, color: {team1: '#60a5fa', team2: '#f87171'}, reviveRange: 500, reviveCastTime: 3000, reviveCooldown: 3000},
-  'dummy': {description: 'Takes damage and shows DPS', name: 'Target Dummy', hp: 999999, speed: 0, attackDamage: 0, attackRange: 0, attackCooldown: 1000, color: {team1: '#a1a1aa', team2: '#a1a1aa'}}
+  'dummy': {description: 'Takes damage and shows DPS', name: 'Target Dummy', hp: 999999, speed: 0, attackDamage: 0, attackRange: 0, attackCooldown: 1000, color: {team1: '#a1a1aa', team2: '#a1a1aa'}},
+  'shooting_dummy': {description: 'Stationary. Shoots straight to test unit defenses. Right-click to change damage.', name: 'Shooting Dummy', hp: 999999, speed: 0, attackDamage: 10, attackRange: 2000, attackCooldown: 500, color: {team1: '#a1a1aa', team2: '#a1a1aa'}},
+  'boss_dummy': {description: 'Huge dummy with huge HP. Gets knocked back slightly on hit.', name: 'Boss Dummy', hp: 50000, speed: 0, attackDamage: 0, attackRange: 0, attackCooldown: 1000, color: {team1: '#6b7280', team2: '#6b7280'}, size: 50}
 };
 
 export { UNIT_SPECS };

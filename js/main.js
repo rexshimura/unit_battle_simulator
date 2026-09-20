@@ -17,6 +17,55 @@ import { setup, gameLoop, updateUnitCounts, endBattle, resetBattlefield } from '
 initUIElements();
 AudioManager.init();
 
+let pendingUnitPlacement = null;
+
+document.getElementById('unit-cancel-btn').addEventListener('click', () => {
+    document.getElementById('unit-settings-modal').classList.add('hidden');
+    pendingUnitPlacement = null;
+});
+
+function placeUnit(newUnit, team) {
+    if (gameState.isOneVOneModeActive) {
+        const existingUnit = team === 1 ? gameState.oneVOneBlueUnit : gameState.oneVOneRedUnit;
+        if (existingUnit) {
+            gameState.units = gameState.units.filter(u => u !== existingUnit);
+            gameState.allUnitsThisRound = gameState.allUnitsThisRound.filter(u => u.id !== existingUnit.id);
+        }
+        if (team === 1) gameState.oneVOneBlueUnit = newUnit;
+        else gameState.oneVOneRedUnit = newUnit;
+    }
+    
+    gameState.units.push(newUnit);
+    gameState.allUnitsThisRound.push(newUnit);
+    updateUnitCounts();
+}
+
+document.getElementById('unit-confirm-btn').addEventListener('click', () => {
+    document.getElementById('unit-settings-modal').classList.add('hidden');
+    if (pendingUnitPlacement) {
+        const { x, y, team, relX, relY, type } = pendingUnitPlacement;
+        let customHp = parseFloat(document.getElementById('unit-hp-input').value);
+        if (isNaN(customHp)) customHp = UNIT_SPECS[type].hp;
+        let customDamage = parseFloat(document.getElementById('unit-damage-input').value);
+        if (isNaN(customDamage)) customDamage = UNIT_SPECS[type].attackDamage;
+        let customCooldown = parseFloat(document.getElementById('unit-cooldown-input').value);
+        if (isNaN(customCooldown)) customCooldown = UNIT_SPECS[type].attackCooldown;
+        let followTarget = document.getElementById('unit-follow-input').checked;
+        
+        AudioManager.play('game_place_unit');
+        let newUnit = new Unit(x, y, team, type, relX, relY);
+        newUnit.maxHp = customHp;
+        newUnit.hp = customHp;
+        newUnit.attackDamage = customDamage;
+        newUnit.attackCooldown = customCooldown;
+        if (type === 'shooting_dummy') newUnit.followTarget = followTarget;
+        
+        placeUnit(newUnit, team);
+        
+        pendingUnitPlacement = null;
+    }
+});
+
 document.querySelectorAll('.unit-preview-canvas').forEach(canvas => {
   const unitType = canvas.dataset.unitType;
   const ctx = canvas.getContext('2d');
@@ -164,18 +213,27 @@ uiElements.canvas.addEventListener('click', e => {
   const relX = x / uiElements.canvas.width;
   const relY = y / uiElements.canvas.height;
   let newUnit;
-  if (x < uiElements.canvas.width / 3) {
-    AudioManager.play('game_place_unit');
-    newUnit = new Unit(x, y, 1, gameState.selectedUnit, relX, relY);
-    gameState.units.push(newUnit);
-    gameState.allUnitsThisRound.push(newUnit);
-  } else if (x > uiElements.canvas.width - uiElements.canvas.width / 3) {
-    AudioManager.play('game_place_unit');
-    newUnit = new Unit(x, y, 2, gameState.selectedUnit, relX, relY);
-    gameState.units.push(newUnit);
-    gameState.allUnitsThisRound.push(newUnit);
+  
+  if (x < uiElements.canvas.width / 3 || x > uiElements.canvas.width - uiElements.canvas.width / 3) {
+      const team = x < uiElements.canvas.width / 3 ? 1 : 2;
+      
+      if (gameState.isModifyModeActive || gameState.selectedUnit === 'shooting_dummy') {
+          pendingUnitPlacement = { x, y, team, relX, relY, type: gameState.selectedUnit };
+          const specs = UNIT_SPECS[gameState.selectedUnit];
+          document.getElementById('unit-settings-title').textContent = specs.name + ' Settings';
+          document.getElementById('unit-hp-input').value = specs.hp;
+          document.getElementById('unit-damage-input').value = specs.attackDamage;
+          document.getElementById('unit-cooldown-input').value = specs.attackCooldown;
+          document.getElementById('unit-follow-container').style.display = gameState.selectedUnit === 'shooting_dummy' ? 'flex' : 'none';
+          document.getElementById('unit-settings-modal').classList.remove('hidden');
+          return;
+      }
+      
+      AudioManager.play('game_place_unit');
+      newUnit = new Unit(x, y, team, gameState.selectedUnit, relX, relY);
+      
+      placeUnit(newUnit, team);
   }
-  updateUnitCounts();
 });
 
 uiElements.canvas.addEventListener('mousemove', e => {
