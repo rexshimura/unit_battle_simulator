@@ -47,7 +47,13 @@ class SlashAnimation {
   constructor(caster, color = '255, 255, 255') {
     this.caster = caster;
     this.color = color;
-    this.angle = Math.atan2(caster.target.y - caster.y, caster.target.x - caster.x);
+    if (caster.target) {
+        this.angle = Math.atan2(caster.target.y - caster.y, caster.target.x - caster.x);
+    } else if (caster.spinRagdollAngle !== undefined) {
+        this.angle = caster.spinRagdollAngle;
+    } else {
+        this.angle = caster.team === 1 ? 0 : Math.PI;
+    }
     this.radius = caster.attackRange * 1.5;
     this.duration = 15;
     this.maxDuration = 15;
@@ -156,12 +162,12 @@ class AoeHeal {
   constructor(x, y, radius, healAmount, team, allUnits, caster, armorBonus, armorDuration, isLightHeal = false) {
     this.x = x;
     this.y = y;
-    this.maxRadius = isLightHeal ? radius * 1.2 : radius;
+    this.maxRadius = (isLightHeal && isLightHeal !== 'cyan') ? radius * 1.2 : radius;
     this.duration = 80;
     this.maxDuration = 80;
     this.isLightHeal = isLightHeal;
     allUnits.forEach(unit => {
-      if (unit.team === team && getDistance(this, unit) <= this.maxRadius) {
+      if (unit.team === team && unit !== caster && getDistance(this, unit) <= this.maxRadius) {
         if (unit.hp < unit.maxHp) {
           let actualHeal = Math.min(unit.maxHp - unit.hp, healAmount);
           if (unit.buffs.healingReduced) {
@@ -169,9 +175,10 @@ class AoeHeal {
           }
           unit.hp += actualHeal;
           caster.healingDone += actualHeal;
-          gameState.animations.push(new FloatingText(`+${Math.round(actualHeal)}`, unit.x, unit.y, this.isLightHeal ? '#fef08a' : '#facc15'));
+          const textColor = this.isLightHeal === 'cyan' ? '#22d3ee' : (this.isLightHeal ? '#fef08a' : '#facc15');
+          gameState.animations.push(new FloatingText(`+${Math.round(actualHeal)}`, unit.x, unit.y, textColor));
         }
-        if (this.isLightHeal && armorBonus > 0) {
+        if (this.isLightHeal === true && armorBonus > 0) {
           unit.armor = Math.min(unit.maxHp, unit.armor + armorBonus);
           unit.buffs.armor = {
             expires: Date.now() + armorDuration,
@@ -190,8 +197,13 @@ class AoeHeal {
     const progress = 1 - this.duration / this.maxDuration;
     const currentRadius = this.maxRadius * progress;
     const alpha = Math.sin(progress * Math.PI);
-    const color = this.isLightHeal ? `rgba(254, 240, 138, ${alpha * 0.9})` : `rgba(250, 204, 21, ${alpha * 0.8})`;
-    const lineWidth = this.isLightHeal ? 6 : 4;
+    let color;
+    if (this.isLightHeal === 'cyan') {
+        color = `rgba(34, 211, 238, ${alpha * 0.8})`;
+    } else {
+        color = this.isLightHeal ? `rgba(254, 240, 138, ${alpha * 0.9})` : `rgba(250, 204, 21, ${alpha * 0.8})`;
+    }
+    const lineWidth = this.isLightHeal === true ? 6 : 4;
     uiElements.ctx.strokeStyle = color;
     uiElements.ctx.lineWidth = lineWidth;
     uiElements.ctx.beginPath();
@@ -217,10 +229,17 @@ class MultiHealAura {
     const potentialTargets = allUnits.filter(u => u.team === caster.team && u !== caster && u.hp < u.maxHp);
     potentialTargets.sort((a, b) => getDistance(caster, a) - getDistance(caster, b));
     this.targets = potentialTargets.slice(0, this.specs.multiHealTargets);
+      
+    const numTargets = this.targets.length;
+    let calculatedHeal = 0;
+    if (numTargets > 0) {
+        calculatedHeal = (this.specs.healAmount / numTargets) + 5;
+    }
+      
     this.targets.forEach(target => {
       target.buffs.druidHeal = {
         caster: this.caster,
-        healPerTick: this.specs.multiHealAmount,
+        healPerTick: calculatedHeal,
         expires: Date.now() + this.specs.multiHealDuration,
         healedSinceLastText: 0,
         nextTextTime: Date.now() + 1000
@@ -642,16 +661,22 @@ class Particle {
     } else if (this.type === 'poison') {
       this.color = ['rgba(132, 204, 22,', 'rgba(163, 230, 53,'][Math.floor(Math.random() * 2)];
       this.vy = -0.5 - Math.random() * 0.5;
-      this.vx = (Math.random() - 0.5) * 1;
-      this.lifespan = 30 + Math.random() * 20;
-      this.size = 2 + Math.random() * 2;
+      this.vx = (Math.random() - 0.5) * 1.5;
+      this.size = 3 + Math.random() * 3;
+      this.lifespan = 20 + Math.random() * 20;
+    } else if (this.type === 'heal_cyan' || this.type === 'heal') {
+      this.color = this.type === 'heal_cyan' ? ['rgba(34, 211, 238,', 'rgba(6, 182, 212,'][Math.floor(Math.random() * 2)] : ['rgba(74, 222, 128,', 'rgba(34, 197, 94,'][Math.floor(Math.random() * 2)];
+      this.vy = -0.5 - Math.random() * 1.5;
+      this.vx = (Math.random() - 0.5) * 1.5;
+      this.size = 2 + Math.random() * 3;
+      this.lifespan = 25 + Math.random() * 15;
     } else if (this.type === 'snow') {
       this.color = 'rgba(255, 255, 255,';
       this.vx = (Math.random() - 0.5) * 0.5;
       this.vy = 0.2 + Math.random() * 0.4;
       this.size = 1 + Math.random() * 2;
       this.lifespan = 60 + Math.random() * 60;
-    } else if (this.type === 'heal') {
+    } else if (this.type === 'heal_old') {
       this.color = 'rgba(74, 222, 128,';
       this.vy = -0.2 - Math.random() * 0.3;
       this.vx = (Math.random() - 0.5) * 0.5;

@@ -1,6 +1,6 @@
 
 import { gameState, uiElements } from '../state.js';
-import { UNIT_SPECS, ARMOR_DAMAGE_REDUCTION_PERCENT } from '../config.js';
+import { UNIT_SPECS, UNIT_ROLES, ARMOR_DAMAGE_REDUCTION_PERCENT } from '../config.js';
 import { getDistance, drawLightningBolt, AudioManager } from '../utils.js';
 import { Projectile, Nail, SentryBullet, IceShard, HealingOrb, Arrow, Fireball, PoisonPotion, AntiHealDart, EagleProjectile, PenetratingBeam, ChainProjectile, AbsorbOrb, NecromancerFireball } from './Projectiles.js';
 import { PoisonSplashAnimation, ChainPushAnimation, SlashAnimation, ThrustAnimation, AoeExplosion, AoeHeal, MultiHealAura, GroundSmashAnimation, TrollSmashAnimation, ShiverWaveAnimation, ChainLightning, AuraBuffAnimation, FloatingText, Particle, ShieldBashAnimation } from './Effects.js';
@@ -91,7 +91,7 @@ class Unit {
     let scale = 1.0;
     if (typeof gameState !== 'undefined' && gameState.isOneVOneModeActive && 
        (this === gameState.oneVOneBlueUnit || this === gameState.oneVOneRedUnit)) {
-        scale = 1.6;
+        scale = 3.0;
     }
     if (scale !== 1.0) {
         uiElements.ctx.save();
@@ -276,7 +276,7 @@ class Unit {
       uiElements.ctx.fill();
       uiElements.ctx.restore();
     }
-    uiElements.ctx.fillStyle = isRestricted ? '#0f172a' : this.color;
+    uiElements.ctx.fillStyle = isRestricted ? '#0f172a' : (this.isHitIndicator ? '#ffffff' : this.color);
     if (this.type === 'abyssal_summoner') {
       const glowSize = Math.sin(this.glowAnimProgress) * 5 + 20;
       uiElements.ctx.globalCompositeOperation = 'lighter';
@@ -290,7 +290,7 @@ class Unit {
       if (this.stunType === 'freeze' && Date.now() < this.stunnedUntil) {
         uiElements.ctx.filter = 'saturate(0.3) brightness(1.5)';
       }
-      uiElements.ctx.fillStyle = isRestricted ? '#0f172a' : this.color; // very dark/black
+      uiElements.ctx.fillStyle = isRestricted ? '#0f172a' : (this.isHitIndicator ? '#ffffff' : this.color);
     }
     if (this.buffs.druidHeal) {
       const glowSize = 18;
@@ -646,7 +646,10 @@ class Unit {
   drawEquipment() {
 
     let angle = this.team === 1 ? 0 : Math.PI;
-    if (this.target) {
+    if (typeof gameState !== 'undefined' && gameState.isSpinRagdollModeActive && 
+        (this === gameState.oneVOneBlueUnit || this === gameState.oneVOneRedUnit)) {
+        if (this.spinRagdollAngle !== undefined) angle = this.spinRagdollAngle;
+    } else if (this.target) {
       angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
     }
     if (this.type === 'accelerator' && this.gunAngle !== undefined) {
@@ -860,6 +863,92 @@ class Unit {
       uiElements.ctx.closePath();
       uiElements.ctx.fill();
       uiElements.ctx.restore();
+    } else if (this.type === 'lunger') {
+        const spearLength = 55;
+        const spearWidth = 5;
+        const headLength = 12;
+        const headWidth = 8;
+        
+        let shakeOffset = 0;
+        let spearOffset = 0; // The pull back / push forward offset
+        
+        if (this.isLungeCharging) {
+            shakeOffset = (Math.random() - 0.5) * 4;
+            const chargeProgress = Math.max(0, (2700 - this.lungeChargeTimer) / 2700);
+            spearOffset = -chargeProgress * 25; // Pulls back significantly as it charges
+            
+            // Draw telegraph line
+            uiElements.ctx.save();
+            uiElements.ctx.beginPath();
+            uiElements.ctx.moveTo(this.x, this.y);
+            const aimAngle = this.target ? Math.atan2(this.target.y - this.y, this.target.x - this.x) : (this.team === 1 ? 0 : Math.PI);
+            uiElements.ctx.lineTo(this.x + Math.cos(aimAngle) * 300, this.y + Math.sin(aimAngle) * 300);
+            uiElements.ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+            uiElements.ctx.lineWidth = 2;
+            uiElements.ctx.setLineDash([10, 10]);
+            uiElements.ctx.lineDashOffset = -Date.now() / 20;
+            uiElements.ctx.stroke();
+            uiElements.ctx.restore();
+        } else if (this.isLunging) {
+            spearOffset = 35; // Pushes it fully forward during the lunge dash
+        }
+
+        const offsetDistance = 10;
+        const offsetX = Math.cos(angle + Math.PI / 2) * offsetDistance;
+        const offsetY = Math.sin(angle + Math.PI / 2) * offsetDistance;
+        uiElements.ctx.save();
+        uiElements.ctx.translate(this.x + offsetX + shakeOffset, this.y + offsetY + shakeOffset);
+        uiElements.ctx.rotate(angle);
+        uiElements.ctx.fillStyle = '#451a03'; // Very dark brown
+        uiElements.ctx.fillRect(this.width / 2 - 15 + spearOffset, -spearWidth / 2, spearLength, spearWidth);
+        uiElements.ctx.fillStyle = '#d1d5db';
+        uiElements.ctx.beginPath();
+        uiElements.ctx.moveTo(this.width / 2 - 15 + spearLength + spearOffset, -headWidth / 2);
+        uiElements.ctx.lineTo(this.width / 2 - 15 + spearLength + headLength + spearOffset, 0);
+        uiElements.ctx.lineTo(this.width / 2 - 15 + spearLength + spearOffset, headWidth / 2);
+        uiElements.ctx.closePath();
+        uiElements.ctx.fill();
+        uiElements.ctx.restore();
+    } else if (this.type === 'spartan') {
+        const shieldWidth = 10;
+        const shieldHeight = 30;
+        uiElements.ctx.save();
+        uiElements.ctx.translate(this.x, this.y);
+        uiElements.ctx.rotate(angle);
+        uiElements.ctx.fillStyle = '#9ca3af';
+        uiElements.ctx.fillRect(this.width / 2, -shieldHeight / 2, shieldWidth, shieldHeight);
+        if (this.deflectAnim > 0) {
+          uiElements.ctx.fillStyle = `rgba(255, 255, 255, ${this.deflectAnim / 10})`;
+          uiElements.ctx.fillRect(this.width / 2, -shieldHeight / 2, shieldWidth, shieldHeight);
+        }
+        uiElements.ctx.restore();
+        
+        // Spear
+        const spearLength = 35;
+        const spearWidth = 3;
+        const headLength = 8;
+        const headWidth = 6;
+        let thrustOffset = 0;
+        if (this.isThrusting) {
+          const progress = this.thrustAnimProgress / this.thrustAnimDuration;
+          thrustOffset = Math.sin(progress * Math.PI) * 15;
+        }
+        const offsetDistance = 8;
+        const offsetX = Math.cos(angle + Math.PI / 2) * offsetDistance;
+        const offsetY = Math.sin(angle + Math.PI / 2) * offsetDistance;
+        uiElements.ctx.save();
+        uiElements.ctx.translate(this.x + offsetX, this.y + offsetY);
+        uiElements.ctx.rotate(angle);
+        uiElements.ctx.fillStyle = '#78350f';
+        uiElements.ctx.fillRect(this.width / 2 - 10 + thrustOffset, -spearWidth / 2, spearLength, spearWidth);
+        uiElements.ctx.fillStyle = '#9ca3af';
+        uiElements.ctx.beginPath();
+        uiElements.ctx.moveTo(this.width / 2 - 10 + spearLength + thrustOffset, -headWidth / 2);
+        uiElements.ctx.lineTo(this.width / 2 - 10 + spearLength + headLength + thrustOffset, 0);
+        uiElements.ctx.lineTo(this.width / 2 - 10 + spearLength + thrustOffset, headWidth / 2);
+        uiElements.ctx.closePath();
+        uiElements.ctx.fill();
+        uiElements.ctx.restore();
     } else if (this.type === 'guardian') {
       const shieldWidth = 10;
       const shieldHeight = 30;
@@ -1072,6 +1161,69 @@ class Unit {
       uiElements.ctx.shadowColor = 'transparent';
       uiElements.ctx.shadowBlur = 0;
       uiElements.ctx.restore();
+    } else if (this.type === 'acolyte') {
+      const specs = UNIT_SPECS.acolyte;
+      uiElements.ctx.save();
+      
+      // Draw constant AOE radius
+      uiElements.ctx.beginPath();
+      uiElements.ctx.arc(this.x, this.y, specs.healRadius, 0, Math.PI * 2);
+      uiElements.ctx.fillStyle = 'rgba(6, 182, 212, 0.05)';
+      uiElements.ctx.fill();
+      uiElements.ctx.strokeStyle = 'rgba(6, 182, 212, 0.3)';
+      uiElements.ctx.lineWidth = 1;
+      uiElements.ctx.stroke();
+
+      // Slow swirling wave effect
+      if (this.hp > 0) {
+          const time = Date.now() / 1000;
+          
+          // Outer expanding swirl
+          for (let j = 0; j < 2; j++) {
+              let progress = ((time * 0.4) + (j * 0.5)) % 1.0;
+              let r = Math.max(1, specs.healRadius * progress);
+              let alpha = 1 - progress;
+              
+              let angleOffset = time * 1.5 + (j * Math.PI);
+              uiElements.ctx.lineWidth = 4;
+              uiElements.ctx.strokeStyle = `rgba(34, 211, 238, ${alpha * 0.6})`;
+              
+              for(let i = 0; i < 2; i++) {
+                  uiElements.ctx.beginPath();
+                  let startAngle = angleOffset + (i * Math.PI);
+                  uiElements.ctx.arc(this.x, this.y, r, startAngle, startAngle + Math.PI * 0.6);
+                  uiElements.ctx.stroke();
+              }
+          }
+          
+          // Inner spinning aura tight around the acolyte
+          const innerR = this.size + 10;
+          const innerAngle = -time * 2.5; 
+          uiElements.ctx.lineWidth = 3;
+          uiElements.ctx.strokeStyle = `rgba(34, 211, 238, 0.8)`;
+          for (let i = 0; i < 3; i++) {
+              uiElements.ctx.beginPath();
+              let startAngle = innerAngle + (i * Math.PI * 2 / 3);
+              uiElements.ctx.arc(this.x, this.y, innerR, startAngle, startAngle + Math.PI / 2);
+              uiElements.ctx.stroke();
+          }
+      }
+
+      const offsetDistance = 8;
+      const offsetX = Math.cos(angle + Math.PI / 2) * offsetDistance;
+      const offsetY = Math.sin(angle + Math.PI / 2) * offsetDistance;
+      
+      uiElements.ctx.translate(this.x + offsetX, this.y + offsetY);
+      uiElements.ctx.rotate(angle);
+      uiElements.ctx.fillStyle = '#22d3ee';
+      uiElements.ctx.shadowColor = '#67e8f9';
+      uiElements.ctx.shadowBlur = 10;
+      uiElements.ctx.beginPath();
+      uiElements.ctx.arc(this.width / 2 + 5, 0, 6, 0, Math.PI * 2);
+      uiElements.ctx.fill();
+      uiElements.ctx.shadowColor = 'transparent';
+      uiElements.ctx.shadowBlur = 0;
+      uiElements.ctx.restore();
     } else if (this.type === 'alchemist') {
       let throwProgress = 0;
       if (this.isThrowing) {
@@ -1146,6 +1298,29 @@ class Unit {
       uiElements.ctx.fill();
       uiElements.ctx.restore();
     } else if (this.type === 'druid') {
+      if (this.target && this.hp > 0 && !this.isMultiHealActive && gameState.isBattleStarted) {
+          uiElements.ctx.save();
+          uiElements.ctx.beginPath();
+          uiElements.ctx.moveTo(this.x, this.y);
+          uiElements.ctx.lineTo(this.target.x, this.target.y);
+          uiElements.ctx.strokeStyle = 'rgba(74, 222, 128, 0.4)';
+          uiElements.ctx.lineWidth = 3;
+          uiElements.ctx.setLineDash([10, 10]);
+          uiElements.ctx.lineDashOffset = -(Date.now() / 20) % 20;
+          uiElements.ctx.stroke();
+          
+          const progress = (Date.now() % 1000) / 1000;
+          const orbX = this.x + (this.target.x - this.x) * progress;
+          const orbY = this.y + (this.target.y - this.y) * progress;
+          uiElements.ctx.beginPath();
+          uiElements.ctx.arc(orbX, orbY, 5, 0, Math.PI*2);
+          uiElements.ctx.fillStyle = '#4ade80';
+          uiElements.ctx.shadowColor = '#4ade80';
+          uiElements.ctx.shadowBlur = 10;
+          uiElements.ctx.fill();
+          uiElements.ctx.restore();
+      }
+
       const branchLength = 28;
       const branchWidth = 4;
       const offsetDistance = 8;
@@ -1371,11 +1546,12 @@ class Unit {
     this.target = alliesToHeal[0];
   }
   applySeparation(friendlies) {
-    if (this.type === 'guardian') return;
+    if (this.type === 'guardian' || this.type === 'spartan') return;
+    if (this.type === 'lunger' && (this.isLunging || this.isLungeCharging)) return;
     let steerX = 0,
       steerY = 0;
     friendlies.forEach(other => {
-      if (other !== this && other.type !== 'guardian') {
+      if (other !== this && other.type !== 'guardian' && other.type !== 'spartan' && !(other.type === 'lunger' && (other.isLunging || other.isLungeCharging))) {
         const d = getDistance(this, other);
         if (d > 0 && d < this.width * 1.5) {
           const diffX = this.x - other.x;
@@ -1389,6 +1565,83 @@ class Unit {
     this.y += steerY * 0.5 * gameState.gameSpeed;
   }
   update(friendlies, enemies) {
+    if (this.isBeingKnockedBack) {
+      this.x += (this.knockbackTargetX - this.x) * 0.1 * gameState.gameSpeed;
+      this.y += (this.knockbackTargetY - this.y) * 0.1 * gameState.gameSpeed;
+      if (getDistance(this, {
+        x: this.knockbackTargetX,
+        y: this.knockbackTargetY
+      }) < 5) {
+        this.isBeingKnockedBack = false;
+      }
+    }
+
+    if (this.hitStopUntil && Date.now() < this.hitStopUntil) {
+        return; 
+    } else {
+        this.isHitIndicator = false; 
+    }
+
+    if (this.type === 'lunger') {
+        if (this.isLunging) {
+            const dx = this.lungeTargetX - this.x;
+            const dy = this.lungeTargetY - this.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < 15) {
+                this.isLunging = false;
+                this.lastAttackTime = Date.now();
+                AudioManager.play('smash'); // big hit sound
+                
+                // Deal damage to target (or all in small AoE)
+                enemies.forEach(e => {
+                    if (getDistance(this, e) < 45) {
+                        e.takeDamage(UNIT_SPECS.lunger.attackDamage, this);
+                        gameState.animations.push(new ThrustAnimation(this, e));
+                        
+                        // Push away x5
+                        const angle = Math.atan2(e.y - this.y, e.x - this.x);
+                        e.isBeingKnockedBack = true;
+                        const pushDist = 200;
+                        const targetX = e.x + Math.cos(angle) * pushDist;
+                        const targetY = e.y + Math.sin(angle) * pushDist;
+                        const eRadius = e.width / 2;
+                        e.knockbackTargetX = Math.max(eRadius, Math.min(targetX, uiElements.canvas.width - eRadius));
+                        e.knockbackTargetY = Math.max(eRadius, Math.min(targetY, uiElements.canvas.height - eRadius));
+                        
+                        // Stun the target for 1.5 seconds properly
+                        e.stunnedUntil = Date.now() + 1500;
+                        e.stunType = 'stun';
+                        
+                        gameState.animations.push(new FloatingText("CRASH!", e.x, e.y - 20, "#ef4444"));
+                    }
+                });
+            } else {
+                const lungeSpeed = 4.0 * gameState.gameSpeed;
+                this.x += (dx/dist) * lungeSpeed;
+                this.y += (dy/dist) * lungeSpeed;
+                if (Math.random() < 0.3) gameState.particles.push(new Particle(this.x, this.y, this.team, false, 'smoke'));
+            }
+            return; 
+        }
+
+        if (this.isLungeCharging) {
+            this.lungeChargeTimer -= (1000/60) * gameState.gameSpeed;
+            if (this.lungeChargeTimer <= 0) {
+                this.isLungeCharging = false;
+                this.isLunging = true;
+                if (this.target && this.target.hp > 0) {
+                    this.lungeTargetX = this.target.x;
+                    this.lungeTargetY = this.target.y;
+                } else {
+                    const faceAngle = this.team === 1 ? 0 : Math.PI;
+                    this.lungeTargetX = this.x + Math.cos(faceAngle) * 150;
+                    this.lungeTargetY = this.y + Math.sin(faceAngle) * 150;
+                }
+            }
+            return; 
+        }
+    }
+    
     if (this.type === 'boss_dummy') {
         if (this.vx || this.vy) {
             this.x += this.vx * gameState.gameSpeed;
@@ -1412,6 +1665,81 @@ class Unit {
             } else if (this.x > uiElements.canvas.width - this.width / 2) {
                 this.x = uiElements.canvas.width - this.width / 2;
                 this.vx *= -0.8;
+            }
+        }
+        return;
+    }
+
+    if (this.vx || this.vy) {
+        this.x += this.vx * gameState.gameSpeed;
+        this.y += this.vy * gameState.gameSpeed;
+        this.vx *= 0.85; 
+        this.vy *= 0.85;
+        if (Math.abs(this.vx) < 0.1) this.vx = 0;
+        if (Math.abs(this.vy) < 0.1) this.vy = 0;
+        
+        const r = this.width / 2;
+        if (this.y < r) { this.y = r; this.vy *= -0.5; }
+        else if (this.y > uiElements.canvas.height - r) { this.y = uiElements.canvas.height - r; this.vy *= -0.5; }
+        if (this.x < r) { this.x = r; this.vx *= -0.5; }
+        else if (this.x > uiElements.canvas.width - r) { this.x = uiElements.canvas.width - r; this.vx *= -0.5; }
+    }
+    
+    if (typeof gameState !== 'undefined' && gameState.isSpinRagdollModeActive && 
+        (this === gameState.oneVOneBlueUnit || this === gameState.oneVOneRedUnit)) {
+        
+        if (this.spinRagdollDirection === undefined) this.spinRagdollDirection = 1;
+        // Spin VERY slowly
+        this.spinRagdollAngle = (this.spinRagdollAngle || 0) + 0.05 * this.spinRagdollDirection * gameState.gameSpeed;
+        
+        if (!this.vx && !this.vy) {
+            const initialAngle = Math.random() * Math.PI * 2;
+            this.vx = Math.cos(initialAngle) * 8;
+            this.vy = Math.sin(initialAngle) * 8;
+        } else {
+            // Counteract friction to keep them sliding constantly
+            this.vx /= 0.85;
+            this.vy /= 0.85;
+            const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+            if (speed > 0) {
+                this.vx = (this.vx / speed) * 8;
+                this.vy = (this.vy / speed) * 8;
+            }
+        }
+        
+        const now = Date.now();
+        if (!this.lastSpinAttack) this.lastSpinAttack = 0;
+        
+        const spinCooldown = Math.max(50, this.attackCooldown * 0.4); 
+        
+        if (now - this.lastSpinAttack > spinCooldown / gameState.gameSpeed) {
+            this.lastSpinAttack = now;
+            
+            // Fix: True ranged units have >= 100 range. Spearman is 80 (melee reach)
+            if (this.attackRange >= 100) {
+                if (Math.random() < 0.5) AudioManager.play('bullet');
+                const targetObj = { 
+                    x: this.x + Math.cos(this.spinRagdollAngle) * 1000, 
+                    y: this.y + Math.sin(this.spinRagdollAngle) * 1000,
+                    hp: 100, width: 0, team: this.team === 1 ? 2 : 1
+                };
+                const proj = new Projectile(this, targetObj, this.attackDamage, this.team);
+                proj.speed = 15;
+                gameState.projectiles.push(proj);
+            } else {
+                let hitEnemy = false;
+                enemies.forEach(e => {
+                    if (getDistance(this, e) < this.width + 40) {
+                        e.takeDamage(this.attackDamage * 0.5, this); // Spin damage is faster so cut it down slightly
+                        gameState.animations.push(new SlashAnimation(this));
+                        hitEnemy = true;
+                    }
+                });
+                
+                // If they hit an enemy with their weapon, reverse their spin direction!
+                if (hitEnemy) {
+                    this.spinRagdollDirection *= -1; 
+                }
             }
         }
         return;
@@ -1457,16 +1785,7 @@ class Unit {
     if (this.type === 'assassin' && this.isShadow && Date.now() > this.shadowTime) {
         this.isShadow = false;
     }
-    if (this.isBeingKnockedBack) {
-      this.x += (this.knockbackTargetX - this.x) * 0.1 * gameState.gameSpeed;
-      this.y += (this.knockbackTargetY - this.y) * 0.1 * gameState.gameSpeed;
-      if (getDistance(this, {
-        x: this.knockbackTargetX,
-        y: this.knockbackTargetY
-      }) < 5) {
-        this.isBeingKnockedBack = false;
-      }
-    }
+
     for (const buffKey in this.buffs) {
       if (Date.now() > this.buffs[buffKey].expires) {
         if (buffKey === 'armor') this.armor = 0;
@@ -1525,7 +1844,41 @@ class Unit {
       this.castAnimProgress -= 1 * gameState.gameSpeed;
       if (this.castAnimProgress <= 0) this.isCasting = false;
     }
-    this.glowAnimProgress += 0.05 * gameState.gameSpeed;
+      this.glowAnimProgress += 0.05 * gameState.gameSpeed;
+      if (this.type === 'acolyte' && gameState.isBattleStarted) {
+        const specs = UNIT_SPECS.acolyte;
+        if (!this.lastAcolyteTick) this.lastAcolyteTick = Date.now();
+        const now = Date.now();
+        
+        if (now - this.lastAcolyteTick >= 300 / Math.max(0.1, gameState.gameSpeed)) {
+            const allies = friendlies.filter(u => u !== this && u.hp > 0 && u.hp < u.maxHp && getDistance(this, u) <= specs.healRadius);
+            
+            allies.forEach(u => {
+                const isInterceptor = UNIT_ROLES.Interceptors.includes(u.type);
+                const bonusPercent = isInterceptor ? 0.02 : 0;
+                const healAmount = u.maxHp * (specs.healPercent + bonusPercent);
+                let actualHeal = healAmount;
+                if (u.buffs.healingReduced) {
+                    actualHeal *= 1 - u.buffs.healingReduced.amount;
+                }
+                const space = u.maxHp - u.hp;
+                actualHeal = Math.min(space, actualHeal);
+                u.hp += actualHeal;
+                this.healingDone += actualHeal;
+                
+                gameState.particles.push(new Particle(u.x, u.y - 10, this.team, false, 'heal_cyan'));
+                gameState.animations.push(new FloatingText(`+${Math.round(actualHeal)}`, u.x, u.y - 10, '#06b6d4'));
+            });
+
+            for(let i=0; i < 6; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const r = Math.random() * specs.healRadius;
+                gameState.particles.push(new Particle(this.x + Math.cos(angle)*r, this.y + Math.sin(angle)*r, this.team, false, 'heal_cyan'));
+            }
+
+            this.lastAcolyteTick = now;
+        }
+      }
     if (this.isSlashing) {
       this.slashAnimProgress -= 1 * gameState.gameSpeed;
       if (this.slashAnimProgress <= 0) this.isSlashing = false;
@@ -1655,12 +2008,65 @@ class Unit {
     if (this.buffs.slow && Date.now() < this.buffs.slow.expires) {
       currentSpeed *= 1 - this.buffs.slow.amount;
     }
-    if (this.type === 'druid' || this.type === 'priest' || this.type === 'bard' || this.type === 'abyssal_summoner') {
+    if (this.type === 'druid' || this.type === 'priest' || this.type === 'bard' || this.type === 'abyssal_summoner' || this.type === 'acolyte') {
       if (this.type === 'druid') {
-        this.findAllyTarget(friendlies.filter(f => getDistance(this, f) <= this.attackRange));
-        if (this.target) {
-          this.attack(friendlies);
+        const specs = UNIT_SPECS.druid;
+        const now = Date.now();
+        if (this.isMultiHealActive) {
+            if (now > this.multiHealEndTime) {
+                this.isMultiHealActive = false;
+                this.druidSingleTargetHealTimer = 0;
+            }
+            return;
+        }
+
+        if (!this.druidSingleTargetHealTimer) this.druidSingleTargetHealTimer = 0;
+        if (!this.druidLastTickTime) this.druidLastTickTime = now;
+        const dt = now - this.druidLastTickTime;
+        this.druidLastTickTime = now;
+
+        const alliesInRange = friendlies.filter(f => f.hp < f.maxHp && f !== this && getDistance(this, f) <= this.attackRange);
+        if (alliesInRange.length > 0) {
+          alliesInRange.sort((a, b) => {
+            const aFront = this.team === 1 ? a.x : -a.x;
+            const bFront = this.team === 1 ? b.x : -b.x;
+            return bFront - aFront;
+          });
+          this.target = alliesInRange[0];
+          
+          if (dt > 0) {
+              this.druidSingleTargetHealTimer += dt * gameState.gameSpeed;
+              if (now - (this.lastDruidTick || 0) >= 100 / Math.max(0.1, gameState.gameSpeed)) {
+                  let actualHeal = Math.min(this.target.maxHp - this.target.hp, specs.healAmount / 8);
+                  if (this.target.buffs.healingReduced) actualHeal *= 1 - this.target.buffs.healingReduced.amount;
+                  this.target.hp += actualHeal;
+                  this.healingDone += actualHeal;
+                  
+                  if (!this.target.druidHealedSinceLastText) this.target.druidHealedSinceLastText = 0;
+                  this.target.druidHealedSinceLastText += actualHeal;
+                  if (!this.target.druidNextTextTime) this.target.druidNextTextTime = now + 1000;
+                  if (now >= this.target.druidNextTextTime) {
+                      if (this.target.druidHealedSinceLastText >= 1) {
+                          gameState.animations.push(new FloatingText(`+${Math.round(this.target.druidHealedSinceLastText)}`, this.target.x, this.target.y - 10, '#4ade80'));
+                      }
+                      this.target.druidHealedSinceLastText = 0;
+                      this.target.druidNextTextTime = now + 1000;
+                  }
+                  this.lastDruidTick = now;
+              }
+          }
+          
+          if (this.druidSingleTargetHealTimer >= 5000) {
+              this.isMultiHealActive = true;
+              this.multiHealEndTime = now + specs.multiHealDuration;
+              this.druidSingleTargetHealTimer = 0;
+              AudioManager.play('druid_aoeheal');
+              gameState.animations.push(new MultiHealAura(this, gameState.units));
+              this.target = null;
+          }
           return;
+        } else {
+          this.target = null;
         }
       }
       if (friendlies.length > 1) {
@@ -1736,12 +2142,42 @@ class Unit {
               this.attack(enemies);
           }
       } else {
-          if (getDistance(this, this.target) > this.attackRange) {
-            const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
-            this.x += Math.cos(angle) * currentSpeed * gameState.gameSpeed;
-            this.y += Math.sin(angle) * currentSpeed * gameState.gameSpeed;
+          const distToTarget = getDistance(this, this.target);
+          const moveAngle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+          
+          if (typeof gameState !== 'undefined' && gameState.isOneVOneModeActive && 
+             (this === gameState.oneVOneBlueUnit || this === gameState.oneVOneRedUnit)) {
+              const time = Date.now();
+              const strafeSpeed = currentSpeed * 1.5; // Slightly faster in 1v1
+              if (distToTarget > this.attackRange) {
+                  const wiggle = Math.sin(time / 200 + this.id) * 0.5;
+                  this.x += Math.cos(moveAngle + wiggle) * currentSpeed * gameState.gameSpeed;
+                  this.y += Math.sin(moveAngle + wiggle) * currentSpeed * gameState.gameSpeed;
+              } else {
+                  const isKiting = this.attackRange >= 100 && distToTarget < this.attackRange * 0.65;
+                  let dodgeAngle = moveAngle;
+                  let speedMult = 0.6;
+                  
+                  if (isKiting) {
+                      // Back away (kite) while slightly strafing
+                      dodgeAngle += Math.PI + Math.sin(time / 400 + this.id) * 0.5;
+                      speedMult = 0.25; // Speed reduced by 75% while moving backwards
+                  } else {
+                      // Just strafe in place
+                      dodgeAngle += Math.PI / 2 * Math.sign(Math.sin(time / 500 + this.id));
+                  }
+                  
+                  this.x += Math.cos(dodgeAngle) * strafeSpeed * speedMult * gameState.gameSpeed;
+                  this.y += Math.sin(dodgeAngle) * strafeSpeed * speedMult * gameState.gameSpeed;
+                  this.attack(enemies);
+              }
           } else {
-            this.attack(enemies);
+              if (distToTarget > this.attackRange) {
+                this.x += Math.cos(moveAngle) * currentSpeed * gameState.gameSpeed;
+                this.y += Math.sin(moveAngle) * currentSpeed * gameState.gameSpeed;
+              } else {
+                this.attack(enemies);
+              }
           }
       }
     } else {
@@ -1967,27 +2403,10 @@ class Unit {
         }
         return;
       }
-      if (this.type === 'druid') {
-        const specs = UNIT_SPECS.druid;
-        if (this.isMultiHealActive) return;
-        if (this.healAttackCounter >= specs.multiHealTriggerCount - 1) {
-          this.healAttackCounter = 0;
-          this.isMultiHealActive = true;
-          this.multiHealEndTime = now + specs.multiHealDuration;
-          AudioManager.play('druid_aoeheal');
-          gameState.animations.push(new MultiHealAura(this, gameState.units));
-        } else {
-          if (this.target) {
-            AudioManager.play('druid_heal');
-            gameState.projectiles.push(new HealingOrb(this, this.target));
-            this.healAttackCounter++;
-          }
-        }
-        return;
-      }
+
       if (this.type === 'priest') {
         const specs = UNIT_SPECS.priest;
-        const needsHeal = gameState.units.some(u => u.team === this.team && getDistance(this, u) <= specs.healRadius && u.hp < u.maxHp);
+        const needsHeal = gameState.units.some(u => u.team === this.team && u !== this && getDistance(this, u) <= specs.healRadius && u.hp < u.maxHp);
         if (!needsHeal) {
           // Revert cooldown so it can check again next frame
           this.lastAttackTime -= currentCooldown / gameState.gameSpeed;
@@ -2012,14 +2431,12 @@ class Unit {
         this.basicAttackCounter++;
         if (this.basicAttackCounter > specs.specialTriggerCount) {
           this.basicAttackCounter = 0;
-          AudioManager.play('poison_dart');
           const enemies = alliesOrEnemies.sort((a, b) => getDistance(this, a) - getDistance(this, b));
           for (let i = 0; i < Math.min(specs.antiHealTargets, enemies.length); i++) {
             gameState.projectiles.push(new AntiHealDart(this, enemies[i]));
           }
         } else {
           if (this.target) {
-            AudioManager.play('potion_throw');
             gameState.projectiles.push(new PoisonPotion(this, this.target));
           }
         }
@@ -2247,6 +2664,11 @@ class Unit {
             this.slashAnimProgress = this.slashAnimDuration;
           }
         }
+} else if (this.type === 'lunger') {
+          if (this.target && getDistance(this, this.target) <= this.attackRange + 5) {
+            this.isLungeCharging = true;
+            this.lungeChargeTimer = 2700;
+          }
 } else if (this.type === 'swordsman' || this.type === 'guardian') {
         if (this.target && getDistance(this, this.target) <= this.attackRange + 5) {
           AudioManager.play('slash');
@@ -2257,11 +2679,22 @@ class Unit {
             this.slashAnimProgress = this.slashAnimDuration;
           }
         }
-      } else if (this.type === 'spearman') {
+      } else if (this.type === 'spearman' || this.type === 'spartan') {
         if (this.target && getDistance(this, this.target) <= this.attackRange + 5) {
           AudioManager.play('thrust');
+          this.basicAttackCounter++;
           this.target.takeDamage(this.attackDamage, this);
           gameState.animations.push(new ThrustAnimation(this, this.target));
+          
+          if (this.basicAttackCounter % 4 === 0) {
+            const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+            this.target.isBeingKnockedBack = true;
+            const pushDist = this.type === 'spartan' ? 80 : 40;
+            this.target.knockbackTargetX = this.target.x + Math.cos(angle) * pushDist;
+            this.target.knockbackTargetY = this.target.y + Math.sin(angle) * pushDist;
+            gameState.animations.push(new FloatingText(this.type === 'spartan' ? "HEAVY PUSH!" : "PUSH!", this.target.x, this.target.y - 20, "#3b82f6"));
+          }
+
           if (!this.isThrusting) {
             this.isThrusting = true;
             this.thrustAnimProgress = this.thrustAnimDuration;
@@ -2294,7 +2727,7 @@ class Unit {
     if (attacker && attacker.buffs.bard && Date.now() < attacker.buffs.bard.expires) {
       modifiedDamage *= 1 + attacker.buffs.bard.damageBoost;
     }
-    if (this.type === 'guardian' && attacker) {
+    if ((this.type === 'guardian' || this.type === 'spartan') && attacker) {
       if (attacker.type === 'spearman') {
         modifiedDamage *= 0.5;
       }
@@ -2305,6 +2738,9 @@ class Unit {
     if (attackerSpecs && attackerSpecs.alwaysCrit) {
       bypassesArmor = true;
       gameState.animations.push(new FloatingText(`CRIT! ${Math.round(modifiedDamage)}`, this.x, this.y - 20, '#f97316'));
+    } else if (attackerSpecs && attackerSpecs.ignoresArmor) {
+      bypassesArmor = true;
+      gameState.animations.push(new FloatingText(`PIERCE! ${Math.round(modifiedDamage)}`, this.x, this.y - 20, '#ef4444'));
     } else if (attackerSpecs && attackerSpecs.critTargets && attackerSpecs.critTargets.includes(this.type)) {
       modifiedDamage *= attackerSpecs.critMultiplier;
       gameState.animations.push(new FloatingText(`CRIT! ${Math.round(modifiedDamage)}`, this.x, this.y - 20, '#f97316'));
@@ -2342,6 +2778,22 @@ class Unit {
         const angle = Math.atan2(this.y - attacker.y, this.x - attacker.x);
         this.vx = (this.vx || 0) + Math.cos(angle) * 5; // smooth bouncy impulse
         this.vy = (this.vy || 0) + Math.sin(angle) * 5;
+    }
+    
+    // 1v1 Mode knockback & Hit Stop
+    if (typeof gameState !== 'undefined' && gameState.isOneVOneModeActive && 
+       (this === gameState.oneVOneBlueUnit || this === gameState.oneVOneRedUnit) && attacker) {
+        const angle = Math.atan2(this.y - attacker.y, this.x - attacker.x);
+        this.vx = (this.vx || 0) + Math.cos(angle) * 6; // quick bounce
+        this.vy = (this.vy || 0) + Math.sin(angle) * 6;
+        
+        // Apply 0.7s Hit Stop
+        this.hitStopUntil = Date.now() + 700;
+        this.isHitIndicator = true;
+        
+        if (attacker === gameState.oneVOneBlueUnit || attacker === gameState.oneVOneRedUnit) {
+            attacker.hitStopUntil = Date.now() + 700;
+        }
     }
 
     if (this.type === 'force_wall' && this.hp > 0 && damageToHp > 0) {
@@ -2384,6 +2836,12 @@ class Unit {
       this.hp = 1; // keep alive
       this.reviveTime = Date.now() + UNIT_SPECS.ghoul.reviveDelay;
       return;
+    }
+    
+    if (this.hp <= 0 && this.type === 'acolyte' && !this.hasExploded) {
+      this.hasExploded = true;
+      gameState.animations.push(new AoeExplosion(this.x, this.y, 80, 50, this.team, gameState.units, this));
+      AudioManager.play('bomb');
     }
     
     if (this.hp <= 0 && attacker) {

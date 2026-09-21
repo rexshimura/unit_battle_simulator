@@ -277,7 +277,12 @@ uiElements.startBattleBtn.addEventListener('click', () => {
     team: u.team,
     type: u.type,
     relX: u.relX,
-    relY: u.relY
+    relY: u.relY,
+    // Save any custom overrides from Modify Mode
+    maxHp: u.maxHp,
+    attackDamage: u.attackDamage,
+    attackCooldown: u.attackCooldown,
+    followTarget: u.followTarget
   }));
   if (gameState.isPaused) {
     gameState.isPaused = false;

@@ -267,16 +267,34 @@ function initInteractionEventListeners() {
     oneVOneBtn.classList.toggle('bg-violet-600', gameState.isOneVOneModeActive);
     oneVOneBtn.classList.toggle('bg-gray-700', !gameState.isOneVOneModeActive);
     const overlay = document.getElementById('one-v-one-ui');
+    const spinBtn = document.getElementById('spin-ragdoll-btn');
     if (gameState.isOneVOneModeActive) {
         overlay.classList.remove('hidden');
+        spinBtn.classList.remove('hidden');
         selectionMessage.textContent = '1v1 Mode ON: Place exactly 1 unit per side';
         selectionMessage.style.opacity = 1;
         setTimeout(() => selectionMessage.style.opacity = 0, 2000);
     } else {
         overlay.classList.add('hidden');
+        spinBtn.classList.add('hidden');
         gameState.oneVOneBlueUnit = null;
         gameState.oneVOneRedUnit = null;
+        gameState.isSpinRagdollModeActive = false;
+        spinBtn.classList.remove('active', 'bg-violet-600');
+        spinBtn.classList.add('bg-gray-700');
     }
+  });
+
+  document.getElementById('spin-ragdoll-btn').addEventListener('click', () => {
+    gameState.isSpinRagdollModeActive = !gameState.isSpinRagdollModeActive;
+    const btn = document.getElementById('spin-ragdoll-btn');
+    btn.classList.toggle('active', gameState.isSpinRagdollModeActive);
+    btn.classList.toggle('bg-violet-600', gameState.isSpinRagdollModeActive);
+    btn.classList.toggle('bg-gray-700', !gameState.isSpinRagdollModeActive);
+    
+    selectionMessage.textContent = gameState.isSpinRagdollModeActive ? 'Spin Ragdoll Mode ON!' : 'Spin Ragdoll Mode OFF';
+    selectionMessage.style.opacity = 1;
+    setTimeout(() => selectionMessage.style.opacity = 0, 2000);
   });
 
   modifyModeBtn.addEventListener('click', () => {

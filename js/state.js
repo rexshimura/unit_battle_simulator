@@ -13,6 +13,7 @@ export const gameState = {
   isInspectModeActive: false,
   isModifyModeActive: false,
   isOneVOneModeActive: false,
+  isSpinRagdollModeActive: false,
   oneVOneBlueUnit: null,
   oneVOneRedUnit: null,
   trackedUnit: null,
@@ -35,6 +36,7 @@ export function initUIElements() {
   uiElements.startBattleBtn = document.getElementById('start-battle-btn');
   uiElements.resetBtn = document.getElementById('reset-btn');
   uiElements.pauseBtn = document.getElementById('pause-btn');
+  uiElements.spinRagdollBtn = document.getElementById('spin-ragdoll-btn');
   uiElements.speedControls = document.getElementById('speed-controls');
   uiElements.statusMessage = document.getElementById('status-message');
   uiElements.selectionMessage = document.getElementById('selection-message');

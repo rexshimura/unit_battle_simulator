@@ -4,8 +4,14 @@ import { getDistance, AudioManager } from './utils.js';
 import { Unit } from './entities/Unit.js';
 import { updateStatsPanel, updateOneVOneUI } from './ui.js';
 
+let battleEndTimeout = null;
+
 function update() {
-  if (!gameState.isBattleStarted) return;
+  if (!gameState.isBattleStarted) {
+    gameState.animations = gameState.animations.filter(a => a.update());
+    gameState.particles = gameState.particles.filter(p => p.update());
+    return;
+  }
   const team1Units = gameState.units.filter(u => u.team === 1);
   const team2Units = gameState.units.filter(u => u.team === 2);
   gameState.units.forEach(unit => unit.update(unit.team === 1 ? team1Units : team2Units, unit.team === 1 ? team2Units : team1Units));
@@ -184,6 +190,7 @@ function setup() {
 }
 
 function resetBattlefield() {
+  if (battleEndTimeout) clearTimeout(battleEndTimeout);
   gameState.isBattleStarted = false;
   gameState.isPaused = false;
   gameState.projectiles = [];
@@ -195,8 +202,24 @@ function resetBattlefield() {
   if (gameState.initialUnitPlacement.length > 0) {
     gameState.initialUnitPlacement.forEach(proto => {
       const newUnit = new Unit(proto.x, proto.y, proto.team, proto.type, proto.relX, proto.relY);
+      
+      // Restore custom stats from Modify Mode if available
+      if (proto.maxHp !== undefined) {
+          newUnit.maxHp = proto.maxHp;
+          newUnit.hp = proto.maxHp;
+      }
+      if (proto.attackDamage !== undefined) newUnit.attackDamage = proto.attackDamage;
+      if (proto.attackCooldown !== undefined) newUnit.attackCooldown = proto.attackCooldown;
+      if (proto.followTarget !== undefined) newUnit.followTarget = proto.followTarget;
+      
       gameState.units.push(newUnit);
       gameState.allUnitsThisRound.push(newUnit);
+      
+      // Reconnect 1v1 logic so UI and scaled physics don't break
+      if (gameState.isOneVOneModeActive) {
+          if (newUnit.team === 1) gameState.oneVOneBlueUnit = newUnit;
+          if (newUnit.team === 2) gameState.oneVOneRedUnit = newUnit;
+      }
     });
   }
   uiElements.startBattleBtn.innerHTML = uiElements.playIconSVG;
@@ -215,8 +238,23 @@ function updateUnitCounts() {
 function endBattle(message) {
   AudioManager.stopAll();
   gameState.isBattleStarted = false;
-  uiElements.statusMessage.textContent = message;
-  uiElements.statusMessage.style.opacity = 1;
+  if (battleEndTimeout) clearTimeout(battleEndTimeout);
+  
+  if (message) {
+    if (message === "Battle Stopped") {
+        uiElements.statusMessage.textContent = message;
+        uiElements.statusMessage.style.opacity = 1;
+        battleEndTimeout = setTimeout(() => {
+            uiElements.statusMessage.style.opacity = 0;
+        }, 1200);
+    } else {
+        battleEndTimeout = setTimeout(() => {
+          uiElements.statusMessage.textContent = message;
+          uiElements.statusMessage.style.opacity = 1;
+        }, 1200);
+    }
+  }
+  
   uiElements.startBattleBtn.innerHTML = uiElements.playIconSVG;
   if (document.getElementById('stats-panel').classList.contains('open')) updateStatsPanel();
 }

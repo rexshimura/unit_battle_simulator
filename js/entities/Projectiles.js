@@ -18,7 +18,7 @@ class Projectile {
     this.y = shooter.y + Math.sin(this.angle) * nozzleTipDist;
   }
   update(enemies) {
-    const enemyGuardians = gameState.units.filter(u => u.team !== this.team && (u.type === 'guardian' || u.type === 'force_wall' || u.type === 'absorber'));
+    const enemyGuardians = gameState.units.filter(u => u.team !== this.team && (u.type === 'guardian' || u.type === 'force_wall' || u.type === 'absorber' || u.type === 'spartan'));
     for (const guardian of enemyGuardians) {
       if (guardian.type === 'absorber') {
           if (getDistance(this, guardian) < guardian.width / 2 + 15) {
@@ -120,7 +120,7 @@ class IceShard extends Projectile {
     }
     
     // Guardian deflect logic
-    const enemyGuardians = gameState.units.filter(u => u.team !== this.team && (u.type === 'guardian' || u.type === 'force_wall' || u.type === 'absorber'));
+    const enemyGuardians = gameState.units.filter(u => u.team !== this.team && (u.type === 'guardian' || u.type === 'force_wall' || u.type === 'absorber' || u.type === 'spartan'));
     for (const guardian of enemyGuardians) {
       if (guardian.type === 'absorber') {
           if (getDistance(this, guardian) < guardian.width / 2 + 15) {
@@ -504,6 +504,7 @@ class PoisonPotion extends Projectile {
     this.rotation += 0.2 * gameState.gameSpeed;
     const distToTarget = getDistance(this, this.targetPos);
     if (distToTarget < this.speed * gameState.gameSpeed) {
+      AudioManager.play('potion_throw');
       const specs = UNIT_SPECS.alchemist;
       gameState.animations.push(new PoisonSplashAnimation(this.x, this.y, specs.poisonAoeRadius, this.team, this.shooter));
       return false;
@@ -544,6 +545,7 @@ class AntiHealDart extends Projectile {
     this.x += Math.cos(angle) * this.speed * gameState.gameSpeed;
     this.y += Math.sin(angle) * this.speed * gameState.gameSpeed;
     if (getDistance(this, this.target) < this.target.width / 2) {
+      AudioManager.play('poison_dart');
       const specs = UNIT_SPECS.alchemist;
       this.target.buffs.healingReduced = {
         expires: Date.now() + specs.healReductionDuration,
